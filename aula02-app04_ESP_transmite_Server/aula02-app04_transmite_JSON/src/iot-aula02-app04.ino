@@ -1,13 +1,19 @@
-//Includes
+/* *Includes* */
+//WiFi
 #include <WiFi.h>
 #include <WiFiClient.h>
+//WebServer
 #include <WebServer.h>
+//ESP32Sensors
 #include "ESP32Sensors.hpp"
+//JSON
+#include <Arduino.h>
+#include <ArduinoJson.h>
 
 //WebServer
 const char* ssid = "Wokwi-GUEST";
 const char* password = "";
-const char* host = "localhost"; // IP do servidor Python
+const char* host = "host.wokwi.internal"; // IP do servidor Python
 const uint16_t port = 5000;
 
 //Dispositivo
@@ -42,9 +48,9 @@ void loop() {
     StaticJsonDocument<200> doc;
 
     doc["device"] = device;
-    doc["temp"] = temp;
-    doc["umid"] = umid;
-    doc["hic"] = hic;
+    doc["temp"] = salaMaquinas.temp;
+    doc["umid"] = salaMaquinas.umid;
+    doc["hic"] = salaMaquinas.hic;
     doc["motor_accel_x"] = motor.acceleration.x;
     doc["motor_accel_y"] = motor.acceleration.y;
     doc["motor_accel_z"] = motor.acceleration.z;
