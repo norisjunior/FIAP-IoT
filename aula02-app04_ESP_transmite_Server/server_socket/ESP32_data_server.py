@@ -14,7 +14,7 @@ br_tz = pytz.timezone("America/Sao_Paulo")
 try:
     with open(CSV_FILE, "x", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["timestamp", "temperature", "humidity", "heat_index"])
+        writer.writerow(["timestamp", "dispositivo", "temp", "umid", "hic", "motor_x", "motor_y", "motor_z"])
 except FileExistsError:
     pass
 
@@ -41,9 +41,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     writer = csv.writer(f)
                     writer.writerow([
                         timestamp,
-                        payload.get("temperature"),
-                        payload.get("humidity"),
-                        payload.get("heat_index")
+                        payload.get("device"),
+                        payload.get("temp"),
+                        payload.get("umid"),
+                        payload.get("hic"),
+                        payload.get("motor_accel_x"),
+                        payload.get("motor_accel_y"),
+                        payload.get("motor_accel_z")
                     ])
                 print("Dados gravados no CSV.")
 
