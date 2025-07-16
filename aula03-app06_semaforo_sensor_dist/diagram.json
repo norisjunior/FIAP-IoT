@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": -4.76, "attrs": {} },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic1",
+      "top": -123.3,
+      "left": -23.3,
+      "attrs": { "distance": "216" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "ultrasonic1:GND", "esp:GND.2", "black", [ "v38.4", "h37.2" ] ],
+    [ "ultrasonic1:VCC", "esp:3V3", "red", [ "v38.4", "h-28.95" ] ],
+    [ "ultrasonic1:TRIG", "esp:25", "blue", [ "v9.6", "h-77.2", "v124.8" ] ],
+    [ "ultrasonic1:ECHO", "esp:26", "green", [ "v19.2", "h-96.8", "v124.8" ] ]
+  ],
+  "dependencies": {}
+}
