@@ -1,9 +1,11 @@
 #include "lwm2mclient.h"
 #include "lwm2m.h"
 
-
+#undef OBJ_COUNT
 #define OBJ_COUNT 15
 
+#define LWM2M_SERVER_URI "coap://leshan.eclipseprojects.io:5683"
+#define LWM2M_CLIENT_NAME "esp32-noris-iot-2025"
 class LwM2mManager
 {
 public:
@@ -17,11 +19,11 @@ private:
   lwm2m_context_t *lwm2mH = NULL;
   int lifetime = 40;
   //TODO - move to platfomrio.ini
-  char *name = "esp32-noris-iot-2025";
+  const char *name = "esp32-noris-iot-2025";
   lwm2m_object_t *objArray[OBJ_COUNT];
   const char *localPort = "56830";
   //TODO - move to platfomrio.ini
-  const char *server = "coap://leshan.eclipseprojects.io";
+  const char *server = "leshan.eclipseprojects.io";
   // const char *server = NULL;
   // const char *serverPort = LWM2M_STANDARD_PORT_STR;
   //TODO - move to platfomrio.ini

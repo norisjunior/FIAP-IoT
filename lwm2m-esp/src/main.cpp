@@ -2,9 +2,12 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
+#include <WiFiUdp.h>
 #include "client_smart_objects.h"
-
 #include <DHT.h>
+
+WiFiUDP udp;
+IPAddress serverIP;
 
 /* ---- Config Wi‑Fi ---- */
 const char* ssid     = "Wokwi-GUEST";
@@ -29,6 +32,13 @@ void setup()
   Serial.println("\nWiFi conectado!");
 
   delay(5000);
+
+  if (WiFi.hostByName("leshan.eclipseprojects.io", serverIP)) {
+    Serial.print("Servidor resolvido para: ");
+    Serial.println(serverIP);
+  } else {
+    Serial.println("Falha ao resolver servidor DNS");
+  }
 
   LwM2m.init();
 }
