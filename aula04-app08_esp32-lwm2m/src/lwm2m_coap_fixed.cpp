@@ -112,15 +112,15 @@ bool sendLWM2MRegister() {
     idx += payload.length();
     
     // Debug
-    Serial.printf("📤 Enviando %d bytes para %s:5683\n", idx, serverIP.toString().c_str());
-    Serial.printf("🆔 Message ID: %d\n", messageId);
+    Serial.printf("📤 Enviando %d bytes para %s:5683\n", idx, serverIP.toString().c_str()); Serial.println("");
+    Serial.printf("🆔 Message ID: %d\n", messageId); Serial.println("");
     Serial.printf("🔑 Token: ");
     for (int i = 0; i < tokenLen; i++) {
         Serial.printf("%02X", token[i]);
     }
     Serial.println();
-    Serial.printf("📋 Endpoint: %s\n", LWM2M_ENDPOINT_NAME);
-    Serial.printf("📄 Payload: %s\n", payload.c_str());
+    Serial.printf("📋 Endpoint: %s\n", LWM2M_ENDPOINT_NAME); Serial.println("");
+    Serial.printf("📄 Payload: %s\n", payload.c_str()); Serial.println("");
     
     // Hex dump
     Serial.println("🔍 Hex dump:");
@@ -168,14 +168,14 @@ void processCoAPResponseBuffer(uint8_t* buffer, int len) {
     if (!isOurResponse) return;
     
     Serial.println("\n📥 === RESPOSTA DO SERVIDOR ===");
-    Serial.printf("📊 Código: %d.%02d", (code >> 5), (code & 0x1F));
+    Serial.printf("📊 Código: %d.%02d", (code >> 5), (code & 0x1F)); Serial.println("");
     
     switch (code) {
         case COAP_CODE_CREATED: {
             Serial.println(" (Created - SUCESSO!)");
             Serial.println("🎉 REGISTRO APROVADO PELO LESHAN!");
             Serial.println("📱 Acesse: https://leshan.eclipseprojects.io");
-            Serial.printf("🔍 Procure por: %s\n", LWM2M_ENDPOINT_NAME);
+            Serial.printf("🔍 Procure por: %s\n", LWM2M_ENDPOINT_NAME); Serial.println("");
             
             // Extrair Location-Path da resposta
             size_t idx = 4 + tkl;
@@ -227,7 +227,7 @@ void processCoAPResponseBuffer(uint8_t* buffer, int len) {
         }
             
         default: {
-            Serial.printf(" (Código: 0x%02X)\n", code);
+            Serial.printf(" (Código: 0x%02X)\n", code); Serial.println("");
             if (code >= 0x80) {
                 Serial.println("❌ Erro no servidor");
                 g_state = LWM2M_STATE_ERROR;
@@ -410,7 +410,7 @@ void processCoAPRequestBuffer(uint8_t* buffer, int len, IPAddress remoteIP, int 
             // Operação READ
             if (objectsManager.processRead(objectId, instanceId, resourceId, responsePayload)) {
                 responseCode = COAP_CODE_CONTENT; // 2.05 Content
-                Serial.printf("✅ Read OK: %s\n", responsePayload.c_str());
+                Serial.printf("✅ Read OK: %s\n", responsePayload.c_str()); Serial.println("");
             } else {
                 responseCode = 0x84; // 4.04 Not Found
                 Serial.println("❌ Recurso não encontrado");
@@ -435,7 +435,7 @@ void processCoAPRequestBuffer(uint8_t* buffer, int len, IPAddress remoteIP, int 
             }
         }
     } else {
-        Serial.printf("❌ URI inválido: %s\n", uriPath.c_str());
+        Serial.printf("❌ URI inválido: %s\n", uriPath.c_str()); Serial.println("");
         responseCode = 0x80; // 4.00 Bad Request
     }
     
@@ -467,7 +467,7 @@ bool sendLWM2MUpdate() {
     uint8_t buffer[256];
     size_t idx = 0;
     
-    Serial.println("\n💓 Enviando update de registro...");
+    Serial.println("\nEnviando update de registro...");
     
     // Cabeçalho CoAP PUT
     buffer[idx++] = (COAP_VERSION << 6) | (COAP_TYPE_CON << 4) | tokenLen;
@@ -510,7 +510,7 @@ bool sendLWM2MUpdate() {
     udp.write(buffer, idx);
     udp.endPacket();
     
-    Serial.printf("📤 Update enviado para %s\n", registrationLocation.c_str());
+    Serial.printf("Update enviado para %s\n", registrationLocation.c_str()); Serial.println("");
     
     return true;
 }
@@ -522,6 +522,7 @@ bool lwm2m_coap_init() {
     // Resolver servidor
     if (WiFi.hostByName("leshan.eclipseprojects.io", serverIP)) {
         Serial.printf("✅ Servidor resolvido: %s\n", serverIP.toString().c_str());
+        Serial.println("");
     } else {
         Serial.println("❌ Falha ao resolver servidor DNS");
         return false;

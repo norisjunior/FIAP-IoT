@@ -10,8 +10,8 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
     
-    Serial.println("\n\n=== LWM2M ESP32 Project ===");
-    Serial.println("Versão: Cliente IoT com sensores e atuadores");
+    Serial.println("\n\n=== Projeto LWM2M ESP32 ===");
+    Serial.println("Versão: Dispositivo IoT ESP32 com sensores e atuadores");
     Serial.println("Objetos: 3303 (Temp), 3304 (Umid), 3311 (LEDs)");
     Serial.println("=========================================\n");
     
@@ -21,17 +21,9 @@ void setup() {
     // Inicializar objetos IPSO (sensores DHT)
     objectsManager.begin();
     
-    // Teste rápido dos LEDs
-    Serial.println("🔦 Testando LEDs...");
-    for (int i = 0; i < 3; i++) {
-        light_set_onoff(i, true);
-        delay(200);
-        light_set_onoff(i, false);
-    }
-    
     // Conectar WiFi
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.print("📡 Conectando ao WiFi");
+    Serial.print("Conectando ao WiFi");
     
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 30) {
@@ -42,12 +34,12 @@ void setup() {
     }
     
     if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("\n❌ Falha ao conectar WiFi!");
+        Serial.println("\nFalha ao conectar WiFi!");
         light_set_onoff(0, true); // LED vermelho
         while(1) delay(1000);
     }
     
-    Serial.println("\n✅ WiFi conectado!");
+    Serial.println("\nWiFi conectado!");
     Serial.printf("📍 IP Local: %s\n", WiFi.localIP().toString().c_str());
     Serial.printf("📶 Sinal: %d dBm\n", WiFi.RSSI());
     light_set_onoff(2, false);
@@ -57,7 +49,7 @@ void setup() {
     delay(3000);
     
     // Inicializar LWM2M
-    Serial.println("\n🚀 Inicializando LWM2M...");
+    Serial.println("\n--- Inicializando LWM2M...");
     if (lwm2m_coap_init()) {
         Serial.println("✅ Cliente LWM2M pronto!");
         light_set_dimmer(1, 50);
@@ -68,7 +60,7 @@ void setup() {
         while(1) delay(1000);
     }
     
-    Serial.println("\n📋 === INFORMAÇÕES DO SISTEMA ===");
+    Serial.println("\n=== INFORMAÇÕES DO SISTEMA ===");
     Serial.printf("Endpoint: %s\n", LWM2M_ENDPOINT_NAME);
     Serial.printf("Lifetime: %d segundos\n", LWM2M_LIFETIME);
     Serial.println("Servidor: leshan.eclipseprojects.io:5683");
@@ -78,9 +70,9 @@ void setup() {
     Serial.println("  - 3311: Light Control (3 instâncias)");
     Serial.println("================================\n");
     
-    Serial.println("💡 Dica: Abra https://leshan.eclipseprojects.io");
-    Serial.println("        e procure pelo endpoint após o registro!");
-    Serial.println("        Você poderá controlar os LEDs e ver os sensores!\n");
+    Serial.println("Acesse https://leshan.eclipseprojects.io");
+    Serial.println("       e procure pelo endpoint após o registro!");
+    Serial.println("       Você poderá controlar os LEDs e ver os sensores!\n");
 }
 
 void loop() {
@@ -88,7 +80,6 @@ void loop() {
     static unsigned long lastHeartbeat = 0;
     static unsigned long lastSensorUpdate = 0;
     static bool wasRegistered = false;
-    static int celebrationCount = 0;
     
     unsigned long currentTime = millis();
     
@@ -101,7 +92,7 @@ void loop() {
     // Status periódico
     if (currentTime - lastStatus >= 10000) {
         lastStatus = currentTime;
-        Serial.printf("\n📊 Status: %s", lwm2m_coap_get_status().c_str());
+        Serial.printf("\nStatus: %s", lwm2m_coap_get_status().c_str());
         
         if (lwm2m_coap_is_registered()) {
             Serial.printf(" ✅ [Visível no Leshan]");
@@ -121,9 +112,8 @@ void loop() {
     
     // Primeira vez que registra
     if (lwm2m_coap_is_registered() && !wasRegistered) {
-        Serial.println("\n🎊 === PRIMEIRA CONEXÃO ESTABELECIDA! ===");
-        Serial.println("🎯 DISPOSITIVO REGISTRADO NO LESHAN!");
-        Serial.printf("🔍 Endpoint: %s\n", LWM2M_ENDPOINT_NAME);
+        Serial.println("\n🎯 DISPOSITIVO REGISTRADO NO LESHAN!");
+        Serial.printf("🔍 Endpoint: %s\n", LWM2M_ENDPOINT_NAME); Serial.println("");
         Serial.println("📱 Acesse: https://leshan.eclipseprojects.io");
         Serial.println("🎮 Controle disponível:");
         Serial.println("   - LEDs: On/Off e Dimmer");
@@ -131,33 +121,9 @@ void loop() {
         Serial.println("=======================================\n");
         
         wasRegistered = true;
-        celebrationCount = 0;
     }
     
-    // Animação de celebração
-    if (wasRegistered && celebrationCount < 10) {
-        static unsigned long lastCelebration = 0;
-        if (currentTime - lastCelebration >= 300) {
-            lastCelebration = currentTime;
-            
-            // Efeito arco-íris nos LEDs
-            int pattern = celebrationCount % 3;
-            light_set_onoff(0, pattern == 0);
-            light_set_onoff(1, pattern == 1);
-            light_set_onoff(2, pattern == 2);
-            
-            celebrationCount++;
-            
-            if (celebrationCount >= 10) {
-                // Estado final: apenas LED azul
-                light_set_onoff(0, false);
-                light_set_onoff(1, true);
-                light_set_onoff(2, false);
-                light_set_dimmer(1, 100);
-            }
-        }
-    }
-    
+   
     // Indicador visual do estado
     if (lwm2m_coap_is_registered()) {
         // LED azul respirando

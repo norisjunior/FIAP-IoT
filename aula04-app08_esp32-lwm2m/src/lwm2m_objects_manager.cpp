@@ -113,7 +113,9 @@ bool LWM2MObjectsManager::processWrite(uint16_t objectId, uint16_t instanceId,
     // Debug do valor recebido
     Serial.printf("📝 processWrite - Object: %d, Instance: %d, Resource: %d\n", 
                   objectId, instanceId, resourceId);
+    Serial.println("");
     Serial.printf("📦 Valor recebido (length=%d): ", value.length());
+    Serial.println("");
     
     // Mostrar em hex
     for (int i = 0; i < value.length(); i++) {
@@ -124,32 +126,29 @@ bool LWM2MObjectsManager::processWrite(uint16_t objectId, uint16_t instanceId,
     // Tentar interpretar o valor
     String processedValue = "";
     
-    // Se for formato TLV (começa com byte de tipo)
-    if (value.length() >= 3 && (uint8_t)value[0] == 0xE1) {
-        // TLV format: Type (1 byte) + Length (1-2 bytes) + Value
-        int valueStart = 2;  // Assumindo length de 1 byte
-        if ((uint8_t)value[1] & 0x80) {
-            // Length em 2 bytes
-            valueStart = 3;
-        }
+    // Se for formato TLV (começa com byte de tipo 0xE1)
+    if (value.length() >= 4 && (uint8_t)value[0] == 0xE1) {
+        // TLV format: Type (1 byte) + ID (1 byte) + Length (1 byte) + Value
+        // E1 = Resource Instance with ID
+        // 16 = ID (22 decimal) 
+        // DA = Length (provavelmente codificado)
+        // 01/00 = Valor real
         
-        // Pegar o valor real
-        if (value.length() > valueStart) {
-            uint8_t actualValue = (uint8_t)value[valueStart];
-            processedValue = String(actualValue);
-            Serial.printf("🔍 Valor TLV decodificado: %d\n", actualValue);
-        }
+        // O valor está no último byte para boolean
+        uint8_t actualValue = (uint8_t)value[value.length() - 1];
+        processedValue = String(actualValue);
+        Serial.printf("🔍 Valor TLV decodificado: %d (último byte)\n", actualValue); Serial.println("");
     } 
     // Se for texto simples
     else if (value.length() == 1 && (value[0] == '0' || value[0] == '1')) {
         processedValue = value;
-        Serial.printf("🔍 Valor texto simples: %s\n", processedValue.c_str());
+        Serial.printf("🔍 Valor texto simples: %s\n", processedValue.c_str()); Serial.println("");
     }
     // Tentar outros formatos
     else {
         // Pode ser apenas o byte direto
         processedValue = String((uint8_t)value[0]);
-        Serial.printf("🔍 Valor direto: %s\n", processedValue.c_str());
+        Serial.printf("🔍 Valor direto: %s\n", processedValue.c_str()); Serial.println("");
     }
     
     switch (objectId) {
@@ -162,6 +161,7 @@ bool LWM2MObjectsManager::processWrite(uint16_t objectId, uint16_t instanceId,
                             light_set_onoff(instanceId, newState);
                             Serial.printf("💡 LED %d: %s\n", instanceId, 
                                         newState ? "ON" : "OFF");
+                            Serial.println("");
                             return true;
                         }
                     case 5851: // Dimmer
@@ -171,6 +171,7 @@ bool LWM2MObjectsManager::processWrite(uint16_t objectId, uint16_t instanceId,
                                 light_set_dimmer(instanceId, dimValue);
                                 Serial.printf("🔆 LED %d dimmer: %d%%\n", 
                                             instanceId, dimValue);
+                                Serial.println("");
                                 return true;
                             }
                         }
@@ -215,6 +216,7 @@ void LWM2MObjectsManager::printStatus() {
                       i, colors[i],
                       light_get_onoff(i) ? "ON" : "OFF",
                       light_get_dimmer(i));
+        Serial.println("");
     }
     
     // Status da temperatura
@@ -225,8 +227,10 @@ void LWM2MObjectsManager::printStatus() {
                           i, temperature[i]->getValue(),
                           temperature[i]->getMinValue(),
                           temperature[i]->getMaxValue());
+            Serial.println("");
         } else {
             Serial.printf("  [%d] Aguardando leitura...\n", i);
+            Serial.println("");
         }
     }
     
@@ -238,8 +242,10 @@ void LWM2MObjectsManager::printStatus() {
                           i, humidity[i]->getValue(),
                           humidity[i]->getMinValue(),
                           humidity[i]->getMaxValue());
+            Serial.println("");
         } else {
             Serial.printf("  [%d] Aguardando leitura...\n", i);
+            Serial.println("");
         }
     }
     
