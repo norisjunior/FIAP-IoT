@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "top": 44.4, "left": -53.8, "attrs": { "color": "red" } },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -143.7, "left": 33, "attrs": {} },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": 167.02, "left": 136.72, "attrs": {} },
+    { "type": "wokwi-microsd-card", "id": "sd1", "top": -47.77, "left": 134.47, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "led1:A", "esp:27", "green", [ "v0" ] ],
+    [ "led1:C", "esp:GND.1", "black", [ "v0" ] ],
+    [ "imu1:VCC", "esp:3V3", "red", [ "h38.48", "v-144", "h-240.15" ] ],
+    [ "imu1:GND", "esp:GND.2", "black", [ "v-124.8", "h-95.92" ] ],
+    [ "imu1:SCL", "esp:17", "cyan", [ "v0" ] ],
+    [ "imu1:SDA", "esp:16", "blue", [ "v0" ] ],
+    [ "imu1:AD0", "esp:GND.3", "orange", [ "v0" ] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v19.2", "h-38.4" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h28.8" ] ],
+    [ "dht1:SDA", "esp:26", "green", [ "v28.8", "h-67.1", "v144" ] ],
+    [ "sd1:VCC", "esp:3V3", "red", [ "h38.4", "v-67.06", "h-134.4", "v86.4", "h-105.6" ] ],
+    [ "sd1:GND", "esp:GND.2", "black", [ "h28.8", "v-38.29", "h-115.2", "v105.6" ] ],
+    [ "sd1:DI", "esp:23", "purple", [ "h9.6", "v28.71" ] ],
+    [ "sd1:DO", "esp:19", "magenta", [ "h19.2", "v182.51" ] ],
+    [ "sd1:SCK", "esp:18", "violet", [ "h28.8", "v134.39" ] ],
+    [ "sd1:CS", "esp:5", "green", [ "h0", "v115.26" ] ]
+  ],
+  "dependencies": {}
+}
