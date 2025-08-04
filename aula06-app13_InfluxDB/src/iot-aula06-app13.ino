@@ -9,9 +9,12 @@ const char* WIFI_PASSWORD = "";
 
 // InfluxDB Cloud - Configurações
 const char* INFLUX_URL    = "https://us-east-1-1.aws.cloud2.influxdata.com/api/v2/write";
-const char* INFLUX_ORG    = "e044ac59f07be199";     // Substituir pela sua organização
-const char* INFLUX_BUCKET = "IoTSensores";        // Nome do bucket criado
-const char* INFLUX_TOKEN  = "Tg1KYC6sbSaO_YMorJwEOEXTOYHjL9exDbkavgwD0cw5mfWXlkudjyhL3elfh6wjpti1Em0714nAHBcz8CqVqg==";      // Token de autenticação
+//e044ac59f07be199
+const char* INFLUX_ORG    = "";     // Substituir pela sua organização
+//IoTSensores
+const char* INFLUX_BUCKET = "";        // Nome do bucket criado
+//Tg1KYC6sbSaO_YMorJwEOEXTOYHjL9exDbkavgwD0cw5mfWXlkudjyhL3elfh6wjpti1Em0714nAHBcz8CqVqg==
+const char* INFLUX_TOKEN  = "";      // Token de autenticação
 
 /* ==== FUNÇÃO AUXILIAR: Envia dados para InfluxDB =================== */
 void enviaParaInfluxDB(float dist_cm, bool dist_alarme, float temp, float umid, float ic) {

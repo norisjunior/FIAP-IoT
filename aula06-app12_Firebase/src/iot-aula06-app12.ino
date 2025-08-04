@@ -7,10 +7,13 @@
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
 
-const char* API_KEY       = "AIzaSyCqSUfVwtK-c6owoEsWqR3q2PZZhP9KLbU";
+//AIzaSyCqSUfVwtK-c6owoEsWqR3q2PZZhP9KLbU
+const char* API_KEY       = "";
 const char* DB_URL        = "https://fiap-iot-2025-default-rtdb.firebaseio.com/"; // sem barra final
-const char* USER_EMAIL    = "profnoris.junior@fiap.com.br";
-const char* USER_PASSWORD = "FIAPIoT20251234";
+//profnoris.junior@fiap.com.br
+const char* USER_EMAIL    = "";
+//FIAPIoT20251234
+const char* USER_PASSWORD = "";
 
 /* ==== OBJETOS GLOBAIS (Firebase) =================================== */
 FirebaseData   fbdo;
