@@ -16,18 +16,18 @@ WiFiClient wifiClient; // Define client WiFi
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/sala1"
 #define MQTT_DEVICEID   "FIAPIoTDevice001"
-#define MQTT_QOS        1
+#define MQTT_QOS        0
 #define MQTT_RETAIN     false
 MqttClient mqttClient(wifiClient);
 
 /* ---- Controle de intervalo de envio ---- */
-const int INTERVALO_COLETA = 2000;  // 2 s
+const int INTERVALO_COLETA = 2500;  // 2,5 s
 int proximaLeitura = 0;
 
 /* ---- Protótipos ---- */
-void conectaWiFi();
-void conectaMQTT();
-
+void conectarWiFi();
+void conectarMQTT();
+bool publicarMsg();
 
 /* ---- MAIN (setup e loop) ---- */
 void setup() {
@@ -78,16 +78,10 @@ void loop() {
 
   /* === LED aceso durante a transmissão === */
   ESP32Sensors::LED::on();
-  bool ok = mqttClient.beginMessage(MQTT_PUB_TOPIC, strlen(payload), MQTT_RETAIN, MQTT_QOS);
-  mqttClient.print(payload);
-  mqttClient.endMessage();
+  bool ok = publicarMsg(MQTT_PUB_TOPIC, payload);
   ESP32Sensors::LED::off();
 
-  if (ok) {
-    Serial.println("[MQTT] Publicado com sucesso.");
-  } else {
-    Serial.println("[MQTT] Falha ao publicar mensagem.");
-  }
+  Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
 
   delay(100);
 }
@@ -106,8 +100,12 @@ void conectarWiFi() {
 
 /* ---- Função: Conectar ao MQTT Broker ---- */
 void conectarMQTT() {
-  Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
+  // Se já está conectado, não faz nada
+  if (mqttClient.connected()) {
+    return;
+  }
 
+  Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
   // Conexão ao MQTT: Definição de ID e keep alive
   mqttClient.setId(MQTT_DEVICEID);
   mqttClient.setKeepAliveInterval(60);
@@ -122,4 +120,11 @@ void conectarMQTT() {
       delay(5000);
     }
   }  
+}
+
+/* ---- Publicação simplificada (QoS 0, retain opcional) ---- */
+bool publicarMsg(const char* topico, const char* dados) {
+  mqttClient.beginMessage(topico, strlen(dados), MQTT_RETAIN, MQTT_QOS);
+  mqttClient.print(dados);
+  return mqttClient.endMessage();
 }
