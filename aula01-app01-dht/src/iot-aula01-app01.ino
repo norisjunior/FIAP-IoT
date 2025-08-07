@@ -1,73 +1,65 @@
 #include <DHT.h>
 
 //Definições - GPIO
-#define BOTAO 18
-#define LED 26
+#define LEDPIN_VERMELHO 25
+#define LEDPIN_VERDE 27
 
 // Estrutura DHT
-#define DHTPIN 21
+#define DHTPIN 26
 #define DHTMODE DHT22
 DHT dht(DHTPIN, DHTMODE);
 
-/* *** Funções início *** */
-bool botaoPressionado() {
-  return digitalRead(BOTAO) == LOW;
-}
-
-bool medirTempUmid(float* p_temp, float* p_umid, float* p_ic) {
-  float temperatura = dht.readTemperature();
-  float umidade = dht.readHumidity();
-
-  if (isnan(temperatura) || isnan(umidade)) {
-    Serial.println("Falha ao ler do sensor DHT!");
-    *p_temp = -99.0;
-    *p_umid = -99.0;
-    *p_ic = -99.0;
-    return false;
+void piscaLED() {
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(LEDPIN_VERDE, HIGH);
+    delay(1000);
+    digitalWrite(LEDPIN_VERDE, LOW);
+    delay(1000);
   }
-
-  float heatIndex = dht.computeHeatIndex(temperatura, umidade, false);
-
-  Serial.print("Temperatura: "); Serial.print(temperatura);
-  Serial.print(" °C, Umidade: "); Serial.print(umidade);
-  Serial.print(" %, Índice de calor: "); Serial.print(heatIndex); Serial.println(" °C");
-
-  *p_temp = temperatura;
-  *p_umid = umidade;
-  *p_ic = heatIndex;
-
-  return true;
 }
-/* *** Funções fim *** */
-
 
 void setup() {
-  pinMode(BOTAO, INPUT_PULLUP);
-  pinMode(LED, OUTPUT);
+  //Inicializar sensores
+  pinMode(LEDPIN_VERDE, OUTPUT);
+  pinMode(LEDPIN_VERMELHO, OUTPUT);
   dht.begin();
+
   Serial.begin(115200);
-  Serial.println("Pressione o botão para medir.");
 }
 
 void loop() {
-  float temp, umid, ic;
   bool acenderLed = false;
 
-  while (!botaoPressionado()) {
-    //Nada
-  }
-  
-  if (medirTempUmid(&temp, &umid, &ic)) {
-    (ic > 30) ? acenderLed = true : acenderLed = false;
-    digitalWrite(LED, acenderLed ? HIGH : LOW);
-    //ou
-    //digitalWrite(LED, acenderLed);
-    (ic > 50) ? Serial.println("Alerta: Índice de calor alto!") : Serial.println("Índice de calor normal.");
-  } else {
-    Serial.println("Erro ao medir temperatura e umidade.");
+  float temp = dht.readTemperature();
+  float umid = dht.readHumidity();
+
+  if (isnan(temp) || isnan(umid)) {
+    Serial.println("Falha ao ler do sensor DHT!");
+    delay(2000);
+    return;
   }
 
-  delay(2000); // Aguarda 2 segundos antes da próxima leitura
-  Serial.println("Pressione o botão para medir novamente.");
+  float heatIndex = dht.computeHeatIndex(temp, umid, false);
+
+  Serial.print("\nTemperatura: "); Serial.print(temp);
+  Serial.print(" °C, Umidade: "); Serial.print(umid);
+  Serial.print(" %, Índice de calor: "); Serial.print(heatIndex); Serial.println(" °C");
+
+  if ( (heatIndex > 25) ) {
+    Serial.println("Condições ambientais inadequadas");
+    acenderLed = true;
+  } else {
+    Serial.println("Condições ambientais dentro da normalidade");
+    acenderLed = false;
+  }
+  digitalWrite(LEDPIN_VERMELHO, acenderLed ? HIGH : LOW);
+  //ou
+  //digitalWrite(LEDPIN_VERMELHO, acenderLed);
+
+  delay(2000); // Aguarda 2 segundos antes da próxima leitura (sensor DHT)
+
+  // Pisca o LED para indicar que começará a próxima leitura
+  piscaLED();
+  delay(1000);
 }
 

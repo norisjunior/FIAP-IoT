@@ -3,23 +3,27 @@
   "author": "Noris Junior",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 115.2, "left": -158.36, "attrs": {} },
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
     {
-      "type": "wokwi-pushbutton", "id": "btn1", "top": 188.6, "left": -38.4, "attrs": { "color": "green", "xray": "1" }
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 82.8,
+      "left": -121,
+      "attrs": { "color": "limegreen" }
     },
-    { "type": "wokwi-dht22", "id": "dht1", "top": -28.5, "left": -130.2, "attrs": {} },
-    { "type": "wokwi-led", "id": "led1", "top": 140.4, "left": -217, "attrs": { "color": "red" } }
+    { "type": "wokwi-dht22", "id": "dht1", "top": -143.7, "left": 33, "attrs": {} },
+    { "type": "wokwi-led", "id": "led2", "top": -32.4, "left": -73, "attrs": { "color": "red" } }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
     [ "esp:RX", "$serialMonitor:TX", "", [] ],
-    [ "dht1:VCC", "esp:3V3", "red", [ "v0", "h-67.2" ] ],
-    [ "dht1:GND", "esp:GND.2", "black", [ "v0", "h19.2" ] ],
-    [ "led1:A", "esp:26", "green", [ "v0" ] ],
+    [ "led1:A", "esp:27", "green", [ "v0" ] ],
     [ "led1:C", "esp:GND.1", "black", [ "v0" ] ],
-    [ "dht1:SDA", "esp:21", "green", [ "v19.2", "h57.7", "v86.4" ] ],
-    [ "btn1:1.l", "esp:GND.3", "black", [ "h0" ] ],
-    [ "btn1:2.l", "esp:18", "green", [ "h0" ] ]
+    [ "dht1:VCC", "esp:3V3", "red", [ "v19.2", "h-38.4" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h28.8" ] ],
+    [ "dht1:SDA", "esp:26", "green", [ "v28.8", "h-67.1", "v144" ] ],
+    [ "led2:A", "esp:25", "green", [ "v0" ] ],
+    [ "led2:C", "esp:GND.1", "black", [ "v0" ] ]
   ],
   "dependencies": {}
 }
