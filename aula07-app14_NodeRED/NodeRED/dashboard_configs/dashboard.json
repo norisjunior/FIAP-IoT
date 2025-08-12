@@ -1,0 +1,461 @@
+[
+    {
+        "id": "196390ff6edf144a",
+        "type": "tab",
+        "label": "Flow FIAPIoT",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "1497e253c9efdc1d",
+        "type": "mqtt in",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "topic": "FIAPIoT/sala1",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "b932bf4a9773c95f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 170,
+        "y": 80,
+        "wires": [
+            [
+                "818a04a9524672c2"
+            ]
+        ]
+    },
+    {
+        "id": "818a04a9524672c2",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "separarDadosSensores",
+        "func": "//Número de saídas: 5\n\nlet temp = { payload: msg.payload.temp };\nlet umid = { payload: msg.payload.umid };\nlet ic = { payload: msg.payload.ic };\nlet dist = { payload: msg.payload.dist };\nlet mov = { payload: msg.payload.mov };\n\nreturn [temp, umid, ic, dist, mov];\n",
+        "outputs": 5,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 220,
+        "wires": [
+            [
+                "a6ca7301433d5c61"
+            ],
+            [
+                "ca69360405404dbe"
+            ],
+            [
+                "4ca0e5d1d30134ee"
+            ],
+            [
+                "722cf0f351319a48",
+                "344c442899e5b138"
+            ],
+            [
+                "6ecf1f1f8ec776e8",
+                "3d850a11f612da23"
+            ]
+        ]
+    },
+    {
+        "id": "a6ca7301433d5c61",
+        "type": "ui_chart",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "group": "af6b46c184d8e1bc",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "Temperatura",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 510,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ca69360405404dbe",
+        "type": "ui_gauge",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "group": "af6b46c184d8e1bc",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Umidade",
+        "label": "%",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 520,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "722cf0f351319a48",
+        "type": "ui_text",
+        "z": "196390ff6edf144a",
+        "group": "8d7139785a93ec75",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Distância",
+        "format": "{{value}}",
+        "layout": "col-center",
+        "className": "",
+        "style": true,
+        "font": "Arial Black,Arial Black,Gadget,sans-serif",
+        "fontSize": 16,
+        "color": "#67289a",
+        "x": 520,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "4ca0e5d1d30134ee",
+        "type": "ui_text",
+        "z": "196390ff6edf144a",
+        "group": "af6b46c184d8e1bc",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Índice de Calor",
+        "format": "{{value}}",
+        "layout": "col-center",
+        "className": "",
+        "style": true,
+        "font": "Arial Black,Arial Black,Gadget,sans-serif",
+        "fontSize": 16,
+        "color": "#e60000",
+        "x": 540,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "6ecf1f1f8ec776e8",
+        "type": "ui_led",
+        "z": "196390ff6edf144a",
+        "order": 3,
+        "group": "f675c3c8d38af862",
+        "width": 0,
+        "height": 0,
+        "label": "",
+        "labelPlacement": "left",
+        "labelAlignment": "left",
+        "colorForValue": [
+            {
+                "color": "#e0e0e0",
+                "value": "false",
+                "valueType": "bool"
+            },
+            {
+                "color": "#f50000",
+                "value": "true",
+                "valueType": "bool"
+            }
+        ],
+        "allowColorForValueInMessage": false,
+        "shape": "circle",
+        "showGlow": true,
+        "name": "",
+        "x": 490,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "9f4f279cabd47239",
+        "type": "telegram sender",
+        "z": "196390ff6edf144a",
+        "name": "Enviar telegram de alerta",
+        "bot": "21502a201e82e854",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 990,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "344c442899e5b138",
+        "type": "switch",
+        "z": "196390ff6edf144a",
+        "name": "alerta < 50",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lt",
+                "v": "50",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 530,
+        "y": 340,
+        "wires": [
+            [
+                "a4d47f42da167927"
+            ]
+        ]
+    },
+    {
+        "id": "a4d47f42da167927",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Alerta Distância",
+        "func": "// Distância\nconst distance = parseFloat(msg.payload);\nconst threshold = 50;\n\nif (distance < threshold) {\n    // Prepara a mensagem\n    msg.payload = {\n        type: \"message\",\n        chatId: \"6239670426\",\n        content: `ALERTA: Objeto detectado a ${distance} cm (gatilho: ${threshold} cm)!`\n    };\n    return msg;\n}\n\n// Sem alerta\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 340,
+        "wires": [
+            [
+                "9f4f279cabd47239",
+                "ec9406cfcc7b582b"
+            ]
+        ]
+    },
+    {
+        "id": "ec9406cfcc7b582b",
+        "type": "debug",
+        "z": "196390ff6edf144a",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "3d850a11f612da23",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Alerta Presença",
+        "func": "// Movimento (booleano) - com validação\nconst mov = msg.payload;\n\n// Verifica se é realmente um boolean\nif (typeof mov !== 'boolean') {\n    node.warn(\"Payload não é boolean: \" + typeof mov);\n    return null;\n}\n\nif (mov === true) {\n    msg.payload = {\n        type: \"message\",\n        chatId: \"6239670426\",\n        content: \"ALERTA: Presença detectada!\"\n    };\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 460,
+        "wires": [
+            [
+                "a0240b374ffb9cea",
+                "9f4f279cabd47239"
+            ]
+        ]
+    },
+    {
+        "id": "a0240b374ffb9cea",
+        "type": "debug",
+        "z": "196390ff6edf144a",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "85f3723b8048a8ec",
+        "type": "ui_spacer",
+        "z": "196390ff6edf144a",
+        "name": "spacer",
+        "group": "af6b46c184d8e1bc",
+        "order": 3,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "587357c9d3caa403",
+        "type": "ui_spacer",
+        "z": "196390ff6edf144a",
+        "name": "spacer",
+        "group": "af6b46c184d8e1bc",
+        "order": 5,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "bb6209e4be34772b",
+        "type": "ui_spacer",
+        "z": "196390ff6edf144a",
+        "name": "spacer",
+        "group": "8d7139785a93ec75",
+        "order": 2,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "b932bf4a9773c95f",
+        "type": "mqtt-broker",
+        "name": "EMQx Broker",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "af6b46c184d8e1bc",
+        "type": "ui_group",
+        "name": "FIAPIoT-Ambiente",
+        "tab": "3971d7500fb1aa4a",
+        "order": 1,
+        "disp": true,
+        "width": "7",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "8d7139785a93ec75",
+        "type": "ui_group",
+        "name": "FIAP-IoT-Dist",
+        "tab": "3971d7500fb1aa4a",
+        "order": 2,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "f675c3c8d38af862",
+        "type": "ui_group",
+        "name": "FIAP-IoT-Presença",
+        "tab": "3971d7500fb1aa4a",
+        "order": 3,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "21502a201e82e854",
+        "type": "telegram bot",
+        "botname": "FIAPIoTBot",
+        "usernames": "",
+        "chatids": "6239670426",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "3971d7500fb1aa4a",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "67a93ff787d8fb25",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.5",
+            "node-red-contrib-ui-led": "0.4.11",
+            "node-red-contrib-telegrambot": "16.3.2"
+        }
+    }
+]
