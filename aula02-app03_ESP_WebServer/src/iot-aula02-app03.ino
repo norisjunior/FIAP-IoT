@@ -27,7 +27,7 @@ void handleAccel() {
   //g é aproximadamente 9.80665 
   //para transformar de m/s² para g (gravidade), basta dividir o resultado por 9.80665
   sensors_event_t a = ESP32Sensors::Accel::medirAccel();
-  server.send(200, HTTPCHARSET, "Acelerômetro: x: " + String(a.acceleration.x) + "m/s², y: " + String(a.acceleration.y) + "m/s², z: " + String(a.acceleration.z) + "m/s².");
+  server.send(200, HTTPCHARSET, "Acelerômetro: x: " + String(a.acceleration.x/9.80665) + "g, y: " + String(a.acceleration.y) + "m/s², z: " + String(a.acceleration.z) + "m/s².");
   delay(100);
 }
 
