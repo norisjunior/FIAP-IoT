@@ -45,7 +45,7 @@ void loop() {
   if (client.connect(host, port)) {
       
     /* Transmissão dos dados em formato JSON */
-    StaticJsonDocument<200> doc;
+    JsonDocument doc;
 
     doc["device"] = device;
     doc["temp"] = salaMaquinas.temp;
