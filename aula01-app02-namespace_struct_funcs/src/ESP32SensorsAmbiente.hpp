@@ -10,7 +10,7 @@ namespace ESP32Sensors {
 		};
 
 		const uint8_t DHT_PIN   = 21;
-		const uint8_t DHT_MODEL = DHT22;
+		#define DHT_MODEL DHT22
 		DHT dht(DHT_PIN, DHT_MODEL);
 
 		const int TEMPO_DECORRIDO_MIN = 2000;  // 2 segundos
