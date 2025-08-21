@@ -1,0 +1,193 @@
+[
+    {
+        "id": "196390ff6edf144a",
+        "type": "tab",
+        "label": "Flow FIAPIoT CBOR",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "1497e253c9efdc1d",
+        "type": "mqtt in",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "topic": "FIAPIoT/aula10/noris/dados/cbor",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "b932bf4a9773c95f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 170,
+        "y": 100,
+        "wires": [
+            [
+                "31b408d71ca7023a"
+            ]
+        ]
+    },
+    {
+        "id": "6d653c4edd305152",
+        "type": "influxdb out",
+        "z": "196390ff6edf144a",
+        "influxdb": "a31a76b7973e6983",
+        "name": "Enviar InfluxDB",
+        "measurement": "fiapiot_aula10_cbor",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "e044ac59f07be199",
+        "bucket": "IoTSensores",
+        "x": 780,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "658d3969306e9604",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Enviar Dados Brutos InfluxDB",
+        "func": "// --- Leitura do payload ---\nconst p = msg.payload || {};\nconst temp = p.temp;\nconst umid = p.umid;\nconst ic = p.ic;\nconst accel_x = p.accel_x;\nconst accel_y = p.accel_y;\nconst accel_z = p.accel_z;\nconst motor_ligado = p.motor_status;\n\n// --- Calcula magnitude da aceleração ---\nconst accelMagnitude = Math.sqrt(\n    accel_x*accel_x + accel_y*accel_y + accel_z*accel_z\n);\n\n// --- Formato SIMPLES para o nó influxdb out ---\nmsg.payload = {\n    // Dados dos sensores\n    temperatura: temp,\n    umidade: umid,\n    indice_calor: ic,\n    accel_x: accel_x,\n    accel_y: accel_y,\n    accel_z: accel_z,\n    accel_magnitude: accelMagnitude,\n    \n    // Status do motor\n    motor_status: motor_ligado ? 1 : 0,\n    motor_text: motor_ligado ? \"ligado\" : \"desligado\",\n    \n    // Identificação do dispositivo\n    device: p.device || \"unknown\",\n    \n    // Timestamp (opcional - InfluxDB pode usar o próprio)\n    timestamp: new Date().toISOString()\n};\n\n// Debug (opcional)\nnode.warn(\"Enviando para InfluxDB: \" + JSON.stringify(msg.payload, null, 2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 240,
+        "wires": [
+            [
+                "6d653c4edd305152"
+            ]
+        ]
+    },
+    {
+        "id": "06edaad753ca15db",
+        "type": "CBOR",
+        "z": "196390ff6edf144a",
+        "name": "Decode",
+        "x": 680,
+        "y": 100,
+        "wires": [
+            [
+                "0da67b183eae0e66"
+            ]
+        ]
+    },
+    {
+        "id": "31b408d71ca7023a",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Base64 para CBOR",
+        "func": "// Entrada esperada: msg.payload = { type, encoding:\"base64\", size, data:\"...\" }\nconst mensagem = msg.payload;\n\nif (!mensagem || mensagem.encoding !== 'base64' || typeof mensagem.data !== 'string') {\n  node.warn('Envelope inválido. Esperado {encoding:\"base64\", data:\"...\"}');\n  return null;\n}\n\nconst buf = Buffer.from(mensagem.data, 'base64');\n\nif (mensagem.size && mensagem.size !== buf.length) {\n  node.warn(`Aviso: size informado=${mensagem.size} bytes, decodificado=${buf.length} bytes`);\n}\n\n// Saída para o nó CBOR: Buffer binário\nmsg.payload = buf;\n// Metadados úteis (opcional)\nmsg.meta = { type: mensagem.type || null, reportedSize: mensagem.size || null, decodedSize: buf.length };\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 100,
+        "wires": [
+            [
+                "06edaad753ca15db"
+            ]
+        ]
+    },
+    {
+        "id": "900f4701c7581957",
+        "type": "debug",
+        "z": "196390ff6edf144a",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "0da67b183eae0e66",
+        "type": "split",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "property": "payload",
+        "x": 870,
+        "y": 100,
+        "wires": [
+            [
+                "900f4701c7581957",
+                "658d3969306e9604"
+            ]
+        ]
+    },
+    {
+        "id": "b932bf4a9773c95f",
+        "type": "mqtt-broker",
+        "name": "EMQx Broker",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a31a76b7973e6983",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB Bucket IoTSensores",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "39898ec6fabfc903",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0",
+            "node-red-contrib-cbor": "1.1.0"
+        }
+    }
+]
