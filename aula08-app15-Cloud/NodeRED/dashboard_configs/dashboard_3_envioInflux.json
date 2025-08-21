@@ -1,0 +1,195 @@
+[
+    {
+        "id": "196390ff6edf144a",
+        "type": "tab",
+        "label": "Flow FIAPIoT",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "1497e253c9efdc1d",
+        "type": "mqtt in",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "topic": "FIAPIoT/aula08/noris/motor/dados",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "b932bf4a9773c95f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 100,
+        "wires": [
+            [
+                "f60bc8d9a5218ae8",
+                "6dbb3da2f42ae786",
+                "658d3969306e9604"
+            ]
+        ]
+    },
+    {
+        "id": "f60bc8d9a5218ae8",
+        "type": "debug",
+        "z": "196390ff6edf144a",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 360,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "6dbb3da2f42ae786",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "EnviaComandoMQTT",
+        "func": "\n// Definindo os limiares (adapte conforme necessário)\nconst LIMIAR_TEMP = 30.0;       // Datasheet do motor: limite de 30 °C de temperatura\nconst LIMIAR_VIBRA_MAG  = 15.0; // Datasheet do motor: limite de 15 m/s² como magnitude de aceleração\n\n// Como vem o msg.payload = {\n// device: \"IoTDeviceNoris001\"\n// temp: 36.3\n// umid: 23\n// ic: 35.0605\n// accel_x: 4.903325\n// accel_y: 4.41012\n// accel_z: 2.451663\n// motor_status: true\n// }\n\nconst p = msg.payload || {};\nconst temp = p.temp;\nconst umid = p.umid;\nconst ic = p.ic;\nconst accel_x = p.accel_x;\nconst accel_y = p.accel_y;\nconst accel_z = p.accel_z;\nconst motor_ligado = p.motor_status;\n\n// Calcula a magnitude da aceleração (teorema de Pitágoras em 3 dimensões)\nconst accelMagnitude = Math.sqrt(accel_x*accel_x + accel_y*accel_y + accel_z*accel_z);\n\n// --- Condição de operação segura do motor ---\nconst condicoesBoas = (temp <= LIMIAR_TEMP) && (accelMagnitude <= LIMIAR_VIBRA_MAG);\n\n// Para debugar, você pode soltar mensagens para debug\nnode.warn(`Temp = ${temp}, AccelMag = ${accelMagnitude}, Cond = ${condicoesBoas}`);\n\nlet comando = null;\n\n/*\n  Regra:\n  - Se condições ruins e motor LIGADO -> enviar OFF\n  - Se condições boas e motor DESLIGADO -> enviar ON\n  - Caso contrário -> não enviar nada\n*/\nif (!condicoesBoas && motor_ligado) {\n  comando = \"OFF\";\n} else if (condicoesBoas && !motor_ligado) {\n  comando = \"ON\";\n}\n\n// --- Se não há mudança necessária, NÃO envie mensagem ---\nif (comando === null) {\n  node.status({ fill: \"grey\", shape: \"ring\",\n    text: `sem envio | T:${temp?.toFixed?.(1)}°C | g:${accelMagnitude?.toFixed?.(2)}` });\n  return null; // <- ESSENCIAL: descarta a mensagem e não publica no MQTT\n}\n\n// --- Publica apenas quando precisa mudar o estado ---\nnode.status({ fill: comando === \"ON\" ? \"green\" : \"red\", shape: \"dot\",\n  text: `${comando} | T:${temp?.toFixed?.(1)}°C | g:${accelMagnitude?.toFixed?.(2)}` });\n\nreturn {\n  payload: comando\n};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 160,
+        "wires": [
+            [
+                "0419234427151ce5",
+                "f540c5e085e9bea3"
+            ]
+        ]
+    },
+    {
+        "id": "0419234427151ce5",
+        "type": "debug",
+        "z": "196390ff6edf144a",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 620,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "f540c5e085e9bea3",
+        "type": "mqtt out",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "topic": "FIAPIoT/aula08/noris/motor/cmd",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b932bf4a9773c95f",
+        "x": 690,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "6d653c4edd305152",
+        "type": "influxdb out",
+        "z": "196390ff6edf144a",
+        "influxdb": "a31a76b7973e6983",
+        "name": "Enviar InfluxDB",
+        "measurement": "fiapiot_aula08_cloud",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "e044ac59f07be199",
+        "bucket": "IoTSensores",
+        "x": 1000,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "658d3969306e9604",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Enviar Dados Brutos InfluxDB",
+        "func": "// --- Leitura do payload ---\nconst p = msg.payload || {};\nconst temp = p.temp;\nconst umid = p.umid;\nconst ic = p.ic;\nconst accel_x = p.accel_x;\nconst accel_y = p.accel_y;\nconst accel_z = p.accel_z;\nconst motor_ligado = p.motor_status;\n\n// --- Calcula magnitude da aceleração ---\nconst accelMagnitude = Math.sqrt(\n    accel_x*accel_x + accel_y*accel_y + accel_z*accel_z\n);\n\n// --- Formato SIMPLES para o nó influxdb out ---\nmsg.payload = {\n    // Dados dos sensores\n    temperatura: temp,\n    umidade: umid,\n    indice_calor: ic,\n    accel_x: accel_x,\n    accel_y: accel_y,\n    accel_z: accel_z,\n    accel_magnitude: accelMagnitude,\n    \n    // Status do motor\n    motor_status: motor_ligado ? 1 : 0,\n    motor_text: motor_ligado ? \"ligado\" : \"desligado\",\n    \n    // Identificação do dispositivo\n    device: p.device || \"unknown\",\n    \n    // Timestamp (opcional - InfluxDB pode usar o próprio)\n    timestamp: new Date().toISOString()\n};\n\n// Debug (opcional)\nnode.warn(\"Enviando para InfluxDB: \" + JSON.stringify(msg.payload, null, 2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 340,
+        "wires": [
+            [
+                "6d653c4edd305152"
+            ]
+        ]
+    },
+    {
+        "id": "b932bf4a9773c95f",
+        "type": "mqtt-broker",
+        "name": "EMQx Broker",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a31a76b7973e6983",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB Bucket IoTSensores",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "2532fc1fe7fc3dbe",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]
