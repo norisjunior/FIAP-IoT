@@ -15,8 +15,8 @@ WiFiClient wifiClient; // Define client WiFi
 /* ---- Config MQTT ---- */
 #define MQTT_HOST       "broker.emqx.io"
 #define MQTT_PORT       1883
-#define MQTT_SUB_TOPIC  "semaforo1/distancia"
-#define MQTT_DEVICEID   "Semaforo00001"
+#define MQTT_SUB_TOPIC  "noris/semaforo1/distancia"
+#define MQTT_DEVICEID   "NorisSemaforo00001"
 #define MQTT_QOS        1
 //PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
 MqttClient mqttClient(wifiClient);
