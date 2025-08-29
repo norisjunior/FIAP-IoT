@@ -8,7 +8,7 @@
 
 // ===== CONFIGURAÇÕES LWM2M =====
 #define LWM2M_SERVER_URI "coap://leshan.eclipseprojects.io:5683"
-#define LWM2M_ENDPOINT_NAME "ESP32-Aluno-001_Noris"  // MUDE ESTE NOME!
+#define LWM2M_ENDPOINT_NAME "Noris-IoT-Alunos-001"  // MUDE ESTE NOME!
 #define LWM2M_LIFETIME 300                     // Tempo de vida em segundos
 
 // ===== HABILITAR/DESABILITAR OBJETOS =====
