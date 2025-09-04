@@ -24,7 +24,7 @@ void LWM2MHumidity::begin() {
     update(); // Primeira leitura
     
     Serial.printf("💧 Sensor de umidade %d inicializado no pino %d\n", 
-                  instance, pin_);
+                  instance, pin_);  Serial.println("");
 }
 
 void LWM2MHumidity::update() {
@@ -70,5 +70,5 @@ float LWM2MHumidity::getMaxValue() {
 void LWM2MHumidity::resetMinMax() {
     minValue = currentValue;
     maxValue = currentValue;
-    Serial.printf("🔄 [%d] Min/Max resetados para %.1f%%\n", instance, currentValue);
+    Serial.printf("🔄 [%d] Min/Max resetados para %.1f%%\n", instance, currentValue);  Serial.println("");
 }

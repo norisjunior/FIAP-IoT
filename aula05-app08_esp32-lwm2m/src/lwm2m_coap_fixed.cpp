@@ -25,6 +25,14 @@
 #define COAP_OPTION_CONTENT_FORMAT 12
 #define COAP_OPTION_URI_QUERY 15
 
+// OTIMIZAÇÃO: Timeouts reduzidos para simulação
+#define REGISTER_RETRY_INTERVAL 2000    // Reduzido de 5000ms
+#define REGISTER_TIMEOUT 10000          // Reduzido de 30000ms
+#define ERROR_RETRY_INTERVAL 10000      // Reduzido de 30000ms
+
+// OTIMIZAÇÃO: Debug reduzido
+#define DEBUG_VERBOSE 0
+
 // Variáveis globais
 static WiFiUDP udp;
 static lwm2m_state_t g_state = LWM2M_STATE_IDLE;
@@ -35,11 +43,16 @@ static uint16_t messageId = 1;
 static String registrationLocation = "";
 static uint8_t token[8];
 static uint8_t tokenLen = 4;
+static bool dnsResolved = false;  // OTIMIZAÇÃO: Cache DNS
 
-// Gerar token aleatório
+// OTIMIZAÇÃO: Gerar token mais eficiente
 void generateToken() {
+    static uint32_t seed = 0;
+    if (seed == 0) seed = millis();
+    
     for (int i = 0; i < tokenLen; i++) {
-        token[i] = random(256);
+        seed = seed * 1103515245 + 12345;
+        token[i] = (seed >> 16) & 0xFF;
     }
 }
 
@@ -111,24 +124,27 @@ bool sendLWM2MRegister() {
     memcpy(buffer + idx, payload.c_str(), payload.length());
     idx += payload.length();
     
-    // Debug
-    Serial.printf("📤 Enviando %d bytes para %s:5683\n", idx, serverIP.toString().c_str()); Serial.println("");
-    Serial.printf("🆔 Message ID: %d\n", messageId); Serial.println("");
+    // OTIMIZAÇÃO: Debug reduzido
+    Serial.printf("📤 Enviando %d bytes para %s:5683\n", idx, serverIP.toString().c_str());
+    Serial.printf("🆔 Message ID: %d\n", messageId);
+    Serial.printf("📋 Endpoint: %s\n", LWM2M_ENDPOINT_NAME);
+    Serial.printf("📄 Payload: %s\n", payload.c_str());
+    
+    #if DEBUG_VERBOSE
     Serial.printf("🔑 Token: ");
     for (int i = 0; i < tokenLen; i++) {
         Serial.printf("%02X", token[i]);
     }
     Serial.println();
-    Serial.printf("📋 Endpoint: %s\n", LWM2M_ENDPOINT_NAME); Serial.println("");
-    Serial.printf("📄 Payload: %s\n", payload.c_str()); Serial.println("");
     
-    // Hex dump
+    // Hex dump apenas se verbose
     Serial.println("🔍 Hex dump:");
     for (size_t i = 0; i < idx; i++) {
         if (i % 16 == 0) Serial.printf("\n  %04X: ", i);
         Serial.printf("%02X ", buffer[i]);
     }
     Serial.println("\n");
+    #endif
     
     // Enviar
     udp.beginPacket(serverIP, 5683);
@@ -168,14 +184,14 @@ void processCoAPResponseBuffer(uint8_t* buffer, int len) {
     if (!isOurResponse) return;
     
     Serial.println("\n📥 === RESPOSTA DO SERVIDOR ===");
-    Serial.printf("📊 Código: %d.%02d", (code >> 5), (code & 0x1F)); Serial.println("");
+    Serial.printf("📊 Código: %d.%02d", (code >> 5), (code & 0x1F));
     
     switch (code) {
         case COAP_CODE_CREATED: {
             Serial.println(" (Created - SUCESSO!)");
             Serial.println("🎉 REGISTRO APROVADO PELO LESHAN!");
             Serial.println("📱 Acesse: https://leshan.eclipseprojects.io");
-            Serial.printf("🔍 Procure por: %s\n", LWM2M_ENDPOINT_NAME); Serial.println("");
+            Serial.printf("🔍 Procure por: %s\n", LWM2M_ENDPOINT_NAME);
             
             // Extrair Location-Path da resposta
             size_t idx = 4 + tkl;
@@ -227,7 +243,7 @@ void processCoAPResponseBuffer(uint8_t* buffer, int len) {
         }
             
         default: {
-            Serial.printf(" (Código: 0x%02X)\n", code); Serial.println("");
+            Serial.printf(" (Código: 0x%02X)\n", code);
             if (code >= 0x80) {
                 Serial.println("❌ Erro no servidor");
                 g_state = LWM2M_STATE_ERROR;
@@ -288,11 +304,12 @@ void sendCoAPResponse(IPAddress ip, int port, uint8_t type, uint8_t code,
     udp.write(buffer, idx);
     udp.endPacket();
     
+    // OTIMIZAÇÃO: Log simplificado
     Serial.printf("📤 Resposta enviada: %d.%02d (%d bytes)\n", 
                   (code >> 5), (code & 0x1F), idx);
 }
 
-// Processar requisição CoAP do buffer
+// Processar requisição CoAP do buffer - MANTIDO ORIGINAL (funciona)
 void processCoAPRequestBuffer(uint8_t* buffer, int len, IPAddress remoteIP, int remotePort) {
     if (len < 4) return;
     
@@ -356,7 +373,8 @@ void processCoAPRequestBuffer(uint8_t* buffer, int len, IPAddress remoteIP, int 
         payload = String((char*)buffer + idx, len - idx);
     }
     
-    Serial.println("\n📨 === REQUISIÇÃO DO LESHAN ===");
+    // OTIMIZAÇÃO: Log simplificado
+    Serial.printf("\n📨 === REQUISIÇÃO DO LESHAN ===\n");
     Serial.printf("📍 De: %s:%d\n", remoteIP.toString().c_str(), remotePort);
     Serial.printf("🔍 Método: %d.%02d ", (code >> 5), (code & 0x1F));
     
@@ -410,7 +428,7 @@ void processCoAPRequestBuffer(uint8_t* buffer, int len, IPAddress remoteIP, int 
             // Operação READ
             if (objectsManager.processRead(objectId, instanceId, resourceId, responsePayload)) {
                 responseCode = COAP_CODE_CONTENT; // 2.05 Content
-                Serial.printf("✅ Read OK: %s\n", responsePayload.c_str()); Serial.println("");
+                Serial.printf("✅ Read OK: %s\n", responsePayload.c_str());
             } else {
                 responseCode = 0x84; // 4.04 Not Found
                 Serial.println("❌ Recurso não encontrado");
@@ -435,7 +453,7 @@ void processCoAPRequestBuffer(uint8_t* buffer, int len, IPAddress remoteIP, int 
             }
         }
     } else {
-        Serial.printf("❌ URI inválido: %s\n", uriPath.c_str()); Serial.println("");
+        Serial.printf("❌ URI inválido: %s\n", uriPath.c_str());
         responseCode = 0x80; // 4.00 Bad Request
     }
     
@@ -510,7 +528,7 @@ bool sendLWM2MUpdate() {
     udp.write(buffer, idx);
     udp.endPacket();
     
-    Serial.printf("Update enviado para %s\n", registrationLocation.c_str()); Serial.println("");
+    Serial.printf("Update enviado para %s\n", registrationLocation.c_str());
     
     return true;
 }
@@ -519,13 +537,16 @@ bool sendLWM2MUpdate() {
 bool lwm2m_coap_init() {
     Serial.println("🔧 Inicializando cliente LWM2M/CoAP...");
     
-    // Resolver servidor
-    if (WiFi.hostByName("leshan.eclipseprojects.io", serverIP)) {
-        Serial.printf("✅ Servidor resolvido: %s\n", serverIP.toString().c_str());
-        Serial.println("");
-    } else {
-        Serial.println("❌ Falha ao resolver servidor DNS");
-        return false;
+    // OTIMIZAÇÃO: Cache DNS
+    if (!dnsResolved) {
+        Serial.print("🔍 Resolvendo DNS...");
+        if (WiFi.hostByName("leshan.eclipseprojects.io", serverIP)) {
+            dnsResolved = true;
+            Serial.printf(" ✅ %s\n", serverIP.toString().c_str());
+        } else {
+            Serial.println(" ❌ Falha DNS");
+            return false;
+        }
     }
     
     // Inicializar UDP
@@ -568,9 +589,10 @@ void lwm2m_coap_step() {
         }
     }
     
+    // OTIMIZAÇÃO: Timeouts reduzidos
     switch (g_state) {
         case LWM2M_STATE_IDLE:
-            if (currentTime - lastRegisterTime > 5000) {
+            if (currentTime - lastRegisterTime > REGISTER_RETRY_INTERVAL) {
                 if (sendLWM2MRegister()) {
                     g_state = LWM2M_STATE_REGISTERING;
                     lastRegisterTime = currentTime;
@@ -582,7 +604,7 @@ void lwm2m_coap_step() {
             
         case LWM2M_STATE_REGISTERING:
             // Timeout
-            if (currentTime - lastRegisterTime > 30000) {
+            if (currentTime - lastRegisterTime > REGISTER_TIMEOUT) {
                 Serial.println("⏰ Timeout no registro - tentando novamente...");
                 g_state = LWM2M_STATE_IDLE;
             }
@@ -598,7 +620,7 @@ void lwm2m_coap_step() {
             break;
             
         case LWM2M_STATE_ERROR:
-            if (currentTime - lastRegisterTime > 30000) {
+            if (currentTime - lastRegisterTime > ERROR_RETRY_INTERVAL) {
                 Serial.println("🔄 Tentando novamente após erro...");
                 g_state = LWM2M_STATE_IDLE;
             }

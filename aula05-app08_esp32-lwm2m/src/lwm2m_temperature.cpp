@@ -24,7 +24,7 @@ void LWM2MTemperature::begin() {
     update(); // Primeira leitura
     
     Serial.printf("🌡️ Sensor de temperatura %d inicializado no pino %d\n", 
-                  instance, pin_);
+                  instance, pin_);  Serial.println("");
 }
 
 void LWM2MTemperature::update() {
@@ -70,5 +70,5 @@ float LWM2MTemperature::getMaxValue() {
 void LWM2MTemperature::resetMinMax() {
     minValue = currentValue;
     maxValue = currentValue;
-    Serial.printf("🔄 [%d] Min/Max resetados para %.1f°C\n", instance, currentValue);
+    Serial.printf("🔄 [%d] Min/Max resetados para %.1f°C\n", instance, currentValue);  Serial.println("");
 }
