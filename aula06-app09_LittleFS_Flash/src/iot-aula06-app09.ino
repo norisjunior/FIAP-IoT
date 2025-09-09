@@ -2,6 +2,12 @@
 #include <LittleFS.h>
 #include "ESP32Sensors.hpp"   // LED, Ambiente (DHT22)
 
+// -------------------- Configurações de Hardware --------------------
+const uint8_t DHT_PIN   = 26;
+const uint8_t DHT_MODEL = DHT22;
+const uint8_t LED_PIN   = 27;
+const uint8_t BTN_PIN   = 25;
+
 // -------------------- Constantes --------------------
 const char *ARQ_DADOS                = "/dados.csv";  // único arquivo de log
 const uint32_t INTERVALO_COLETA_MS   = 5000;          // 5 s entre leituras
@@ -13,6 +19,7 @@ unsigned long ultimoRegistro = 0;
 void criaArquivoSeNecessario();
 void gravaMedicoes();
 void imprimeArquivo();
+void zeraMedicoes();
 
 // -------------------- Setup --------------------
 void setup() {
@@ -24,7 +31,10 @@ void setup() {
     while (true) {}
   }
 
-  ESP32Sensors::beginAll();
+  // Inicializa os sensores com as configurações de hardware definidas acima
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN);
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  
   criaArquivoSeNecessario();
 
   Serial.println("[OK] Sistema pronto - gravando sem rotação.");
@@ -36,13 +46,12 @@ void loop() {
     ultimoRegistro = millis();
     gravaMedicoes();
   }
+
+  if (digitalRead(BTN_PIN) == LOW) { //Pressionou o botão
+    zeraMedicoes();
+    delay(500);
+  }
 }
-
-
-
-
-
-
 
 // -------------------- Funções auxiliares --------------------
 
@@ -56,7 +65,6 @@ void criaArquivoSeNecessario() {
   f.println("temp_C,umid_%,indice_calor_C");
   f.close();
 }
-
 
 void gravaMedicoes() {
   //Coleta das medições
@@ -99,4 +107,27 @@ void imprimeArquivo() {
   while (f.available()) Serial.write(f.read());
   Serial.println("---------------- fim do arquivo ----------------\n");
   f.close();
+}
+
+//Zera medições com o pressionamento do botão
+void zeraMedicoes() {
+  Serial.println("[BOTÃO] Zerando medições...");
+
+  // Revmove arquivo existente
+  if (LittleFS.exists(ARQ_DADOS)) {
+    LittleFS.remove(ARQ_DADOS);
+  }
+
+  //Cria arquivo novamente (apenas com o cabeçalho)
+  // Cria novo arquivo diretamente com o cabeçalho
+  File f = LittleFS.open(ARQ_DADOS, FILE_WRITE);
+  if (!f) {
+    Serial.println("[ERRO] Não foi possível criar arquivo!");
+    return;
+  }
+  f.println("temp_C,umid_%,indice_calor_C");
+  f.close();
+
+  Serial.println("[OK] Medições zeradas!");
+  imprimeArquivo();
 }
