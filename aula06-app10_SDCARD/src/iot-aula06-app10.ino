@@ -3,6 +3,11 @@
 #include <SD.h>
 #include "ESP32Sensors.hpp"   // LED, Ambiente (DHT22)
 
+// -------------------- Configurações de Hardware --------------------
+const uint8_t DHT_PIN   = 26;
+const uint8_t DHT_MODEL = DHT22;
+const uint8_t LED_PIN   = 27;
+
 // -------------------- Constantes --------------------
 const gpio_num_t CS_PIN = GPIO_NUM_5;      // chip-select do cartão
 const char *ARQ_DADOS                = "/dados.csv";  // único arquivo de log
@@ -29,7 +34,9 @@ void setup() {
   uint64_t mb = SD.cardSize() / (1024 * 1024);
   Serial.printf("[SD] Cartão OK - %llu MB\n", mb); Serial.println("");
 
-  ESP32Sensors::beginAll();
+  // Inicializa os sensores com as configurações de hardware definidas acima
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN);
+
   criaArquivoSeNecessario();
 
   Serial.println("[OK] Sistema pronto - gravando no cartão SD.");
@@ -90,7 +97,7 @@ void gravaMedicoes() {
 
   ESP32Sensors::LED::off();
 
-  Serial.println("[SALVO] Nova linha gravada. Conteúdo completo:");
+  Serial.println("[SALVO] Nova linha gravada:");
   imprimeArquivo();
 }
 
