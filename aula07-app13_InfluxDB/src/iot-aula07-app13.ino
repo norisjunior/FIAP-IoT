@@ -10,18 +10,18 @@ const char* WIFI_PASSWORD = "";
 // InfluxDB Cloud - Configurações
 const char* INFLUX_URL    = "https://us-east-1-1.aws.cloud2.influxdata.com/api/v2/write";
 //e044ac59f07be199
-const char* INFLUX_ORG    = "";     // Substituir pela sua organização
+const char* INFLUX_ORG    = "e044ac59f07be199";     // Substituir pela sua organização
 //IoTSensores
-const char* INFLUX_BUCKET = "";        // Nome do bucket criado
+const char* INFLUX_BUCKET = "IoTSensores";        // Nome do bucket criado
 //Tg1KYC6sbSaO_YMorJwEOEXTOYHjL9exDbkavgwD0cw5mfWXlkudjyhL3elfh6wjpti1Em0714nAHBcz8CqVqg==
 //KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ==
-const char* INFLUX_TOKEN  = "";      // Token de autenticação
+const char* INFLUX_TOKEN  = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ==";      // Token de autenticação
 
 /* ==== FUNÇÃO AUXILIAR: Envia dados para InfluxDB =================== */
 void enviaParaInfluxDB(float dist_cm, bool dist_alarme, float temp, float umid, float ic) {
   // Monta a string no formato Line Protocol do InfluxDB
   // Formato: measurement,tag=value field1=value1,field2=value2 timestamp
-  String dados = "sensores_iot,dispositivo=ESP32_Aula ";  // measurement e tags
+  String dados = "sensores_iot,dispositivo=Noris1_ESP32_Aula07 ";  // measurement e tags
   dados += "distancia_cm=" + String(dist_cm, 2) + ",";
   dados += "distancia_alarme=" + String(dist_alarme ? 1 : 0) + ",";
   dados += "temp=" + String(temp, 2) + ",";
