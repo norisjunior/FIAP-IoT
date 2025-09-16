@@ -1,9 +1,9 @@
 /* ==== INCLUDES ===================================================== */
 #include <WiFi.h>
-#include <HTTPClient.h>              // Para requisições HTTP ao InfluxDB
-#include "ESP32Sensors.hpp"           // LED, Distância (HC-SR04) e Ambiente (DHT22)
+#include <HTTPClient.h>
+#include "ESP32Sensors.hpp"   // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
 
-/* ==== CREDENCIAIS =================================================== */
+/* ==== WI-FI =================================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
 
@@ -17,120 +17,103 @@ const char* INFLUX_BUCKET = "IoTSensores";        // Nome do bucket criado
 //KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ==
 const char* INFLUX_TOKEN  = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ==";      // Token de autenticação
 
-/* ==== FUNÇÃO AUXILIAR: Envia dados para InfluxDB =================== */
-void enviaParaInfluxDB(float x, float y, float z, float temp, float umid, float ic) {
-  // Monta a string no formato Line Protocol do InfluxDB
-  // Formato: measurement,tag=value field1=value1,field2=value2 timestamp
-  String dados = "sensores_iot,dispositivo=Noris2_ESP32_Aula12 ";  // measurement e tags
-  dados += "accel_x=" + String(x, 2) + ",";
-  dados += "accel_y=" + String(y, 2) + ",";
-  dados += "accel_z=" + String(z, 2) + ",";
-  dados += "temp=" + String(temp, 2) + ",";
-  dados += "umid=" + String(umid, 2) + ",";
-  dados += "IC=" + String(ic, 2);
-  
-  // Cria cliente HTTP
-  HTTPClient http;
-  
-  // Monta a URL completa com parâmetros
-  String urlCompleta = String(INFLUX_URL) + "?org=" + INFLUX_ORG + "&bucket=" + INFLUX_BUCKET;
-  
-  // Configura a requisição
-  http.begin(urlCompleta);
-  http.addHeader("Authorization", "Token " + String(INFLUX_TOKEN));
-  http.addHeader("Content-Type", "text/plain");
-  
-  // Envia os dados via POST
-  int httpCode = http.POST(dados);
-  
-  // Verifica resposta
-  if (httpCode == 204) {  // 204 = No Content (sucesso no InfluxDB)
-    Serial.println("Dados enviados com sucesso ao InfluxDB!");
-  } else {
-    Serial.print("[ERRO] ao enviar para InfluxDB. Código HTTP: ");
-    Serial.println(httpCode);
-    if (httpCode > 0) {
-      Serial.println("Resposta: " + http.getString());
-    }
-  }
-  
-  // Encerra conexão HTTP
-  http.end();
+/* ==== IDENTIDADE DO DISPOSITIVO =================================== */
+const char* DISPOSITIVO = "Noris_ESP32_Aula13"; // tag para análise
+
+/* ==== MOCK: HumidityRatio ========================================= */
+float humidityRatioMock() {
+  static bool seeded = false;
+  if (!seeded) { randomSeed(esp_random()); seeded = true; }
+  const float MIN_HR = 0.002674f;
+  const float MAX_HR = 0.006476f;
+  long r = random(0, 10000);        // 0..9999
+  float u = r / 9999.0f;            // 0..1
+  return MIN_HR + u * (MAX_HR - MIN_HR);
 }
 
-/* ==== VARIÁVEIS DE CONTROLE ========================================= */
-const uint32_t INTERVALO_COLETA = 5000;   // 5 segundos
-uint32_t proximaLeitura = 0;
+/* ==== AUXILIARES =================================================== */
+void conectarWiFi() {
+  Serial.print("Conectando ao Wi-Fi: ");
+  Serial.println(WIFI_SSID);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  uint8_t tentativas = 0;
+  while (WiFi.status() != WL_CONNECTED && tentativas < 30) {
+    delay(500);
+    Serial.print(".");
+    tentativas++;
+  }
+  Serial.println();
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("OK! IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("Falha ao conectar Wi-Fi.");
+  }
+}
 
-/* ==== SETUP ========================================================= */
+String buildLineProtocol() {
+  ESP32Sensors::Ambiente::AMBIENTE  amb = ESP32Sensors::Ambiente::medirAmbiente();
+  ESP32Sensors::LDR::DADOS_LDR      luz = ESP32Sensors::LDR::ler();
+  ESP32Sensors::CO2::DADOS_CO2      co2 = ESP32Sensors::CO2::ler();
+
+  if (!amb.valido || !luz.valido || !co2.valido) {
+    Serial.println("Leituras inválidas: sem envio de dados!");
+    return String("");
+  }
+
+  float hr = humidityRatioMock();
+
+  // Campos exigidos: Temperature; Humidity; Light; CO2; HumidityRatio
+  String dados = "ML_occupancy,dispositivo=" + String(DISPOSITIVO);
+  dados += " ";
+  dados += "Temperature="    + String(amb.temp, 2);
+  dados += ",Humidity="      + String(amb.umid, 2);
+  dados += ",Light="         + String(luz.lux, 1);
+  dados += ",CO2="           + String(co2.ppm, 1);
+  dados += ",HumidityRatio=" + String(hr, 6);
+  return dados;
+}
+
+bool postToInflux(const String& line) {
+  if (line.isEmpty()) return false;
+
+  String url = String(INFLUX_URL) + "?org=" + INFLUX_ORG + "&bucket=" + INFLUX_BUCKET + "&precision=s";
+  HTTPClient http;
+  http.begin(url);
+  http.addHeader("Authorization", String("Token ") + INFLUX_TOKEN);
+  http.addHeader("Content-Type", "text/plain; charset=utf-8");
+
+  int code = http.POST(line);
+  String resp = http.getString();
+  http.end();
+
+  Serial.printf("[InfluxDB] POST %d -> %s\n", code, resp.c_str()); Serial.println("");
+  return code >= 200 && code < 300;
+}
+
+/* ==== SETUP / LOOP ================================================ */
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n=== ESP32 + InfluxDB - Aula 12 IoT ===\n");
-
-  // Inicializa sensores
   ESP32Sensors::beginAll();
-
-  // Conecta ao Wi-Fi --------------------------------------------------
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.print("Conectando-se ao Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print('.');
-    delay(350);
-  }
-  Serial.println("Wi-Fi conectado!");
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
-  
-  // Informações sobre InfluxDB ----------------------------------------
-  Serial.println("\n=== Configuração InfluxDB ===");
-  Serial.print("Bucket: ");
-  Serial.println(INFLUX_BUCKET);
-  Serial.print("Organização: ");
-  Serial.println(INFLUX_ORG);
-  Serial.println("=============================\n");
-
-  ESP32Sensors::LED::off();  // Garante LED apagado no início
+  conectarWiFi();
 }
 
-/* ==== LOOP PRINCIPAL ================================================ */
 void loop() {
-  // Aguarda próximo ciclo de coleta
-  if (millis() < proximaLeitura) return;
-  proximaLeitura = millis() + INTERVALO_COLETA;
+  static unsigned long lastMs = 0;
+  const unsigned long INTERVAL = 10000UL; // 10s entre envios
+  unsigned long now = millis();
 
-  Serial.println("\n--- Nova Leitura ---");
-
-  // Leitura dos sensores ----------------------------------------------
-    // Lê acelerômetro (MPU6050)
-  sensors_event_t dadosAccel = ESP32Sensors::Accel::medirAccel();
-  ESP32Sensors::Ambiente::AMBIENTE leituraAmbiente = ESP32Sensors::Ambiente::medirAmbiente();
-  
-  // Verifica se a leitura do DHT é válida
-  if (!leituraAmbiente.valido) {
-    Serial.println("[ERRO] Leitura DHT22 inválida. Pulando ciclo.");
-    return;
+  if (now - lastMs >= INTERVAL) {
+    String buffer = buildLineProtocol();
+    if (!buffer.isEmpty()) {
+      ESP32Sensors::LED::on();
+      bool ok = postToInflux(buffer);
+      if (ok) Serial.println(String("Enviado: \n") + buffer);
+      else    Serial.println("Falha no envio ao InfluxDB.");
+      ESP32Sensors::LED::off();
+    }
+    lastMs = now; // reprograma próximo envio
   }
-
-  // Exibe dados no Serial Monitor -------------------------------------
-  Serial.println("Dados Coletados:");
-  Serial.printf("-> Aceleração: x: %.2f m/s² | y: %.2f m/s² | z: %.2f m/s²",
-                dadosAccel.acceleration.x, dadosAccel.acceleration.y, dadosAccel.acceleration.z); Serial.println("");
-  Serial.printf("-> Temperatura: %.2f °C\n", leituraAmbiente.temp); Serial.println("");
-  Serial.printf("-> Umidade: %.2f %%\n", leituraAmbiente.umid); Serial.println("");
-  Serial.printf("-> Índice de Calor: %.2f °C\n", leituraAmbiente.ic); Serial.println("");
-
-  // Envia ao InfluxDB com indicação visual via LED --------------------
-  Serial.print("Enviando para InfluxDB... ");
-  ESP32Sensors::LED::on();  // Liga LED durante transmissão
-  
-  enviaParaInfluxDB(
-    dadosAccel.acceleration.x, 
-    dadosAccel.acceleration.y,
-    dadosAccel.acceleration.z,
-    leituraAmbiente.temp, 
-    leituraAmbiente.umid, 
-    leituraAmbiente.ic
-  );
-  
-  ESP32Sensors::LED::off(); // Desliga LED após transmissão
+  delay(100);
 }

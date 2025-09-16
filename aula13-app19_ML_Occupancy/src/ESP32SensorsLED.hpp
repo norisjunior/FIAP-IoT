@@ -1,6 +1,6 @@
 namespace ESP32Sensors {
 	namespace LED {
-		const uint8_t LED_PIN = 27;
+		const uint8_t LED_PIN = 21;
 
 		void inicializar() {
 			pinMode(LED_PIN, OUTPUT);

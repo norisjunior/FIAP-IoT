@@ -1,12 +1,14 @@
-// Inclui os cabeçalhos dos módulos para que as funções sejam visíveis
-#include "ESP32SensorsAmbiente.hpp"
-#include "ESP32SensorsAccel.hpp"
-#include "ESP32SensorsLED.hpp"
+// Cabeçalho agregador para inicializar todos os sensores usados nesta aula
+#include "ESP32SensorsAmbiente.hpp"  // DHT22 (temp/umid/IC)
+#include "ESP32SensorsLED.hpp"       // LED indicador
+#include "ESP32SensorsLDR.hpp"       // LDR (luminosidade)
+#include "ESP32SensorsCO2.hpp"       // CO2 simulado pelo potenciômetro
 
 namespace ESP32Sensors {
-	void beginAll() {
-		Ambiente::inicializar();
-		Accel::inicializar();
-		LED::inicializar();
-	}
+  inline void beginAll() {
+    Ambiente::inicializar();
+    LED::inicializar();
+    LDR::inicializar();
+    CO2::inicializar();
+  }
 }
