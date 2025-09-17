@@ -43,9 +43,9 @@ void enviaParaFirebase(float dist_cm, bool dist_alarme, float temp, float umid, 
   const String base = "/iotAula";             // Nó principal
   Firebase.RTDB.setFloat(&fbdo, base + "/distancia_cm",  dist_cm);
   Firebase.RTDB.setFloat(&fbdo, base + "/distancia_alarme",  dist_alarme);
-  Firebase.RTDB.setFloat(&fbdo, base + "/temperatura_C", temp);
-  Firebase.RTDB.setFloat(&fbdo, base + "/umidade_%",     umid);
-  Firebase.RTDB.setFloat(&fbdo, base + "/indice_calor_C", ic);
+  Firebase.RTDB.setFloat(&fbdo, base + "/temperatura", temp);
+  Firebase.RTDB.setFloat(&fbdo, base + "/umidade",     umid);
+  Firebase.RTDB.setFloat(&fbdo, base + "/indice_calor", ic);
 }
 
 /* ==== VARIÁVEIS DE CONTROLE ====================================== */
