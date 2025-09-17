@@ -1,7 +1,7 @@
 namespace ESP32Sensors {
   namespace LDR {
 
-    const uint8_t LDR_PIN = 35;
+    static uint8_t ldrPin = 0;
 
     // Constantes do modelo LDR (fornecidas)
     constexpr float RL10_kOhm = 50.0f;   // resistência a 10 lux (kΩ)
@@ -13,9 +13,10 @@ namespace ESP32Sensors {
       bool  valido;
     };
 
-    void inicializar() {
+    void inicializar(uint8_t pin) {
+      ldrPin = pin;
       analogReadResolution(12); // 0..4095
-      pinMode(LDR_PIN, INPUT);
+      pinMode(pin, INPUT);
     }
 
     DADOS_LDR ler() {
@@ -23,7 +24,7 @@ namespace ESP32Sensors {
       r.lux = 0.0f;
       r.valido = false;
       
-      int amostra = analogRead(LDR_PIN);
+      int amostra = analogRead(ldrPin);
       if (amostra < 0) return r;
 
       // Conversões

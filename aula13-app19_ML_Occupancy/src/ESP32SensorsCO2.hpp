@@ -1,7 +1,7 @@
 namespace ESP32Sensors {
   namespace CO2 {
     // Potenciômetro simula o nível de CO2
-    const uint8_t CO2_PIN = 34;
+    static uint8_t co2Pin = 0;
 
     // Faixa didática desejada para CO2 em ppm
     constexpr float PPM_MIN = 413.0f;   // baseline atmosférico aproximado
@@ -14,10 +14,11 @@ namespace ESP32Sensors {
       bool     valido;
     };
 
-    inline void inicializar() {
+    void inicializar(uint8_t pin) {
+      co2Pin = pin;
       analogReadResolution(12);
       // Mantemos a atenuação padrão do ADC. Caso necessário, pode-se usar ADC_11db.
-      pinMode(CO2_PIN, INPUT);
+      pinMode(co2Pin, INPUT);
     }
 
     static inline float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
@@ -32,7 +33,7 @@ namespace ESP32Sensors {
       r.valido = false;
 
       // 1) Leitura do potenciômetro
-      int potValue = analogRead(CO2_PIN); // 0..4095
+      int potValue = analogRead(co2Pin); // 0..4095
       if (potValue < 0) return r;
 
       // 2) Mapeia intensidade 0..255

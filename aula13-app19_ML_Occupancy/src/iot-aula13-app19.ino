@@ -3,6 +3,14 @@
 #include <HTTPClient.h>
 #include "ESP32Sensors.hpp"   // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
 
+
+/* ==== Configurações de Hardware =================================================== */
+const uint8_t DHT_PIN   = 26;
+const uint8_t DHT_MODEL = DHT22;
+const uint8_t LED_PIN   = 21;
+const uint8_t LDR_PIN   = 35;
+const uint8_t CO2_PIN   = 34;
+
 /* ==== WI-FI =================================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
@@ -19,6 +27,11 @@ const char* INFLUX_TOKEN  = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_
 
 /* ==== IDENTIDADE DO DISPOSITIVO =================================== */
 const char* DISPOSITIVO = "Noris_ESP32_Aula13"; // tag para análise
+
+/* ==== CONSTANTES =================================== */
+static unsigned long lastMs = 0;
+const unsigned long INTERVAL = 30000; // 30s entre envios
+
 
 /* ==== MOCK: HumidityRatio ========================================= */
 float humidityRatioMock() {
@@ -95,22 +108,25 @@ bool postToInflux(const String& line) {
 /* ==== SETUP / LOOP ================================================ */
 void setup() {
   Serial.begin(115200);
-  ESP32Sensors::beginAll();
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, LDR_PIN, CO2_PIN);
   conectarWiFi();
 }
 
 void loop() {
-  static unsigned long lastMs = 0;
-  const unsigned long INTERVAL = 10000UL; // 10s entre envios
   unsigned long now = millis();
 
   if (now - lastMs >= INTERVAL) {
+    Serial.println("Preparando dados para envio ao InfluxDB");
     String buffer = buildLineProtocol();
     if (!buffer.isEmpty()) {
+      Serial.println("Início da transmissão...");
       ESP32Sensors::LED::on();
       bool ok = postToInflux(buffer);
-      if (ok) Serial.println(String("Enviado: \n") + buffer);
-      else    Serial.println("Falha no envio ao InfluxDB.");
+      if (ok) { 
+        Serial.println(String("Enviado: \n") + buffer);
+      } else {
+        Serial.println("Falha no envio ao InfluxDB.");
+      }
       ESP32Sensors::LED::off();
     }
     lastMs = now; // reprograma próximo envio
