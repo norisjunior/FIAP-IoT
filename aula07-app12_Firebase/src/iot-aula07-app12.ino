@@ -7,9 +7,12 @@
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
 
-//AIzaSyCqSUfVwtK-c6owoEsWqR3q2PZZhP9KLbU
+//FIAP-IoT-2025: AIzaSyCqSUfVwtK-c6owoEsWqR3q2PZZhP9KLbU
+//FIAPAulaIoT: AIzaSyAD5tEtupy6dxJEbwCw3oAcEM9xZ3akLyg
 const char* API_KEY       = "";
-const char* DB_URL        = "https://fiap-iot-2025-default-rtdb.firebaseio.com/"; // sem barra final
+//FIAP-IoT-2025: https://fiap-iot-2025-default-rtdb.firebaseio.com
+//FIAPAulaIoT: https://fiapaulaiot-default-rtdb.firebaseio.com
+const char* DB_URL        = ""; // sem barra final
 //profnoris.junior@fiap.com.br
 const char* USER_EMAIL    = "";
 //FIAPIoT20251234
@@ -37,7 +40,7 @@ void enviaParaFirebase(float dist_cm, bool dist_alarme, float temp, float umid, 
 }
 
 /* ==== VARIÁVEIS DE CONTROLE ====================================== */
-const uint32_t INTERVALO_COLETA = 5000;   // 5 segundos
+const uint32_t INTERVALO_COLETA = 30000;   // 10 segundos
 uint32_t proximaLeitura     = 0;
 
 /* ==== SETUP ========================================================= */
