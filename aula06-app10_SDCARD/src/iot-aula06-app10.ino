@@ -7,6 +7,8 @@
 const uint8_t DHT_PIN   = 26;
 const uint8_t DHT_MODEL = DHT22;
 const uint8_t LED_PIN   = 27;
+const uint8_t BTN_PIN   = 25;
+const uint8_t BTN_PIN_V = 16;
 
 // -------------------- Constantes --------------------
 const gpio_num_t CS_PIN = GPIO_NUM_5;      // chip-select do cartão
@@ -20,11 +22,15 @@ unsigned long ultimoRegistro = 0;
 void criaArquivoSeNecessario();
 void gravaMedicoes();
 void imprimeArquivo();
+void zeraMedicoes();
 
 // -------------------- Setup --------------------
 void setup() {
   Serial.begin(115200);
   delay(1000);
+
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  pinMode(BTN_PIN_V, INPUT_PULLUP);
 
   // Inicia SD (usa barramento VSPI padrão: SCK 18, MISO (DO) 19, MOSI (DI) 23)
   if (!SD.begin(CS_PIN)) {
@@ -48,6 +54,18 @@ void loop() {
     ultimoRegistro = millis();
     gravaMedicoes();
   }
+
+  if (digitalRead(BTN_PIN) == LOW) {
+    imprimeArquivo();
+    delay(100);
+  }
+
+  if (digitalRead(BTN_PIN_V) == LOW) {
+    zeraMedicoes();
+    delay(100);
+  }
+
+  delay(100);
 }
 
 
@@ -98,7 +116,7 @@ void gravaMedicoes() {
   ESP32Sensors::LED::off();
 
   Serial.println("[SALVO] Nova linha gravada:");
-  imprimeArquivo();
+  //imprimeArquivo();
 }
 
 // Imprime o arquivo inteiro no Serial Monitor
@@ -114,4 +132,27 @@ void imprimeArquivo() {
   }
   Serial.println("---------------- fim do arquivo ----------------\n");
   f.close();
+}
+
+//Zera medições com o pressionamento do botão
+void zeraMedicoes() {
+  Serial.println("[BOTÃO] Zerando medições...");
+
+  // Revmove arquivo existente
+  if (SD.exists(ARQ_DADOS)) {
+    SD.remove(ARQ_DADOS);
+  }
+
+  //Cria arquivo novamente (apenas com o cabeçalho)
+  // Cria novo arquivo diretamente com o cabeçalho
+  File f = SD.open(ARQ_DADOS, FILE_WRITE);
+  if (!f) {
+    Serial.println("[ERRO] Não foi possível criar arquivo!");
+    return;
+  }
+  f.println("temp_C,umid_%,indice_calor_C");
+  f.close();
+
+  Serial.println("[OK] Medições zeradas!");
+  imprimeArquivo();
 }

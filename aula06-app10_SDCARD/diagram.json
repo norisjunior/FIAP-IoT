@@ -13,6 +13,27 @@
       "top": 84.2,
       "left": -57.6,
       "attrs": { "color": "black", "xray": "1" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn2",
+      "top": 161,
+      "left": 153.6,
+      "attrs": { "color": "red", "xray": "1" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text1",
+      "top": 57.6,
+      "left": -76.8,
+      "attrs": { "text": "IMPRIME" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text2",
+      "top": 182.4,
+      "left": 153.6,
+      "attrs": { "text": "ZERA" }
     }
   ],
   "connections": [
@@ -30,7 +51,9 @@
     [ "sd1:SCK", "esp:18", "violet", [ "h28.8", "v134.39" ] ],
     [ "sd1:CS", "esp:5", "green", [ "h0", "v115.26" ] ],
     [ "btn1:2.r", "esp:GND.1", "black", [ "h10.4", "v0.4" ] ],
-    [ "btn1:1.r", "esp:25", "green", [ "v0", "h29.6", "v38.4" ] ]
+    [ "btn1:1.r", "esp:25", "green", [ "v0", "h29.6", "v38.4" ] ],
+    [ "btn2:1.l", "esp:GND.3", "black", [ "h-9.6", "v-57.6" ] ],
+    [ "btn2:2.l", "esp:16", "green", [ "h-28.8", "v-18.8" ] ]
   ],
   "dependencies": {}
 }
