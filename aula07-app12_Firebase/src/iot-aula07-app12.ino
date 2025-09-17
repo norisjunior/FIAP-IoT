@@ -3,6 +3,15 @@
 #include <Firebase_ESP_Client.h>      // Biblioteca "Firebase ESP Client" (Mobizt)
 #include "ESP32Sensors.hpp"          // LED, Distância (HC-SR04) e Ambiente (DHT22)
 
+
+/* ==== Configurações de Hardware ===================================== */
+const uint8_t DHT_PIN     = 26;
+const uint8_t DHT_MODEL   = DHT22;
+const uint8_t LED_PIN     = 27;
+const uint8_t TRIG_PIN    = 17;
+const uint8_t ECHO_PIN    = 16;
+const float   DIST_LIMIAR = 100.0;
+
 /* ==== CREDENCIAIS =================================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
@@ -47,7 +56,7 @@ uint32_t proximaLeitura     = 0;
 void setup() {
   Serial.begin(115200);
 
-  ESP32Sensors::beginAll();
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, TRIG_PIN, ECHO_PIN, DIST_LIMIAR, LED_PIN);
 
   // Wi-Fi ---------------------------------------------------------------
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
