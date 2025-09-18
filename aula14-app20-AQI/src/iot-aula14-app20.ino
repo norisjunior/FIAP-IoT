@@ -188,6 +188,9 @@ bool enviarDadosColetados() {
       Serial.println("AVISO: Payload muito grande!");
   }  
 
+  // IMPRIME O JSON CRIADO:
+  Serial.print("PAYLOAD MQTT:");
+  Serial.println(buffer.c_str());
 
   
   bool envio = mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str());
