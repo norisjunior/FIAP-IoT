@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": -96.18,
+      "left": 359.77,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot1",
+      "top": -167.8,
+      "left": 143,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot2",
+      "top": -91,
+      "left": 143,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot3",
+      "top": -14.2,
+      "left": 143,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot4",
+      "top": 62.6,
+      "left": 143,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot5",
+      "top": 139.4,
+      "left": 143,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot6",
+      "top": 216.2,
+      "left": 143,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot7",
+      "top": -244.6,
+      "left": 143,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text1",
+      "top": -201.6,
+      "left": 57.6,
+      "attrs": { "text": "PM 2.5" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text2",
+      "top": -124.8,
+      "left": 57.6,
+      "attrs": { "text": "PM 10" }
+    },
+    { "type": "wokwi-text", "id": "text3", "top": -48, "left": 76.8, "attrs": { "text": "NO" } },
+    { "type": "wokwi-text", "id": "text4", "top": 28.8, "left": 76.8, "attrs": { "text": "NO2" } },
+    {
+      "type": "wokwi-text",
+      "id": "text5",
+      "top": 105.6,
+      "left": 76.8,
+      "attrs": { "text": "NOx" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text6",
+      "top": 182.4,
+      "left": 76.8,
+      "attrs": { "text": "NH3" }
+    },
+    { "type": "wokwi-text", "id": "text7", "top": 259.2, "left": 86.4, "attrs": { "text": "CO" } },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot8",
+      "top": -148.6,
+      "left": 517.4,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot9",
+      "top": -71.8,
+      "left": 517.4,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot10",
+      "top": 5,
+      "left": 517.4,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text8",
+      "top": -115.2,
+      "left": 691.2,
+      "attrs": { "text": "SO2" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text9",
+      "top": -38.4,
+      "left": 691.2,
+      "attrs": { "text": "O3" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot11",
+      "top": 81.8,
+      "left": 517.4,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot12",
+      "top": 158.6,
+      "left": 517.4,
+      "attrs": { "travelLength": "15" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text10",
+      "top": 48,
+      "left": 691.2,
+      "attrs": { "text": "Benzene" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text11",
+      "top": 115.2,
+      "left": 691.2,
+      "attrs": { "text": "Toluene" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text12",
+      "top": 201.6,
+      "left": 691.2,
+      "attrs": { "text": "Xylene" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "pot3:GND", "pot2:GND", "black", [ "v0" ] ],
+    [ "pot2:GND", "pot1:GND", "black", [ "v0" ] ],
+    [ "pot7:GND", "pot1:GND", "black", [ "v0" ] ],
+    [ "pot4:GND", "pot3:GND", "black", [ "v0" ] ],
+    [ "pot5:GND", "pot4:GND", "black", [ "v0" ] ],
+    [ "pot6:GND", "pot5:GND", "black", [ "v0" ] ],
+    [ "pot6:VCC", "pot5:VCC", "red", [ "h-19.2", "v-76.8" ] ],
+    [ "pot5:VCC", "pot4:VCC", "red", [ "h-19.2", "v-67.2" ] ],
+    [ "pot4:VCC", "pot3:VCC", "red", [ "h-19.2", "v-76.8" ] ],
+    [ "pot3:VCC", "pot2:VCC", "red", [ "h-19.2", "v-76.8" ] ],
+    [ "pot2:VCC", "pot1:VCC", "red", [ "h-19.2", "v-76.8" ] ],
+    [ "pot1:VCC", "pot7:VCC", "red", [ "h-19.2", "v-76.8" ] ],
+    [ "pot7:SIG", "esp:34", "green", [ "v28", "h163.2", "v144" ] ],
+    [ "pot2:SIG", "esp:32", "green", [ "v28", "h163.2", "v-134.4" ] ],
+    [ "pot3:SIG", "esp:33", "green", [ "v28", "h163.2", "v-201.6" ] ],
+    [ "pot7:VCC", "esp:3V3", "red", [ "h-19.2", "v-57.6", "h211.2" ] ],
+    [ "pot12:GND", "pot11:GND", "black", [ "v0" ] ],
+    [ "pot11:GND", "pot10:GND", "black", [ "v0" ] ],
+    [ "pot10:GND", "pot9:GND", "black", [ "v0" ] ],
+    [ "pot9:GND", "pot8:GND", "black", [ "v0" ] ],
+    [ "pot12:VCC", "pot11:VCC", "red", [ "h-9.6", "v-76.8", "h-9.6" ] ],
+    [ "pot11:VCC", "pot10:VCC", "red", [ "h-9.6", "v-76.8" ] ],
+    [ "pot10:VCC", "pot9:VCC", "red", [ "h-9.6", "v-76.8" ] ],
+    [ "pot9:VCC", "pot8:VCC", "red", [ "h-9.6", "v-76.8" ] ],
+    [ "pot7:VCC", "esp:3V3.1", "red", [ "h-19.2", "v-28.8", "h230.4" ] ],
+    [ "pot8:VCC", "esp:3V3.1", "red", [ "h0" ] ],
+    [ "pot8:SIG", "esp:1", "green", [ "h-38.4", "v47.2" ] ],
+    [ "pot9:SIG", "esp:2", "green", [ "h-38.4", "v-20" ] ],
+    [ "pot7:SIG", "esp:4", "green", [ "h0", "v28", "h192", "v115.2" ] ],
+    [ "pot1:SIG", "esp:5", "green", [ "h0", "v28", "h192", "v48" ] ],
+    [ "pot2:SIG", "esp:6", "green", [ "h0", "v28", "h192", "v-19.2" ] ],
+    [ "pot3:SIG", "esp:7", "green", [ "h0", "v28", "h192", "v-86.4" ] ],
+    [ "pot4:SIG", "esp:8", "green", [ "h0", "v28", "h192", "v-124.8" ] ],
+    [ "pot5:SIG", "esp:3", "green", [ "h0", "v28", "h192", "v-182.4", "h28.8" ] ],
+    [ "pot6:SIG", "esp:9", "green", [ "h0", "v28", "h192", "v-240" ] ],
+    [ "pot11:SIG", "esp:11", "green", [ "h-38.4", "v-58.4" ] ],
+    [ "pot10:SIG", "esp:10", "green", [ "h-38.4", "v8.8" ] ],
+    [ "pot12:SIG", "esp:12", "green", [ "h-163.2", "v-125.6" ] ]
+  ],
+  "dependencies": {}
+}
