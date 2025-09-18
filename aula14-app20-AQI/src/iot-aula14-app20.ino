@@ -156,6 +156,39 @@ bool enviarDadosColetados() {
   // Serializa e envia JSON
   String buffer;
   serializeJson(doc, buffer);
+
+  //DEBUGs:
+  // TAMANHO DO PAYLOAD
+  Serial.print("DEBUG: Tamanho do payload: ");
+  Serial.println(buffer.length());
+  
+  // ESTADO DA CONEXÃO  
+  if (!mqttClient.connected()) {
+      Serial.print("DEBUG: MQTT desconectado. Estado: ");
+      Serial.println(mqttClient.state());
+      switch(mqttClient.state()) {
+          case -4: Serial.println("Connection Timeout"); break;
+          case -3: Serial.println("Connection Lost"); break;
+          case -2: Serial.println("Connect Failed"); break;
+          case -1: Serial.println("Disconnected"); break;
+          case 0:  Serial.println("Connected"); break;
+          case 1:  Serial.println("Bad Protocol"); break;
+          case 2:  Serial.println("Bad Client ID"); break;
+          case 3:  Serial.println("Unavailable"); break;
+          case 4:  Serial.println("Bad Credentials"); break;
+          case 5:  Serial.println("Unauthorized"); break;
+      }
+      return false;
+  }
+
+  // TAMANHO DO PAYLOAD
+  Serial.print("Tamanho do JSON: ");
+  Serial.println(buffer.length());
+  if (buffer.length() > 1024) {
+      Serial.println("AVISO: Payload muito grande!");
+  }  
+
+
   
   bool envio = mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str());
   
