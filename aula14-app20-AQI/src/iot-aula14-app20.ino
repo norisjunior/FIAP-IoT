@@ -13,25 +13,20 @@ const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_SERVER     "192.168.15.46"   //10.63.106.231
+#define MQTT_SERVER     "test.mosquitto.org"   //
 #define MQTT_PORT       1883
-#define MQTT_PUB_TOPIC  "FIAPIoT/aula09/noris/motor/dados"
-#define MQTT_SUB_TOPIC  "FIAPIoT/aula09/noris/motor/cmd"
+#define MQTT_PUB_TOPIC  "FIAPIoT/aula14/noris/aqi/dados"
 // ATENÇÃO: ClientID DEVE SER ÚNICO NO BROKER!
-#define MQTT_CLIENT_ID  "IoTDeviceNoris001"
+#define MQTT_CLIENT_ID  "IoTDeviceNorisAQI001"
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Controle de intervalo de envio ---- */
-const int INTERVALO_COLETA = 3000;  // 3 s
+const int INTERVALO_COLETA = 10000;  // 10 s
 int proximaLeitura = 0;
-
-/* ---- Controle do motor ---- */
-bool motorLigado = true;
 
 /* ---- Protótipos ---- */
 void conectarWiFi();
 void conectarMQTT();
-void callbackMQTT(char* topic, byte* payload, unsigned int length);
 bool enviarDadosColetados();
 
 /* ---- MAIN (setup e loop) ---- */
@@ -39,30 +34,26 @@ void setup() {
   Serial.begin(115200);
     
   Serial.println("\n\n===================================");
-  Serial.println("  SISTEMA DE MONITORAMENTO MOTOR  ");
+  Serial.println("  SISTEMA DE MONITORAMENTO AQI    ");
   Serial.println("===================================");
-  Serial.println("Demonstração: Fog / Near Edge");
+  Serial.println("Demonstração: Sensores de Qualidade do Ar");
   Serial.println("===================================\n");
 
   //Inicializa todos os sensores
-  Serial.println("Inicializando sensores...");
+  Serial.println("Inicializando sensores AQI...");
   ESP32Sensors::beginAll();
 
-  // Liga LED indicando motor funcionando
-  ESP32Sensors::LED::on();
-  motorLigado = true;
-  Serial.println("LED ligado (motor operando)");
+  Serial.println("Sistema AQI ativo");
 
   //Conecta no WiFi
   conectarWiFi();
   
   //Configura MQTT e conecta no Broker
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
-  mqttClient.setCallback(callbackMQTT);
   conectarMQTT();
 
-  Serial.println("\nSistema embarcado inicializado!");
-  Serial.println("Envio de dados a cada 5 segundos...\n");
+  Serial.println("\nSistema AQI inicializado!");
+  Serial.printf("Envio de dados a cada %d segundos...", (INTERVALO_COLETA/1000)); Serial.println("");
 }
 
 void loop() {
@@ -76,9 +67,9 @@ void loop() {
 
   bool dadosEnviados = enviarDadosColetados();
   if (dadosEnviados) {
-      Serial.println("\nSUCESSO: Dados enviados para Near Edge / MQTT Broker");
+      Serial.println("\nSUCESSO: Dados AQI enviados para o MQTT Broker");
   } else {
-      Serial.println("\nFALHA: Erro ao enviar dados");
+      Serial.println("\nFALHA: Erro ao enviar dados AQI");
   }
 
   delay(100);
@@ -110,11 +101,6 @@ void conectarMQTT() {
 
     if (mqttClient.connect(MQTT_CLIENT_ID)) {
       Serial.println("--> Conectado ao MQTT Broker!");
-      // Inscreve no tópico de comandos
-      mqttClient.subscribe(MQTT_SUB_TOPIC);
-      Serial.print("Inscrito no tópico: ");
-      Serial.println(MQTT_SUB_TOPIC);
-
     } else {
       Serial.print(" Falha, rc=");
       Serial.print(mqttClient.state());
@@ -124,66 +110,29 @@ void conectarMQTT() {
   }  
 }
 
-// ===== Callback MQTT - Processa dados quando forem recebidos =======
-void callbackMQTT(char* topic, byte* payload, unsigned int length) {
-  // Converte o payload em String para facilitar a comparação
-  String comando;
-  for (unsigned int i = 0; i < length; i++) {
-    comando += (char)payload[i];
-  }
-
-  // Exibe dados no Serial Monitor
-  Serial.println("\n========================================");
-  Serial.println("COMANDO RECEBIDO DA FOG/NEAR EDGE:");
-  Serial.println("========================================");
-  Serial.print("Tópico: ");
-  Serial.println(topic);
-  Serial.print("Mensagem: ");
-  Serial.println(comando);
-
-  comando.toUpperCase();
-
-  // Se o comando for desligar, apaga o LED (motor desliga)
-  if (comando == "OFF") {
-    ESP32Sensors::LED::off();
-    motorLigado = false;
-    Serial.println("COMANDO: desligar motor. LED apagado.");
-  }
-  // Se o comando for ligar, acende o LED
-  else if (comando == "ON") {
-    ESP32Sensors::LED::on();
-    motorLigado = true;
-    Serial.println("COMANDO: ligar motor. LED aceso.");
-  }
-  // Outros comandos podem ser tratados aqui
-}
-
 // ===== Envia dados coletados =======
 bool enviarDadosColetados() {
-  // Lê sensor de ambiente (DHT22)
-  ESP32Sensors::Ambiente::AMBIENTE dadosAmbiente = ESP32Sensors::Ambiente::medirAmbiente();
-  
-  // Lê acelerômetro (MPU6050)
-  sensors_event_t dadosAccel = ESP32Sensors::Accel::medirAccel();
+  // Lê sensores de qualidade do ar (AQI)
+  ESP32Sensors::AQI::DADOSAQI dadosAQI = ESP32Sensors::AQI::medirAQI();
 
   // Exibe dados no Serial Monitor
   Serial.println("\n========================================");
-  Serial.println("DADOS COLETADOS (Far Edge/Extreme Edge):");
+  Serial.println("DADOS AQI COLETADOS (Far Edge/Extreme Edge):");
   Serial.println("========================================");
   
-  if (!dadosAmbiente.valido) {
-    Serial.println("Erro na leitura do DHT22");
-  }
-
   /* --- Log no Serial Monitor --- */
-  Serial.println("Dados coletados: ");
-  Serial.printf("[AMBIENTE] - Temp: %.2f °C | Umid: %.2f %% | HI: %.2f °C",
-                 dadosAmbiente.temp, dadosAmbiente.umid, dadosAmbiente.ic);
+  Serial.println("Dados de Qualidade do Ar coletados: ");
+  Serial.printf("[PARTICULADOS] - PM2.5: %.2f μg/m³ | PM10: %.2f μg/m³",
+                 dadosAQI.PM25, dadosAQI.PM10);
   Serial.println("");
-  Serial.printf("[ACELERAÇÃO] - x: %.2f m/s² | y: %.2f m/s² | z: %.2f m/s²",
-                dadosAccel.acceleration.x, dadosAccel.acceleration.y, dadosAccel.acceleration.z);
+  Serial.printf("[ÓXIDOS NITROGÊNIO] - NO: %.2f μg/m³ | NO2: %.2f μg/m³ | NOx: %.2f μg/m³",
+                dadosAQI.NO, dadosAQI.NO2, dadosAQI.NOx);
   Serial.println("");
-  Serial.printf("[MOTOR STATUS] - %s", motorLigado ? "Ligado" : "Desligado");
+  Serial.printf("[GASES] - NH3: %.2f μg/m³ | CO: %.2f mg/m³ | SO2: %.2f μg/m³ | O3: %.2f μg/m³",
+                dadosAQI.NH3, dadosAQI.CO, dadosAQI.SO2, dadosAQI.O3);
+  Serial.println("");
+  Serial.printf("[COVs] - Benzene: %.2f μg/m³ | Toluene: %.2f μg/m³ | Xylene: %.2f μg/m³",
+                dadosAQI.Benzene, dadosAQI.Toluene, dadosAQI.Xylene);
   Serial.println("");
 
   
@@ -191,13 +140,18 @@ bool enviarDadosColetados() {
   JsonDocument doc;
   
   doc["device"] = MQTT_CLIENT_ID;
-  doc["temp"] = dadosAmbiente.temp;
-  doc["umid"] = dadosAmbiente.umid;
-  doc["ic"] = dadosAmbiente.ic;
-  doc["accel_x"] = dadosAccel.acceleration.x;
-  doc["accel_y"] = dadosAccel.acceleration.y;
-  doc["accel_z"] = dadosAccel.acceleration.z;
-  doc["motor_status"] = motorLigado;
+  doc["PM25"] = dadosAQI.PM25;
+  doc["PM10"] = dadosAQI.PM10;
+  doc["NO"] = dadosAQI.NO;
+  doc["NO2"] = dadosAQI.NO2;
+  doc["NOx"] = dadosAQI.NOx;
+  doc["NH3"] = dadosAQI.NH3;
+  doc["CO"] = dadosAQI.CO;
+  doc["SO2"] = dadosAQI.SO2;
+  doc["O3"] = dadosAQI.O3;
+  doc["Benzene"] = dadosAQI.Benzene;
+  doc["Toluene"] = dadosAQI.Toluene;
+  doc["Xylene"] = dadosAQI.Xylene;
 
   // Serializa e envia JSON
   String buffer;
@@ -207,4 +161,3 @@ bool enviarDadosColetados() {
   
   return envio;
 }
-
