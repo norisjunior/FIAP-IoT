@@ -7,7 +7,7 @@
 #include "ESP32Sensors.hpp"
 
 
-/* ---- Config Wi‑Fi ---- */
+/* ---- Config Wi-Fi ---- */
 const char* WIFI_SSID     = "Wokwi-GUEST";
 const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
@@ -28,6 +28,7 @@ int proximaLeitura = 0;
 void conectarWiFi();
 void conectarMQTT();
 bool enviarDadosColetados();
+void debugMQTTCompleto();
 
 /* ---- MAIN (setup e loop) ---- */
 void setup() {
@@ -50,9 +51,11 @@ void setup() {
   
   //Configura MQTT e conecta no Broker
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  // Configurações adicionais para robustez
   mqttClient.setKeepAlive(60);     // Manter conexão viva por 60s
-  mqttClient.setSocketTimeout(30); // Timeout de 30s  
-  mqttClient.setBufferSize(512);   // Buffer adequado considerando o payload gerado
+  mqttClient.setSocketTimeout(30); // Timeout de 30s
+  mqttClient.setBufferSize(512);   // Buffer adequado
+  conectarMQTT();
 
   Serial.println("\nSistema AQI inicializado!");
   Serial.printf("Envio de dados a cada %d segundos...", (INTERVALO_COLETA/1000)); Serial.println("");
@@ -112,6 +115,46 @@ void conectarMQTT() {
   }  
 }
 
+// ============== Debug MQTT Completo ====================
+void debugMQTTCompleto() {
+  Serial.println("=== DEBUG MQTT COMPLETO ===");
+  
+  // Estado WiFi
+  Serial.print("WiFi Status: ");
+  Serial.println(WiFi.status());
+  Serial.print("WiFi Conectado: ");
+  Serial.println(WiFi.status() == WL_CONNECTED ? "SIM" : "NÃO");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+  
+  // Estado MQTT
+  Serial.print("MQTT Estado: ");
+  Serial.println(mqttClient.state());
+  Serial.print("MQTT Conectado: ");
+  Serial.println(mqttClient.connected() ? "SIM" : "NÃO");
+  
+  // Decodificar estado MQTT
+  Serial.print("Estado MQTT decodificado: ");
+  switch(mqttClient.state()) {
+      case -4: Serial.println("Connection Timeout"); break;
+      case -3: Serial.println("Connection Lost"); break;
+      case -2: Serial.println("Connect Failed"); break;
+      case -1: Serial.println("Disconnected"); break;
+      case 0:  Serial.println("Connected"); break;
+      case 1:  Serial.println("Bad Protocol"); break;
+      case 2:  Serial.println("Bad Client ID"); break;
+      case 3:  Serial.println("Unavailable"); break;
+      case 4:  Serial.println("Bad Credentials"); break;
+      case 5:  Serial.println("Unauthorized"); break;
+  }
+  
+  // Informações de memória
+  Serial.print("Heap livre: ");
+  Serial.println(ESP.getFreeHeap());
+  
+  Serial.println("========================");
+}
+
 // ===== Envia dados coletados =======
 bool enviarDadosColetados() {
   // Lê sensores de qualidade do ar (AQI)
@@ -159,11 +202,91 @@ bool enviarDadosColetados() {
   String buffer;
   serializeJson(doc, buffer);
 
+  //DEBUGs:
+  // TAMANHO DO PAYLOAD
+  Serial.print("DEBUG: Tamanho do payload: ");
+  Serial.println(buffer.length());
+  
+  // TAMANHO DO PAYLOAD
+  Serial.print("Tamanho do JSON: ");
+  Serial.println(buffer.length());
+  if (buffer.length() > 1024) {
+      Serial.println("AVISO: Payload muito grande!");
+  }  
+
   // IMPRIME O JSON CRIADO:
   Serial.print("PAYLOAD MQTT:");
   Serial.println(buffer.c_str());
- 
+
+  // ===== DEBUG DETALHADO ANTES DO ENVIO =====
+  Serial.println("\n=== DEBUG PRÉ-ENVIO ===");
+  debugMQTTCompleto();
+  
+  // ESTADO DA CONEXÃO  
+  if (!mqttClient.connected()) {
+      Serial.println("DEBUG: MQTT DESCONECTADO! Tentando reconectar...");
+      
+      // Tentar reconectar
+      int tentativas = 0;
+      while (!mqttClient.connected() && tentativas < 3) {
+          Serial.print("Tentativa de reconexão ");
+          Serial.print(tentativas + 1);
+          Serial.println("/3");
+          
+          if (mqttClient.connect(MQTT_CLIENT_ID)) {
+              Serial.println("DEBUG: Reconectado com sucesso!");
+              break;
+          } else {
+              Serial.print("DEBUG: Falha na reconexão. Estado: ");
+              Serial.println(mqttClient.state());
+              delay(1000);
+              tentativas++;
+          }
+      }
+      
+      // Se ainda não conectou, falhar
+      if (!mqttClient.connected()) {
+          Serial.println("DEBUG: Não foi possível reconectar ao MQTT!");
+          return false;
+      }
+  }
+
+  // ===== TENTATIVA DE ENVIO COM DEBUG =====
+  Serial.println("\n=== TENTANDO PUBLICAÇÃO ===");
+  Serial.print("Tópico: ");
+  Serial.println(MQTT_PUB_TOPIC);
+  Serial.print("Cliente ID: ");
+  Serial.println(MQTT_CLIENT_ID);
+  
+  // Estado final antes do envio
+  Serial.print("Estado MQTT imediatamente antes do publish: ");
+  Serial.println(mqttClient.state());
+  Serial.print("Conectado: ");
+  Serial.println(mqttClient.connected() ? "SIM" : "NÃO");
+  
+  // EXECUTAR PUBLICAÇÃO
+  Serial.println("DEBUG: Executando mqttClient.publish()...");
   bool envio = mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str());
+  
+  // DEBUG DO RESULTADO
+  Serial.println("\n=== RESULTADO DA PUBLICAÇÃO ===");
+  Serial.print("Resultado da publicação: ");
+  Serial.println(envio ? "✅ SUCESSO" : "❌ FALHA");
+  
+  if (!envio) {
+      Serial.print("Estado MQTT após falha: ");
+      Serial.println(mqttClient.state());
+      Serial.println("Executando debug completo pós-falha:");
+      debugMQTTCompleto();
+      
+      // Teste simples
+      Serial.println("Tentando publicação de teste simples...");
+      bool testeSimples = mqttClient.publish("debug/teste", "hello");
+      Serial.print("Resultado do teste simples: ");
+      Serial.println(testeSimples ? "✅ SUCESSO" : "❌ FALHA");
+  }
+  
+  Serial.println("=============================\n");
   
   return envio;
 }
