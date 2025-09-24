@@ -1,15 +1,16 @@
-#define PIR_PIN 13
-
 namespace ESP32Sensors {
-	namespace PIR {
-		const uint8_t LED_PIN = 27;
+	namespace Movimento {
+		static uint8_t pirPin = 0;
 
-		void inicializar() {
-			pinMode(PIR_PIN, INPUT);
+		void inicializar(uint8_t pin) {
+			pirPin = pin;
+			pinMode(pirPin, INPUT);
 		}
 
-		int detectarMovimento() {
-			return digitalRead(PIR_PIN);
+		bool detectarMovimento() {
+			bool movimento = digitalRead(pirPin);
+			delay(100);
+			return movimento;
 		}
 	}
 }

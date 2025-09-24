@@ -10,14 +10,18 @@ namespace ESP32Sensors {
 			bool valido;
 		};
 
-		const uint8_t DHT_PIN   = 26;
-		#define DHT_MODEL DHT22
-		DHT dht(DHT_PIN, DHT_MODEL);
-
-		const int TEMPO_DECORRIDO_MIN = 2000;  // 2 segundos
+		// Variáveis privadas do módulo
+		static uint8_t dhtPin = 0;
+		static uint8_t dhtModel = 0;
+		static DHT dht(0, 0);  // Instância inicial (será reinicializada)
+		static const int TEMPO_DECORRIDO_MIN = 2000;  // 2 segundos
 		static int ultimoTempoColeta = 0;
 
-		void inicializar() {
+		// Função de inicialização que recebe os parâmetros de configuração
+		void inicializar(uint8_t pin, uint8_t modelo) {
+			dhtPin = pin;
+			dhtModel = modelo;
+			dht = DHT(pin, modelo);  // Reconstrói a instância com os novos parâmetros
 			dht.begin();
 		}
 

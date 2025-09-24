@@ -6,6 +6,16 @@
 #include <ArduinoJson.h>
 #include "ESP32Sensors.hpp"
 
+
+/* ---- Config Hardware ---- */
+const uint8_t DHT_PIN     = 26;
+const uint8_t DHT_MODEL   = DHT22;
+const uint8_t LED_PIN     = 27;
+const uint8_t TRIG_PIN    = 17;
+const uint8_t ECHO_PIN    = 16;
+const float   DIST_LIMIAR = 100.0;
+const uint8_t PIR_PIN     = 25;
+
 /* ---- Config Wi‑Fi ---- */
 const char* WIFI_SSID     = "Wokwi-GUEST";
 const char* WIFI_PASSWORD = "";
@@ -34,7 +44,7 @@ void setup() {
   Serial.begin(115200);
 
   //Inicializa todos os sensores
-  ESP32Sensors::beginAll();
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, TRIG_PIN, ECHO_PIN, DIST_LIMIAR, LED_PIN, PIR_PIN);
 
   conectarWiFi();
   conectarMQTT();
@@ -51,9 +61,10 @@ void loop() {
   proximaLeitura = millis() + INTERVALO_COLETA;
 
   /* --- Coleta de dados --- */
-  bool mov = ESP32Sensors::PIR::detectarMovimento();
+  bool mov = ESP32Sensors::Movimento::detectarMovimento();
   ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
   ESP32Sensors::Ambiente::AMBIENTE amb = ESP32Sensors::Ambiente::medirAmbiente();
+  
   
   if (!amb.valido) {
     Serial.println("[ERRO] Leitura DHT inválida.");
@@ -66,14 +77,14 @@ void loop() {
   Serial.println("");
 
   /* === Montagem do JSON === */
-  StaticJsonDocument<128> doc;
+  JsonDocument doc;
   doc["temp"] = amb.temp;
   doc["umid"] = amb.umid;
   doc["ic"] = amb.ic;
   doc["dist"] = dist.cm;
   doc["mov"]  = mov;
 
-  char payload[128];
+  char payload[200];
   serializeJson(doc, payload);
 
   /* === LED aceso durante a transmissão === */

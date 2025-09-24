@@ -28,7 +28,7 @@
     [ "ultrasonic1:TRIG", "esp:17", "blue", [ "v0" ] ],
     [ "ultrasonic1:ECHO", "esp:16", "cyan", [ "v0" ] ],
     [ "pir1:GND", "esp:GND.1", "black", [ "v0" ] ],
-    [ "pir1:OUT", "esp:13", "green", [ "v0" ] ],
+    [ "pir1:OUT", "esp:25", "green", [ "v0" ] ],
     [ "pir1:VCC", "esp:3V3", "red", [ "v28.8", "h-48", "v28.8" ] ]
   ],
   "dependencies": {}
