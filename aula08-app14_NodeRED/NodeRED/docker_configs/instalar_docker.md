@@ -8,11 +8,14 @@ Add rule → Type: Custom TCP → Port range: 1880 → Source: My IP (recomendad
 ## Primieiro passo: INSTALAR DOCKER
 
 ### Pré-requisitos
+```
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
+```
 
 
 ### Adicionar o repositório oficial do Docker
+```
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
@@ -24,14 +27,19 @@ echo \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt-get update
+```
 
 ### Instalar o Docker Engine, CLI, containerd e plugins (inclui Compose v2)
+```
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
 
 
 ### Habilitar e testar
+```
 sudo systemctl enable --now docker
 sudo docker run --rm hello-world
+```
 
 
 ## Segundo passo: COMPILAR NODERED
@@ -43,5 +51,7 @@ sudo docker run --rm hello-world
 Depois de criar os arquivos, inserir o conteúdo conforme consta no diretório "docker_configs"
 
 Com os arquivos configurados:
+```
 sudo docker compose build
 sudo docker compose up -d
+```
