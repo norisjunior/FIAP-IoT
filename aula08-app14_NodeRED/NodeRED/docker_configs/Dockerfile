@@ -1,17 +1,40 @@
-FROM nodered/node-red:latest
+FROM nodered/node-red:latest-debian
 
 USER root
 
-RUN npm install \
-    node-red-dashboard \
-    node-red-contrib-ui-led \
-    node-red-contrib-ui-level \
-    node-red-contrib-telegrambot \
+# Toolchain + headers p/ módulos nativos (sqlite3)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential python3 python3-distutils libsqlite3-dev ccache \
+ && rm -rf /var/lib/apt/lists/*
+
+# Ajuda o node-gyp e permite instalar como root dentro do build
+ENV npm_config_unsafe_perm=true \
+    npm_config_python=/usr/bin/python3 \
+    npm_config_jobs=2 \
+    CC="ccache gcc" \
+    CXX="ccache g++"
+
+WORKDIR /usr/src/node-red
+
+# Instala primeiro o "pesado" para aproveitar cache de camadas
+RUN npm install --no-audit --no-fund --verbose \
+    node-red-node-sqlite
+
+# Depois o restante dos nós
+RUN npm install --no-audit --no-fund --verbose \
     node-red-contrib-influxdb \
-    node-red-node-sqlite \
     node-red-contrib-dsm \
     node-red-contrib-cron-plus \
+    node-red-contrib-ui-led \
+    node-red-contrib-ui-level \
     node-red-node-email \
-    node-red-node-random
+    node-red-node-random \
+    node-red-contrib-telegrambot \
+    node-red-contrib-cbor \
+    node-red-dashboard
+
+RUN chown -R node-red:node-red /usr/src/node-red/node_modules \
+ && chown -R node-red:node-red /data \
+ && npm cache clean --force
 
 USER node-red

@@ -1,7 +1,7 @@
 /* *Includes* */
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <MqttClient.h>
+#include <PubSubClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include "ESP32Sensors.hpp"
@@ -25,10 +25,17 @@ WiFiClient wifiClient; // Define client WiFi
 #define MQTT_HOST       "broker.emqx.io"
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/sala1"
-#define MQTT_DEVICEID   "FIAPIoTDevice001"
+#define MQTT_DEVICEID   "NorisESP32IoT2025001"
+//#define MQTT_USERNAME   "NorisESP32IoT2025001"
+//#define MQTT_PASSWORD   "@...IoT..."
 #define MQTT_QOS        0
 #define MQTT_RETAIN     false
-MqttClient mqttClient(wifiClient);
+unsigned long ultimaTentativaReconexao = 0;
+const unsigned long INTERVALO_RECONEXAO = 5000; // 5 segundos entre tentativas
+PubSubClient mqttClient(wifiClient);
+bool wifiConectado = false;
+bool mqttConectado = false;
+
 
 /* ---- Controle de intervalo de envio ---- */
 const int INTERVALO_COLETA = 2500;  // 2,5 s
@@ -37,7 +44,6 @@ int proximaLeitura = 0;
 /* ---- Protótipos ---- */
 void conectarWiFi();
 void conectarMQTT();
-bool publicarMsg();
 
 /* ---- MAIN (setup e loop) ---- */
 void setup() {
@@ -47,18 +53,28 @@ void setup() {
   ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, TRIG_PIN, ECHO_PIN, DIST_LIMIAR, LED_PIN, PIR_PIN);
 
   conectarWiFi();
+  
+  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
   conectarMQTT();
+  
+  Serial.println("Sistema inicializado!");
 }
 
 void loop() {
-  mqttClient.poll();
-
-  if (!mqttClient.connected()) {
+  if (wifiConectado && !mqttClient.connected()) {
     conectarMQTT();
   }
 
-  if (millis() < proximaLeitura) return;   // Aguarda próximo ciclo
+  if (mqttConectado) {
+    mqttClient.loop();
+  } else {
+    Serial.println("MQTT desconectado. Pulando ciclo de leitura.");
+    return;
+  }
+
+  if (millis() < proximaLeitura) return;
   proximaLeitura = millis() + INTERVALO_COLETA;
+
 
   /* --- Coleta de dados --- */
   bool mov = ESP32Sensors::Movimento::detectarMovimento();
@@ -89,53 +105,60 @@ void loop() {
 
   /* === LED aceso durante a transmissão === */
   ESP32Sensors::LED::on();
-  bool ok = publicarMsg(MQTT_PUB_TOPIC, payload);
-  ESP32Sensors::LED::off();
-
+  bool ok = mqttClient.publish(MQTT_PUB_TOPIC, payload);
   Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
+  ESP32Sensors::LED::off();
 
   delay(100);
 }
 
 /* ---- Função: Conectar ao WiFi ---- */
 void conectarWiFi() {
-  Serial.printf("Conectando ao WiFi %s", WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
+  Serial.print("Conectando ao WiFi");
+  
+  int tentativas = 0;
+  while (WiFi.status() != WL_CONNECTED && tentativas < 20) {
     delay(500);
-    Serial.print('.');
+    Serial.print(".");
+    tentativas++;
   }
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("[WiFi] Conectado!");
+    Serial.printf("[WiFi] IP: %s\n", WiFi.localIP().toString().c_str());
+    Serial.println("");
+    wifiConectado = true;
+  } else {
+    Serial.println("\n[WiFi] Falha na conexão - continuando sem MQTT");
+    wifiConectado = false;
+  }
 }
 
 /* ---- Função: Conectar ao MQTT Broker ---- */
 void conectarMQTT() {
-  // Se já está conectado, não faz nada
-  if (mqttClient.connected()) {
-    return;
-  }
-
-  Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
-  // Conexão ao MQTT: Definição de ID e keep alive
-  mqttClient.setId(MQTT_DEVICEID);
-  mqttClient.setKeepAliveInterval(60);
-
-  while (!mqttClient.connected()) {
-    if (mqttClient.connect(MQTT_HOST, MQTT_PORT)) {
-      Serial.println("--> Conectado ao MQTT!");
+  if (!wifiConectado) return;
+  
+  Serial.printf("[MQTT] Conectando ao broker %s", MQTT_HOST);
+  
+  int tentativas = 0;
+  while (!mqttClient.connected() && tentativas < 3) {
+    //if (mqttClient.connect(MQTT_DEVICEID, MQTT_USERNAME, MQTT_PASSWORD)) {
+    if (mqttClient.connect(MQTT_DEVICEID)) {
+      Serial.println(" --> Conectado ao MQTT Broker!");
+      mqttConectado = true;
     } else {
-      Serial.print(" Falha, rc=");
-      Serial.print(mqttClient.connectError());
-      Serial.println(" Tentando novamente em 5 segundos...");
-      delay(5000);
+      Serial.printf(" Falha, rc=%d", mqttClient.state());
+      tentativas++;
+      if (tentativas < 3) {
+        Serial.println(" Tentando novamente em 3s...");
+        delay(3000);
+      }
     }
-  }  
+  }
+  
+  if (!mqttConectado) {
+    Serial.println(" --> Falha final na conexão MQTT");
+  }
 }
 
-/* ---- Publicação simplificada (QoS 0, retain opcional) ---- */
-bool publicarMsg(const char* topico, const char* dados) {
-  mqttClient.beginMessage(topico, strlen(dados), MQTT_RETAIN, MQTT_QOS);
-  mqttClient.print(dados);
-  return mqttClient.endMessage();
-}
