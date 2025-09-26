@@ -1,0 +1,68 @@
+Primeiro nó: MQTT Trigger
+
+Segundo nó: Code
+// 1) Usa o campo message (pode vir string JSON ou objeto)
+const msg = $json.message;
+
+// 2) Armazena na variável data e o timestamp correto
+const data = JSON.parse(msg);
+
+// --> timestamp local de São Paulo (simples)
+const tsSp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+// 3) Monta um objeto “limpo” só com as variáveis que queremos
+return {
+  json: {
+    temp: data.temp,
+    umid: data.umid,
+    ic:   data.ic,
+    dist: data.dist,
+    mov:  data.mov,
+    timestamp: tsSp,
+    topic: $json.topic  // preserva o tópico (útil em logs/mensagens)
+  }
+};
+
+
+Outros 3 nós IF:
+1:
+Nome: Índice de calor alto
+Conditions:
+{{ $json.ic }} is greather than 35
+
+
+2:
+Nome: Objeto próximo
+Conditions:
+{{ $json.dist }} is less than 50
+
+3:
+Nome: Movimento detectado
+Conditions:
+{{ $json.mov }} is equal to Movimento
+
+
+Cada nó IF com o seu respectivo: Telegram - Send a text message
+ChatID: 6239670426
+
+1:
+🔥 Alerta: Índice de Calor Alto!
+Sala: {{$json.topic}}
+Temperatura: {{$json.temp}}°C
+Umidade: {{$json.umid}}%
+Índice de Calor: {{ $json.ic }}ºC
+timestamp: {{ $json.timestamp }}
+
+2:
+📏 Alerta: Objeto próximo!
+Sala: {{$json.topic}}
+Distância: {{ $json.dist }} cm
+timestamp={{$json.timestamp}}
+
+3:
+👁️ Alerta: Movimento detectado!
+Sala: {{$json.topic}}
+timestamp={{$json.timestamp}}
+
+
+

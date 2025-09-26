@@ -2,7 +2,7 @@
     {
         "id": "196390ff6edf144a",
         "type": "tab",
-        "label": "Flow FIAPIoT",
+        "label": "Flow FIAPIoT - Dashboard",
         "disabled": false,
         "info": ""
     },
@@ -47,25 +47,47 @@
             "ce4c6e991b143841",
             "53a3e2070ff40991"
         ],
-        "x": 834,
+        "x": 814,
         "y": 239,
         "w": 152,
         "h": 202
+    },
+    {
+        "id": "30667eaddc968dea",
+        "type": "group",
+        "z": "196390ff6edf144a",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "0419234427151ce5",
+            "f540c5e085e9bea3"
+        ],
+        "x": 634,
+        "y": 559,
+        "w": 312,
+        "h": 142
     },
     {
         "id": "1497e253c9efdc1d",
         "type": "mqtt in",
         "z": "196390ff6edf144a",
         "name": "",
-        "topic": "FIAPIoT/sala1/motor/dados",
+        "topic": "FIAPIoT/aula08/noris/motor/dados",
         "qos": "0",
         "datatype": "auto-detect",
-        "broker": "b932bf4a9773c95f",
+        "broker": "f57bcdae81064000",
         "nl": false,
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 110,
+        "x": 140,
         "y": 60,
         "wires": [
             [
@@ -221,7 +243,7 @@
         "seg2": "",
         "diff": true,
         "className": "",
-        "x": 910,
+        "x": 890,
         "y": 280,
         "wires": []
     },
@@ -250,7 +272,7 @@
         "seg2": "",
         "diff": true,
         "className": "",
-        "x": 910,
+        "x": 890,
         "y": 340,
         "wires": []
     },
@@ -279,7 +301,7 @@
         "seg2": "",
         "diff": true,
         "className": "",
-        "x": 910,
+        "x": 890,
         "y": 400,
         "wires": []
     },
@@ -369,6 +391,7 @@
         "id": "0419234427151ce5",
         "type": "debug",
         "z": "196390ff6edf144a",
+        "g": "30667eaddc968dea",
         "name": "debug 2",
         "active": true,
         "tosidebar": true,
@@ -378,15 +401,16 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 720,
-        "y": 600,
+        "y": 660,
         "wires": []
     },
     {
         "id": "f540c5e085e9bea3",
         "type": "mqtt out",
         "z": "196390ff6edf144a",
+        "g": "30667eaddc968dea",
         "name": "",
-        "topic": "FIAPIoT/sala1/motor/cmd",
+        "topic": "FIAPIoT/aula08/noris/motor/cmd",
         "qos": "0",
         "retain": "",
         "respTopic": "",
@@ -394,9 +418,9 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "b932bf4a9773c95f",
-        "x": 770,
-        "y": 540,
+        "broker": "f57bcdae81064000",
+        "x": 790,
+        "y": 600,
         "wires": []
     },
     {
@@ -420,10 +444,10 @@
         "height": 1
     },
     {
-        "id": "b932bf4a9773c95f",
+        "id": "f57bcdae81064000",
         "type": "mqtt-broker",
-        "name": "EMQx Broker",
-        "broker": "broker.emqx.io",
+        "name": "MQTTBroker local",
+        "broker": "host.docker.internal",
         "port": 1883,
         "clientid": "",
         "autoConnect": true,
@@ -481,7 +505,7 @@
         "hidden": false
     },
     {
-        "id": "ecf7e9314c6259ef",
+        "id": "cee200ec40e62749",
         "type": "global-config",
         "env": [],
         "modules": {

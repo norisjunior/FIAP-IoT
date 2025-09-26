@@ -1,0 +1,54 @@
+[
+    {
+        "id": "8db8ee8f2b9c0881",
+        "type": "mqtt in",
+        "z": "6001eddd8ce16606",
+        "name": "",
+        "topic": "FIAPIoT/aula08/noris/motor/dados",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "f57bcdae81064000",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 100,
+        "wires": [
+            [
+                "fefb7c0315e5d53c"
+            ]
+        ]
+    },
+    {
+        "id": "f57bcdae81064000",
+        "type": "mqtt-broker",
+        "name": "MQTTBroker local",
+        "broker": "host.docker.internal",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

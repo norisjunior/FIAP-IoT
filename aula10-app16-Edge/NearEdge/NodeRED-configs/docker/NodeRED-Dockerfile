@@ -34,4 +34,8 @@ RUN npm install --no-audit --no-fund --verbose \
     node-red-contrib-cbor \
     node-red-dashboard
 
+RUN chown -R node-red:node-red /usr/src/node-red/node_modules \
+ && chown -R node-red:node-red /data \
+ && npm cache clean --force
+    
 USER node-red
