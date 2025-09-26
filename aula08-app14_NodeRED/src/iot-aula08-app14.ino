@@ -22,7 +22,7 @@ const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_HOST       "broker.emqx.io"
+#define MQTT_HOST       "host.wokwi.internal"
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/sala1"
 #define MQTT_DEVICEID   "NorisESP32IoT2025001"

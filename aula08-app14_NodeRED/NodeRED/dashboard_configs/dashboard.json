@@ -1,20 +1,20 @@
 [
     {
-        "id": "196390ff6edf144a",
+        "id": "d282e4778fbdbe1e",
         "type": "tab",
         "label": "Flow FIAPIoT",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "1497e253c9efdc1d",
+        "id": "9049f4b1763ab153",
         "type": "mqtt in",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "",
         "topic": "FIAPIoT/sala1",
         "qos": "1",
         "datatype": "auto-detect",
-        "broker": "b932bf4a9773c95f",
+        "broker": "f57bcdae81064000",
         "nl": false,
         "rap": true,
         "rh": 0,
@@ -23,14 +23,14 @@
         "y": 80,
         "wires": [
             [
-                "818a04a9524672c2"
+                "5b980dce9c2a64cc"
             ]
         ]
     },
     {
-        "id": "818a04a9524672c2",
+        "id": "5b980dce9c2a64cc",
         "type": "function",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "separarDadosSensores",
         "func": "//Número de saídas: 5\n\nlet temp = { payload: msg.payload.temp };\nlet umid = { payload: msg.payload.umid };\nlet ic = { payload: msg.payload.ic };\nlet dist = { payload: msg.payload.dist };\nlet mov = { payload: msg.payload.mov };\n\nreturn [temp, umid, ic, dist, mov];\n",
         "outputs": 5,
@@ -43,28 +43,28 @@
         "y": 220,
         "wires": [
             [
-                "a6ca7301433d5c61"
+                "8d3fb503ec1c2330"
             ],
             [
-                "ca69360405404dbe"
+                "7b69396e20114506"
             ],
             [
-                "4ca0e5d1d30134ee"
+                "6211de5ebc0f0525"
             ],
             [
-                "722cf0f351319a48",
-                "344c442899e5b138"
+                "284c4072e7e6175d",
+                "788377274be09569"
             ],
             [
-                "6ecf1f1f8ec776e8",
-                "3d850a11f612da23"
+                "216e745fb60364c0",
+                "7d38e4f482ef7216"
             ]
         ]
     },
     {
-        "id": "a6ca7301433d5c61",
+        "id": "8d3fb503ec1c2330",
         "type": "ui_chart",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "",
         "group": "af6b46c184d8e1bc",
         "order": 2,
@@ -106,9 +106,9 @@
         ]
     },
     {
-        "id": "ca69360405404dbe",
+        "id": "7b69396e20114506",
         "type": "ui_gauge",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "",
         "group": "af6b46c184d8e1bc",
         "order": 4,
@@ -134,10 +134,10 @@
         "wires": []
     },
     {
-        "id": "722cf0f351319a48",
+        "id": "284c4072e7e6175d",
         "type": "ui_text",
-        "z": "196390ff6edf144a",
-        "group": "8d7139785a93ec75",
+        "z": "d282e4778fbdbe1e",
+        "group": "7a01314d66499467",
         "order": 1,
         "width": 0,
         "height": 0,
@@ -155,9 +155,9 @@
         "wires": []
     },
     {
-        "id": "4ca0e5d1d30134ee",
+        "id": "6211de5ebc0f0525",
         "type": "ui_text",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "group": "af6b46c184d8e1bc",
         "order": 1,
         "width": 0,
@@ -176,9 +176,9 @@
         "wires": []
     },
     {
-        "id": "6ecf1f1f8ec776e8",
+        "id": "216e745fb60364c0",
         "type": "ui_led",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "order": 3,
         "group": "f675c3c8d38af862",
         "width": 0,
@@ -207,11 +207,11 @@
         "wires": []
     },
     {
-        "id": "9f4f279cabd47239",
+        "id": "a083ff53b8dc82d3",
         "type": "telegram sender",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "Enviar telegram de alerta",
-        "bot": "21502a201e82e854",
+        "bot": "65eb49276087a1bb",
         "haserroroutput": false,
         "outputs": 1,
         "x": 990,
@@ -221,9 +221,9 @@
         ]
     },
     {
-        "id": "344c442899e5b138",
+        "id": "788377274be09569",
         "type": "switch",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "alerta < 50",
         "property": "payload",
         "propertyType": "msg",
@@ -241,14 +241,14 @@
         "y": 340,
         "wires": [
             [
-                "a4d47f42da167927"
+                "2434d6fcc67416c5"
             ]
         ]
     },
     {
-        "id": "a4d47f42da167927",
+        "id": "2434d6fcc67416c5",
         "type": "function",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "Alerta Distância",
         "func": "// Distância\nconst distance = parseFloat(msg.payload);\nconst threshold = 50;\n\nif (distance < threshold) {\n    // Prepara a mensagem\n    msg.payload = {\n        type: \"message\",\n        chatId: \"6239670426\",\n        content: `ALERTA: Objeto detectado a ${distance} cm (gatilho: ${threshold} cm)!`\n    };\n    return msg;\n}\n\n// Sem alerta\nreturn null;",
         "outputs": 1,
@@ -261,15 +261,15 @@
         "y": 340,
         "wires": [
             [
-                "9f4f279cabd47239",
-                "ec9406cfcc7b582b"
+                "a083ff53b8dc82d3",
+                "4dd7a4ef86ac3fae"
             ]
         ]
     },
     {
-        "id": "ec9406cfcc7b582b",
+        "id": "4dd7a4ef86ac3fae",
         "type": "debug",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "debug 1",
         "active": true,
         "tosidebar": true,
@@ -283,9 +283,9 @@
         "wires": []
     },
     {
-        "id": "3d850a11f612da23",
+        "id": "7d38e4f482ef7216",
         "type": "function",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "Alerta Presença",
         "func": "// Movimento (booleano) - com validação\nconst mov = msg.payload;\n\n// Verifica se é realmente um boolean\nif (typeof mov !== 'boolean') {\n    node.warn(\"Payload não é boolean: \" + typeof mov);\n    return null;\n}\n\nif (mov === true) {\n    msg.payload = {\n        type: \"message\",\n        chatId: \"6239670426\",\n        content: \"ALERTA: Presença detectada!\"\n    };\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -298,15 +298,15 @@
         "y": 460,
         "wires": [
             [
-                "a0240b374ffb9cea",
-                "9f4f279cabd47239"
+                "197e721d63a812b8",
+                "a083ff53b8dc82d3"
             ]
         ]
     },
     {
-        "id": "a0240b374ffb9cea",
+        "id": "197e721d63a812b8",
         "type": "debug",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "debug 2",
         "active": true,
         "tosidebar": true,
@@ -320,9 +320,9 @@
         "wires": []
     },
     {
-        "id": "85f3723b8048a8ec",
+        "id": "55a056e9b080f87c",
         "type": "ui_spacer",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "spacer",
         "group": "af6b46c184d8e1bc",
         "order": 3,
@@ -330,9 +330,9 @@
         "height": 1
     },
     {
-        "id": "587357c9d3caa403",
+        "id": "a1be675f801d6d36",
         "type": "ui_spacer",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "spacer",
         "group": "af6b46c184d8e1bc",
         "order": 5,
@@ -340,20 +340,20 @@
         "height": 1
     },
     {
-        "id": "bb6209e4be34772b",
+        "id": "eb6edf0e214eaa50",
         "type": "ui_spacer",
-        "z": "196390ff6edf144a",
+        "z": "d282e4778fbdbe1e",
         "name": "spacer",
-        "group": "8d7139785a93ec75",
+        "group": "7a01314d66499467",
         "order": 2,
         "width": 1,
         "height": 1
     },
     {
-        "id": "b932bf4a9773c95f",
+        "id": "f57bcdae81064000",
         "type": "mqtt-broker",
-        "name": "EMQx Broker",
-        "broker": "broker.emqx.io",
+        "name": "MQTTBroker local",
+        "broker": "host.docker.internal",
         "port": 1883,
         "clientid": "",
         "autoConnect": true,
@@ -392,7 +392,7 @@
         "className": ""
     },
     {
-        "id": "8d7139785a93ec75",
+        "id": "7a01314d66499467",
         "type": "ui_group",
         "name": "FIAP-IoT-Dist",
         "tab": "3971d7500fb1aa4a",
@@ -405,7 +405,7 @@
     {
         "id": "f675c3c8d38af862",
         "type": "ui_group",
-        "name": "FIAP-IoT-Presença",
+        "name": "FIAP-IoT-Vibração",
         "tab": "3971d7500fb1aa4a",
         "order": 3,
         "disp": true,
@@ -414,11 +414,11 @@
         "className": ""
     },
     {
-        "id": "21502a201e82e854",
+        "id": "65eb49276087a1bb",
         "type": "telegram bot",
         "botname": "FIAPIoTBot",
         "usernames": "",
-        "chatids": "6239670426",
+        "chatids": "",
         "baseapiurl": "",
         "testenvironment": false,
         "updatemode": "polling",
@@ -449,11 +449,11 @@
         "hidden": false
     },
     {
-        "id": "67a93ff787d8fb25",
+        "id": "6fe74012f1773369",
         "type": "global-config",
         "env": [],
         "modules": {
-            "node-red-dashboard": "3.6.5",
+            "node-red-dashboard": "3.6.6",
             "node-red-contrib-ui-led": "0.4.11",
             "node-red-contrib-telegrambot": "16.3.2"
         }
