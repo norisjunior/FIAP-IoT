@@ -1,0 +1,54 @@
+[
+    {
+        "id": "03068e432e3f39fa",
+        "type": "alexa-remote-routine",
+        "z": "d282e4778fbdbe1e",
+        "name": "Fala temp",
+        "account": "5274f35b88fe19ae",
+        "routineNode": {
+            "type": "speak",
+            "payload": {
+                "type": "regular",
+                "text": {
+                    "type": "msg",
+                    "value": "payload"
+                },
+                "devices": [
+                    "G0922H07301304JT"
+                ]
+            }
+        },
+        "x": 1000,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5274f35b88fe19ae",
+        "type": "alexa-remote-account",
+        "name": "",
+        "authMethod": "proxy",
+        "proxyOwnIp": "192.168.15.182",
+        "proxyPort": 3456,
+        "cookieFile": "authFile",
+        "refreshInterval": "3",
+        "alexaServiceHost": "alexa.amazon.com.br",
+        "pushDispatchHost": "",
+        "amazonPage": "amazon.com.br",
+        "acceptLanguage": "pt-BR",
+        "onKeywordInLanguage": "on",
+        "userAgent": "",
+        "usePushConnection": "on",
+        "autoInit": "on",
+        "autoQueryActivityOnTrigger": "off"
+    },
+    {
+        "id": "f3baacb056e48536",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-alexa-remote2-applestrudel": "5.0.52"
+        }
+    }
+]

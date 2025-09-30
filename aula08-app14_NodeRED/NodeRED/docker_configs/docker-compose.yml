@@ -6,6 +6,7 @@ services:
     container_name: NorisNodeRED
     ports:
       - "1880:1880"
+      - "3456:3456"
     environment:
       - TZ=America/Sao_Paulo
     restart: unless-stopped
