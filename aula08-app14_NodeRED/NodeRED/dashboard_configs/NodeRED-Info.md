@@ -22,21 +22,15 @@ return [ temp, umid, ic, dist, mov ];
 
 Function: *alerta distância*
 // Distância
-const distance = parseFloat(msg.payload);
-const threshold = 50;
-
-if (distance < threshold) {
-    // Prepara a mensagem
-    msg.payload = {
-        type: "message",
-        chatId: "6239670426",
-        content: `ALERTA: Objeto detectado a ${distance} cm (gatilho: ${threshold} cm)!`
-    };
-    return msg;
+msg.payload = {
+    type: "message",
+    chatId: "6239670426",
+    content: `ALERTA: Objeto detectado a ${msg.payload} cm!`
 }
 
-// Sem alerta
-return null;
+return msg;
+
+
 
 Function: *Alerta Presença*
 // Movimento (booleano) - com validação

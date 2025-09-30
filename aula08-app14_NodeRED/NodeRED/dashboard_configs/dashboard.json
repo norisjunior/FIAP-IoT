@@ -250,7 +250,7 @@
         "type": "function",
         "z": "d282e4778fbdbe1e",
         "name": "Alerta Distância",
-        "func": "// Distância\nconst distance = parseFloat(msg.payload);\nconst threshold = 50;\n\nif (distance < threshold) {\n    // Prepara a mensagem\n    msg.payload = {\n        type: \"message\",\n        chatId: \"6239670426\",\n        content: `ALERTA: Objeto detectado a ${distance} cm (gatilho: ${threshold} cm)!`\n    };\n    return msg;\n}\n\n// Sem alerta\nreturn null;",
+        "func": "// Distância\n// Prepara a mensagem\nmsg.payload = {\n    type: \"message\",\n    chatId: \"6239670426\",\n    content: `ALERTA: Objeto detectado a ${msg.payload} cm!`\n};\nreturn msg;\n}\n\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,

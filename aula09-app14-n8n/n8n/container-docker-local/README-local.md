@@ -35,9 +35,12 @@ exit
 ```
 
 ## 3. Criar arquivos (cole o conteúdo dos arquivos)
+```
 vim docker-compose.yml
+```
+```
 vim .env
-
+```
 
 ## 4. Gerar chave de criptografia
 
