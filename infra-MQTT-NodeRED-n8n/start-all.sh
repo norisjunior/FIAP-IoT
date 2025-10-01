@@ -9,14 +9,19 @@ echo "================================================"
 echo "Configurando e iniciando todos os serviços..."
 echo "================================================"
 
+
+cd ~
+mkdir IoTStack
+cd IoTStack
+
 # ============================================
 # MQTT BROKER
 # ============================================
 echo ""
 echo "[1/3] Configurando MQTT Broker..."
 
-mkdir -p ~/mqtt-broker
-cd ~/mqtt-broker
+mkdir -p mqtt-broker
+cd mqtt-broker
 
 # Criar docker-compose.yml
 cat > docker-compose.yml << 'EOF'
@@ -42,6 +47,8 @@ echo "✓ Arquivos do MQTT Broker criados"
 echo "  Subindo MQTT Broker..."
 sudo docker compose up -d
 echo "✓ MQTT Broker iniciado"
+cd ..
+
 
 # ============================================
 # NODE-RED
@@ -49,8 +56,8 @@ echo "✓ MQTT Broker iniciado"
 echo ""
 echo "[2/3] Configurando Node-RED..."
 
-mkdir -p ~/nodered
-cd ~/nodered
+mkdir -p nodered
+cd nodered
 
 # Criar docker-compose.yml
 cat > docker-compose.yml << 'EOF'
@@ -70,6 +77,7 @@ echo "✓ Arquivos do Node-RED criados"
 echo "  Subindo Node-RED..."
 sudo docker compose up -d
 echo "✓ Node-RED iniciado"
+cd ..
 
 # ============================================
 # N8N
@@ -77,8 +85,8 @@ echo "✓ Node-RED iniciado"
 echo ""
 echo "[3/3] Configurando n8n..."
 
-mkdir -p ~/n8n
-cd ~/n8n
+mkdir -p n8n
+cd n8n
 
 # Criar estrutura de diretórios
 mkdir -p ./n8n_data ./pg_data
@@ -159,6 +167,8 @@ echo "✓ Arquivos do n8n criados"
 echo "  Subindo n8n..."
 sudo docker compose up -d
 echo "✓ n8n iniciado"
+cd ..
+
 
 # ============================================
 # FINALIZAÇÃO
