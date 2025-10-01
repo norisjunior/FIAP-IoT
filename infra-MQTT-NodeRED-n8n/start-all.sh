@@ -9,8 +9,6 @@ echo "================================================"
 echo "Configurando e iniciando todos os serviços..."
 echo "================================================"
 
-
-cd ~
 mkdir IoTStack
 cd IoTStack
 
