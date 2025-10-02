@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script completo para configurar e subir MQTT Broker, Node-RED e n8n
+# Script completo para configurar e subir MQTT Broker, Node-RED, n8n e Grafana
 # WSL2 Ubuntu
 
 set -e
@@ -16,7 +16,7 @@ cd IoTStack
 # MQTT BROKER
 # ============================================
 echo ""
-echo "[1/3] Configurando MQTT Broker..."
+echo "[1/4] Configurando MQTT Broker..."
 
 mkdir -p mqtt-broker
 cd mqtt-broker
@@ -52,7 +52,7 @@ cd ..
 # NODE-RED
 # ============================================
 echo ""
-echo "[2/3] Configurando Node-RED..."
+echo "[2/4] Configurando Node-RED..."
 
 mkdir -p nodered
 cd nodered
@@ -81,7 +81,7 @@ cd ..
 # N8N
 # ============================================
 echo ""
-echo "[3/3] Configurando n8n..."
+echo "[3/4] Configurando n8n..."
 
 mkdir -p n8n
 cd n8n
@@ -167,6 +167,38 @@ sudo docker compose up -d
 echo "✓ n8n iniciado"
 cd ..
 
+# ============================================
+# GRAFANA
+# ============================================
+echo ""
+echo "[4/4] Configurando Grafana..."
+
+mkdir -p grafana
+cd grafana
+
+# Criar docker-compose.yml
+cat > docker-compose.yml << 'EOF'
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    volumes:
+      # Garante que seus dashboards e configs persistam!
+      - grafana-storage:/var/lib/grafana
+volumes:
+  grafana-storage:
+    # Cria o volume para o armazenamento persistente
+EOF
+
+echo "✓ Arquivos do Grafana criados"
+echo "  Subindo Grafana..."
+sudo docker compose up -d
+echo "✓ Grafana iniciado"
+cd ..
+
 
 # ============================================
 # FINALIZAÇÃO
@@ -179,14 +211,17 @@ echo ""
 echo "MQTT Broker: porta 1883 (MQTT) e 9001 (WebSocket)"
 echo "Node-RED:    http://localhost:1880"
 echo "n8n:         http://localhost:5678"
+echo "Grafana:     http://localhost:3000"
 echo ""
 echo "Verificar logs:"
 echo "  sudo docker logs mqtt-broker"
 echo "  sudo docker logs NorisNodeRED"
 echo "  sudo docker logs n8n-n8n-1"
+echo "  sudo docker logs grafana"
 echo ""
 echo "Diretórios criados:"
-echo "  ~/mqtt-broker"
-echo "  ~/nodered"
-echo "  ~/n8n"
+echo "  IoTStack/mqtt-broker"
+echo "  IoTStack/nodered"
+echo "  IoTStack/n8n"
+echo "  IoTStack/grafana"
 echo ""
