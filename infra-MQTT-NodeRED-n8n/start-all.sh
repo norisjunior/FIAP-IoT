@@ -9,6 +9,10 @@ echo "================================================"
 echo "Configurando e iniciando todos os serviços..."
 echo "================================================"
 
+if [ -d "IoTStack" ]; then
+  rm -rf "IoTStack"
+fi
+
 mkdir IoTStack
 cd IoTStack
 
