@@ -4,9 +4,9 @@
 #include "ESP32SensorsLED.hpp"
 
 namespace ESP32Sensors {
-	void beginAll() {
-		Ambiente::inicializar();
-		Accel::inicializar();
-		LED::inicializar();
+	void beginAll(uint8_t dhtPin, uint8_t dhtModel, uint8_t clPin, uint8_t daPin, uint8_t ledPin) {
+		Ambiente::inicializar(dhtPin, dhtModel);
+		Accel::inicializar(clPin, daPin);
+		LED::inicializar(ledPin);
 	}
 }

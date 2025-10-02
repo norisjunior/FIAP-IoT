@@ -7,11 +7,11 @@
 #include "ESP32Sensors.hpp"
 
 /* ---- Config Sensores ---- */
-// #define SCLPIN 19
-// #define SDAPIN 18
-// const uint8_t DHT_PIN = 26;
-// #define DHT_MODEL DHT22
-// const uint8_t LED_PIN = 27;
+const static uint8_t SCL_PIN   = 19;
+const static uint8_t SDA_PIN   = 18;
+const static uint8_t DHT_PIN   = 26;
+const static uint8_t DHT_MODEL = DHT22;
+const static uint8_t LED_PIN   = 27;
 
 /* ---- Config Wi‑Fi ---- */
 const char* WIFI_SSID     = "Wokwi-GUEST";
@@ -19,7 +19,7 @@ const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_SERVER     "192.168.15.46"   //10.63.106.231
+#define MQTT_SERVER     "host.wokwi.internal"   //10.63.106.231 - IP do Raspberry Pi
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/aula09/noris/motor/dados"
 #define MQTT_SUB_TOPIC  "FIAPIoT/aula09/noris/motor/cmd"
@@ -52,7 +52,7 @@ void setup() {
 
   //Inicializa todos os sensores
   Serial.println("Inicializando sensores...");
-  ESP32Sensors::beginAll();
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, SCL_PIN, SDA_PIN, LED_PIN);
 
   // Liga LED indicando motor funcionando
   ESP32Sensors::LED::on();

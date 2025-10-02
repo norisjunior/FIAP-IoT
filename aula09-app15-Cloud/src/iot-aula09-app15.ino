@@ -7,11 +7,11 @@
 #include "ESP32Sensors.hpp"
 
 /* ---- Config Sensores ---- */
-// #define SCLPIN 19
-// #define SDAPIN 18
-// const uint8_t DHT_PIN = 26;
-// #define DHT_MODEL DHT22
-// const uint8_t LED_PIN = 27;
+const static uint8_t SCL_PIN   = 19;
+const static uint8_t SDA_PIN   = 18;
+const static uint8_t DHT_PIN   = 26;
+const static uint8_t DHT_MODEL = DHT22;
+const static uint8_t LED_PIN   = 27;
 
 /* ---- Config Wi‑Fi ---- */
 const char* WIFI_SSID     = "Wokwi-GUEST";
@@ -52,7 +52,7 @@ void setup() {
 
   //Inicializa todos os sensores
   Serial.println("Inicializando sensores...");
-  ESP32Sensors::beginAll();
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, SCL_PIN, SDA_PIN, LED_PIN);
 
   // Liga LED indicando motor funcionando
   ESP32Sensors::LED::on();

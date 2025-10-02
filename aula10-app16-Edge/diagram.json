@@ -15,12 +15,12 @@
     [ "imu1:GND", "esp:GND.2", "black", [ "v-134.4", "h-95.92" ] ],
     [ "imu1:SCL", "esp:19", "limegreen", [ "v0" ] ],
     [ "imu1:SDA", "esp:18", "green", [ "v0" ] ],
-    [ "led1:A", "esp:14", "green", [ "v0" ] ],
+    [ "led1:A", "esp:27", "green", [ "v0" ] ],
     [ "led1:C", "esp:GND.1", "black", [ "v0" ] ],
     [ "imu1:AD0", "esp:GND.3", "orange", [ "v0" ] ],
     [ "dht1:VCC", "esp:3V3", "red", [ "v19.2", "h-38.4" ] ],
     [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h28.8" ] ],
-    [ "dht1:SDA", "esp:27", "green", [ "v28.8", "h-67.1", "v144" ] ]
+    [ "dht1:SDA", "esp:26", "green", [ "v28.8", "h-67.1", "v144" ] ]
   ],
   "dependencies": {}
 }

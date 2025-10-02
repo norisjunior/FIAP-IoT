@@ -1,0 +1,6 @@
+URL = "https://us-east-1-1.aws.cloud2.influxdata.com/api/v2/write"
+ORG = "e044ac59f07be199"
+BUCKET = "IoTSensores"
+TOKEN = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ=="
+MEASUREMENT = "sensores_iot"
+TAG/DEVICE_ID = "IoTDeviceNoris001"
