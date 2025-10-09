@@ -165,6 +165,7 @@ services:
       N8N_ENCRYPTION_KEY: XiCegB07AWfY5H7DxNrVrHkUuEe9uUs3
       N8N_LOG_LEVEL: info
       N8N_RUNNERS_ENABLED: true
+      N8N_SECURE_COOKIE: false
     ports:
       - '5678:5678'
     volumes:

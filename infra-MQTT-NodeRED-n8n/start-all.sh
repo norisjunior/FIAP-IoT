@@ -172,6 +172,7 @@ services:
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
       N8N_LOG_LEVEL: info
       N8N_RUNNERS_ENABLED: true
+      N8N_SECURE_COOKIE: false
     ports:
       - '${N8N_PORT}:5678'  # Expõe para qualquer interface
     volumes:
