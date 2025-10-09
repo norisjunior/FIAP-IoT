@@ -1,5 +1,5 @@
 # Script completo para configurar e subir MQTT Broker, Node-RED, n8n, Grafana e InfluxDB
-# Windows 11 - Docker Compose único
+# Windows 11 - Docker Compose unico
 
 $ErrorActionPreference = "Stop"
 
@@ -8,7 +8,7 @@ Write-Host "Configurando e iniciando plataforma IoT..." -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 
 if (Test-Path "IoTStack") {
-    Write-Host "Removendo diretório IoTStack existente..." -ForegroundColor Yellow
+    Write-Host "Removendo diretorio IoTStack existente..." -ForegroundColor Yellow
     Remove-Item -Path "IoTStack" -Recurse -Force
 }
 
@@ -16,10 +16,10 @@ New-Item -ItemType Directory -Path "IoTStack" | Out-Null
 Set-Location "IoTStack"
 
 # ============================================
-# ESTRUTURA DE DIRETÓRIOS
+# ESTRUTURA DE DIRETORIOS
 # ============================================
 Write-Host ""
-Write-Host "Criando estrutura de diretórios..." -ForegroundColor Yellow
+Write-Host "Criando estrutura de diretorios..." -ForegroundColor Yellow
 
 New-Item -ItemType Directory -Path "mqtt-broker" -Force | Out-Null
 New-Item -ItemType Directory -Path "nodered" -Force | Out-Null
@@ -28,20 +28,31 @@ New-Item -ItemType Directory -Path "n8n\pg_data" -Force | Out-Null
 New-Item -ItemType Directory -Path "influxdb" -Force | Out-Null
 New-Item -ItemType Directory -Path "grafana" -Force | Out-Null
 
-Write-Host "✓ Estrutura criada" -ForegroundColor Green
+Write-Host "[OK] Estrutura criada" -ForegroundColor Green
 
 # ============================================
-# CONFIGURAÇÕES INDIVIDUAIS
+# CONFIGURACOES INDIVIDUAIS
 # ============================================
 
 # MQTT Broker
+#Write-Host ""
+#Write-Host "Configurando MQTT Broker..." -ForegroundColor Yellow
+#$mosquittoConf = @"
+#listener 1883
+#allow_anonymous true
+#"@
+#$mosquittoConf | Out-File -FilePath "mqtt-broker\mosquitto.conf" -Encoding UTF8
+#Write-Host "[OK] MQTT configurado" -ForegroundColor Green
+# MQTT Broker
 Write-Host ""
 Write-Host "Configurando MQTT Broker..." -ForegroundColor Yellow
-@"
+$mosquittoConf = @"
 listener 1883
 allow_anonymous true
-"@ | Out-File -FilePath "mqtt-broker\mosquitto.conf" -Encoding UTF8
-Write-Host "✓ MQTT configurado" -ForegroundColor Green
+"@
+[System.IO.File]::WriteAllText("$PWD\mqtt-broker\mosquitto.conf", $mosquittoConf, [System.Text.UTF8Encoding]::new($false))
+Write-Host "[OK] MQTT configurado" -ForegroundColor Green
+
 
 # Node-RED
 Write-Host ""
@@ -49,9 +60,23 @@ Write-Host "Configurando Node-RED..." -ForegroundColor Yellow
 $NODERED_PASSWORD = "FIAPIoT"
 Write-Host "  Gerando hash da senha..." -ForegroundColor Gray
 
-$NODERED_HASH = docker run --rm python:3.9-slim sh -c "pip install -q --no-warn-script-location bcrypt 2>null && python -c `"import bcrypt; print(bcrypt.hashpw(b'$NODERED_PASSWORD', bcrypt.gensalt(rounds=8)).decode())`""
+# Criar script Python temporario
+$pythonScript = @"
+import bcrypt
+import sys
+password = sys.argv[1]
+hash_result = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=8))
+print(hash_result.decode())
+"@
+$pythonScript | Out-File -FilePath "gen_hash.py" -Encoding UTF8
 
-@"
+# Executar via Docker
+$NODERED_HASH = docker run --rm -v "${PWD}:/work" -w /work python:3.9-slim sh -c "pip install -q bcrypt 2>/dev/null && python gen_hash.py $NODERED_PASSWORD"
+
+# Remover script temporario
+Remove-Item "gen_hash.py" -Force
+
+$noderedSettings = @"
 module.exports = {
     adminAuth: {
         type: "credentials",
@@ -62,37 +87,33 @@ module.exports = {
         }]
     }
 }
-"@ | Out-File -FilePath "nodered\settings.js" -Encoding UTF8
-Write-Host "✓ Node-RED configurado" -ForegroundColor Green
+"@
+$noderedSettings | Out-File -FilePath "nodered\settings.js" -Encoding UTF8
+Write-Host "[OK] Node-RED configurado" -ForegroundColor Green
 
 # n8n
 Write-Host ""
 Write-Host "Configurando n8n..." -ForegroundColor Yellow
-@"
-# Configurações do Banco de Dados
+$n8nEnv = @"
 POSTGRES_DB=n8n
 POSTGRES_USER=n8nuser
 POSTGRES_PASSWORD=minha_senha_super_secreta
-
-# Configurações do N8N para LOCALHOST
 N8N_DOMAIN=localhost
 N8N_PROTOCOL=http
 N8N_PORT=5678
-
-# Chave de criptografia
 N8N_ENCRYPTION_KEY=XiCegB07AWfY5H7DxNrVrHkUuEe9uUs3
-"@ | Out-File -FilePath "n8n\.env" -Encoding UTF8
-Write-Host "✓ n8n configurado" -ForegroundColor Green
+"@
+$n8nEnv | Out-File -FilePath "n8n\.env" -Encoding UTF8
+Write-Host "[OK] n8n configurado" -ForegroundColor Green
 
 # ============================================
-# DOCKER COMPOSE ÚNICO
+# DOCKER COMPOSE UNICO
 # ============================================
 Write-Host ""
-Write-Host "Criando docker-compose.yml único..." -ForegroundColor Yellow
+Write-Host "Criando docker-compose.yml unico..." -ForegroundColor Yellow
 
-@"
+$dockerCompose = @"
 services:
-  # MQTT Broker
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mqtt-broker
@@ -105,7 +126,6 @@ services:
     networks:
       - iot-network
 
-  # Node-RED
   node-red:
     image: norisjunior/nodered-norisiot:latest
     container_name: NorisNodeRED
@@ -123,7 +143,6 @@ services:
       - mosquitto
       - influxdb
 
-  # PostgreSQL para n8n
   postgres:
     image: postgres:15
     container_name: n8n-postgres
@@ -142,7 +161,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # n8n
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
@@ -173,7 +191,6 @@ services:
       postgres:
         condition: service_healthy
 
-  # InfluxDB
   influxdb:
     image: influxdb:2.7
     container_name: influxdb
@@ -194,7 +211,6 @@ services:
     networks:
       - iot-network
 
-  # Grafana
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -216,15 +232,16 @@ volumes:
   influxdb-data:
   influxdb-config:
   grafana-storage:
-"@ | Out-File -FilePath "docker-compose.yml" -Encoding UTF8
+"@
+$dockerCompose | Out-File -FilePath "docker-compose.yml" -Encoding UTF8
 
-Write-Host "✓ docker-compose.yml criado" -ForegroundColor Green
+Write-Host "[OK] docker-compose.yml criado" -ForegroundColor Green
 
 # ============================================
-# INICIALIZAR SERVIÇOS
+# INICIALIZAR SERVICOS
 # ============================================
 Write-Host ""
-Write-Host "Subindo todos os serviços..." -ForegroundColor Yellow
+Write-Host "Subindo todos os servicos..." -ForegroundColor Yellow
 docker compose up -d
 
 Write-Host ""
@@ -233,13 +250,13 @@ Write-Host "Plataforma IoT configurada e iniciada!" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "MQTT Broker: porta 1883 (MQTT) e 9001 (WebSocket)" -ForegroundColor White
-Write-Host "Node-RED:    http://localhost:1880 (usuário: admin / senha: $NODERED_PASSWORD)" -ForegroundColor White
-Write-Host "n8n:         http://localhost:5678 (usuário/senha: gere ao acessar pela primeira vez)" -ForegroundColor White
-Write-Host "InfluxDB:    http://localhost:8086 (usuário: admin / senha: FIAP@123)" -ForegroundColor White
+Write-Host "Node-RED:    http://localhost:1880 (usuario: admin / senha: $NODERED_PASSWORD)" -ForegroundColor White
+Write-Host "n8n:         http://localhost:5678 (usuario/senha: gere ao acessar)" -ForegroundColor White
+Write-Host "InfluxDB:    http://localhost:8086 (usuario: admin / senha: FIAP@123)" -ForegroundColor White
 Write-Host "  Org:       fiapiot" -ForegroundColor Gray
 Write-Host "  Bucket:    sensores" -ForegroundColor Gray
 Write-Host "  Token:     TOKEN_SUPER_SECRETO_1234567890" -ForegroundColor Gray
-Write-Host "Grafana:     http://localhost:3000 (usuário/senha: admin/admin)" -ForegroundColor White
+Write-Host "Grafana:     http://localhost:3000 (usuario/senha: admin/admin)" -ForegroundColor White
 Write-Host ""
 Write-Host "Verificar logs:" -ForegroundColor Yellow
 Write-Host "  docker logs mqtt-broker" -ForegroundColor Gray
@@ -248,7 +265,7 @@ Write-Host "  docker logs n8n" -ForegroundColor Gray
 Write-Host "  docker logs influxdb" -ForegroundColor Gray
 Write-Host "  docker logs grafana" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Parar todos os serviços:" -ForegroundColor Yellow
+Write-Host "Parar todos os servicos:" -ForegroundColor Yellow
 Write-Host "  cd IoTStack" -ForegroundColor Gray
 Write-Host "  docker compose down" -ForegroundColor Gray
 Write-Host ""
