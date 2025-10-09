@@ -65,7 +65,7 @@ cd nodered
 NODERED_PASSWORD="FIAPIoT"
 # Gera o hash da senha usando bcrypt
 echo "  Gerando hash da senha..."
-NODERED_HASH=$(docker run --rm -i node:18-alpine sh -c "npm install -g bcrypt && node -e \"const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('$NODERED_PASSWORD', 8));\"")
+NODERED_HASH=$(docker run --rm python:3.9-slim sh -c "pip install -q bcrypt && python -c \"import bcrypt; print(bcrypt.hashpw(b'$NODERED_PASSWORD', bcrypt.gensalt(rounds=8)).decode())\"")
 
 # Criar settings.js com autenticação
 cat > settings.js << EOF
