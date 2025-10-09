@@ -65,7 +65,7 @@ cd nodered
 NODERED_PASSWORD="FIAPIoT"
 # Gera o hash da senha usando bcrypt
 echo "  Gerando hash da senha..."
-NODERED_HASH=$(docker run --rm python:3.9-slim sh -c "pip install -q bcrypt && python -c \"import bcrypt; print(bcrypt.hashpw(b'$NODERED_PASSWORD', bcrypt.gensalt(rounds=8)).decode())\"")
+NODERED_HASH=$(docker run --rm python:3.9-slim sh -c "pip install -q --no-warn-script-location bcrypt 2>/dev/null && python -c \"import bcrypt; print(bcrypt.hashpw(b'$NODERED_PASSWORD', bcrypt.gensalt(rounds=8)).decode())\"")
 
 # Criar settings.js com autenticação
 cat > settings.js << EOF
@@ -237,7 +237,7 @@ echo ""
 echo "MQTT Broker: porta 1883 (MQTT) e 9001 (WebSocket)"
 echo "Node-RED:    http://localhost:1880 (usuário: admin / senha: $NODERED_PASSWORD)"
 echo "n8n:         http://localhost:5678 (usuário/senha: gere ao acessar pela primeira vez)"
-echo "Grafana:     http://localhost:3000 (usuário/senha: ```admin/admin``` - troque ao acessar pela primeira vez)"
+echo "Grafana:     http://localhost:3000 (usuário/senha: admin/admin - troque ao acessar pela primeira vez)"
 echo ""
 echo "Verificar logs:"
 echo "  sudo docker logs mqtt-broker"
