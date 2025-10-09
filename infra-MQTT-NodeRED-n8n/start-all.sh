@@ -61,6 +61,26 @@ echo "[2/4] Configurando Node-RED..."
 mkdir -p nodered
 cd nodered
 
+# *** PERSONALIZE AQUI: Altere a senha do Node-RED ***
+NODERED_PASSWORD="FIAPIoT"
+# Gera o hash da senha usando bcrypt
+echo "  Gerando hash da senha..."
+NODERED_HASH=$(docker run --rm -i node:18-alpine sh -c "npm install -g bcrypt && node -e \"const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('$NODERED_PASSWORD', 8));\"")
+
+# Criar settings.js com autenticação
+cat > settings.js << EOF
+module.exports = {
+    adminAuth: {
+        type: "credentials",
+        users: [{
+            username: "admin",
+            password: "$NODERED_HASH",
+            permissions: "*"
+        }]
+    }
+}
+EOF
+
 # Criar docker-compose.yml
 cat > docker-compose.yml << 'EOF'
 services:
@@ -72,13 +92,15 @@ services:
       - "3456:3456"
     environment:
       - TZ=America/Sao_Paulo
+    volumes:
+      - ./settings.js:/data/settings.js
     restart: unless-stopped
 EOF
 
 echo "✓ Arquivos do Node-RED criados"
 echo "  Subindo Node-RED..."
 sudo docker compose up -d
-echo "✓ Node-RED iniciado"
+echo "✓ Node-RED iniciado (usuário: admin / senha: $NODERED_PASSWORD)"
 cd ..
 
 # ============================================
@@ -213,9 +235,9 @@ echo "Todos os serviços configurados e iniciados!"
 echo "================================================"
 echo ""
 echo "MQTT Broker: porta 1883 (MQTT) e 9001 (WebSocket)"
-echo "Node-RED:    http://localhost:1880"
-echo "n8n:         http://localhost:5678"
-echo "Grafana:     http://localhost:3000"
+echo "Node-RED:    http://localhost:1880 (usuário: admin / senha: $NODERED_PASSWORD)"
+echo "n8n:         http://localhost:5678 (usuário/senha: gere ao acessar pela primeira vez)"
+echo "Grafana:     http://localhost:3000 (usuário/senha: `admin/admin` - troque ao acessar pela primeira vez)"
 echo ""
 echo "Verificar logs:"
 echo "  sudo docker logs mqtt-broker"
