@@ -13,7 +13,6 @@ cd IoTStack
 
 # n8n
 echo ""
-cd IoTStack
 sudo docker compose down
 cd ..
 
