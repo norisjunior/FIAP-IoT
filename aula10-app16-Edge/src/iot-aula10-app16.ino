@@ -19,7 +19,7 @@ const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_SERVER     "host.wokwi.internal"   //10.63.106.231 - IP do Raspberry Pi
+#define MQTT_SERVER     "192.168.15.46"   //10.63.106.231 - IP do Raspberry Pi
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/aula09/noris/motor/dados"
 #define MQTT_SUB_TOPIC  "FIAPIoT/aula09/noris/motor/cmd"

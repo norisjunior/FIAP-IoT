@@ -1,0 +1,314 @@
+{
+  "name": "Condições de operação da sala1",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/sala1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c882212d-5c51-4e9d-b963-58d91e4d3fd9",
+      "name": "MQTT Trigger",
+      "credentials": {
+        "mqtt": {
+          "id": "fIxoQAHFVg5UsCP5",
+          "name": "EMQx Broker"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1) Usa o campo message (pode vir string JSON ou objeto)\nconst msg = $json.message;\n\n// 2) Armazena na variável data e o timestamp correto\nconst data = JSON.parse(msg);\n\n// --> timestamp local de São Paulo (simples)\nconst tsSp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });\n\n// 3) Monta um objeto “limpo” só com as variáveis que queremos\nreturn {\n  json: {\n    temp: data.temp,\n    umid: data.umid,\n    ic:   data.ic,\n    dist: data.dist,\n    mov:  data.mov,\n    timestamp: tsSp,\n    topic: $json.topic  // preserva o tópico (útil em logs/mensagens)\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6f9ad8b8-14e8-4d5f-a598-498ed3aaf93d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "30d92ba4-0258-4d0e-82b4-5ca975cbda43",
+              "leftValue": "={{ $json.ic }}",
+              "rightValue": 35,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        -192
+      ],
+      "id": "91a3a926-8822-48d1-8e3c-74cd0d07dc29",
+      "name": "Índice de calor alto"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9568ccbd-8555-447f-b7d8-9bf45b9a9b20",
+              "leftValue": "={{ $json.dist }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "d0449ae2-4f7a-4428-92dc-e41cf0a39008",
+      "name": "Objeto próximo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "76127afd-8b08-46cd-af16-9d3b33a67ec8",
+              "leftValue": "={{ $json.mov }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        192
+      ],
+      "id": "a7ba9daf-49b2-417a-92f2-dccbffac2349",
+      "name": "Movimento detectado"
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=🔥 Alerta: Índice de Calor Alto!\nSala: {{$json.topic}}\nTemperatura: {{$json.temp}}°C\nUmidade: {{$json.umid}}%\nÍndice de Calor: {{ $json.ic }}ºC\ntimestamp: {{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        -208
+      ],
+      "id": "0533f08d-d730-4755-abab-7b51c05ed043",
+      "name": "Mensagem: IC",
+      "webhookId": "97d7f95f-fc26-4792-b444-4dbd445be755",
+      "credentials": {
+        "telegramApi": {
+          "id": "MdKRyIQ02l85u6FF",
+          "name": "Conta Telegram Noris"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=📏 Alerta: Objeto próximo!\nSala: {{$json.topic}}\nDistância: {{ $json.dist }} cm\ntimestamp={{$json.timestamp}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        -16
+      ],
+      "id": "1a036610-3d61-4611-a0b8-fba1048a5e0a",
+      "name": "Mensagem: Distância",
+      "webhookId": "cecfd1a9-a1d8-488c-8ea4-86e2d7efab62",
+      "credentials": {
+        "telegramApi": {
+          "id": "MdKRyIQ02l85u6FF",
+          "name": "Conta Telegram Noris"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=👁️ Alerta: Movimento detectado!\nSala: {{$json.topic}}\ntimestamp={{$json.timestamp}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        176
+      ],
+      "id": "8e1788e0-2e12-4d37-a555-5bceef64e7cb",
+      "name": "Mensagem: movimento",
+      "webhookId": "8ab1ba6f-bedc-471a-8707-573ee15d4d49",
+      "credentials": {
+        "telegramApi": {
+          "id": "MdKRyIQ02l85u6FF",
+          "name": "Conta Telegram Noris"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "topic": "FIAPIoT/alexa",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -352
+      ],
+      "id": "19b9d626-d488-470e-ba65-8b18b17dae70",
+      "name": "MQTT",
+      "credentials": {
+        "mqtt": {
+          "id": "fIxoQAHFVg5UsCP5",
+          "name": "EMQx Broker"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "MQTT Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Objeto próximo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Índice de calor alto",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Movimento detectado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Objeto próximo": {
+      "main": [
+        [
+          {
+            "node": "Mensagem: Distância",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Índice de calor alto": {
+      "main": [
+        [
+          {
+            "node": "MQTT",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mensagem: IC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Movimento detectado": {
+      "main": [
+        [
+          {
+            "node": "Mensagem: movimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MQTT": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ad1cd70d-1d6d-430d-a26a-c158a6c7e4ec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "OCV1sS4b9nEdrNGe",
+  "tags": []
+}
