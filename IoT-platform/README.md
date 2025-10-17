@@ -14,18 +14,30 @@ Script completo que cria todos os arquivos de configuração e sobe os serviços
 
 ## Como usar
 
+### 0. Acessar a máquina ubuntu no WSL2 (exemplo com máquina ubuntu já instalada):
+```
+wsl -d ubuntu
+```
+
+- Caso precise/queira instalar a máquina ubuntu no WSL2:
+```
+wsl --install ubuntu
+```
+
+
 ### 1. Clonar o git da disciplina
 ```bash
 cd ~
+
 git clone https://github.com/norisjunior/FIAP-IoT
 ```
 
 ### 2. Acessar o diretório que contém o script automático para inicialização dos serviços
 ```bash
-cd FIAP-IoT/infra-MQTT-NodeRED-n8n/
+cd FIAP-IoT/IoT-platform/
 ```
 
-### 3. Executar o script
+### 3. Caso queira controlar os serviços individualmente, use
 ```bash
 sudo ./start-all.sh
 ```
@@ -60,6 +72,18 @@ cd IoTStack/n8n && sudo docker compose down
 cd IoTStack/grafana && sudo docker compose down
 ```
 
+### 4. Caso queira controlar os serviços como uma plataforma padrão em Docker, use:
+```
+sudo ./start-nearedge.sh
+```
+
+ATENÇÃO: quando usar nesse formato, as máquinas docker devem ser apontadas pelo nome ao qual ela foi denominada na criação. Por exemplo:
+Quando o Node-RED precisar acessar o MQTT Broker local, o nome do container criado é mqtt-broker, portanto, no Node-RED, o endereço do MQTT Broker é: mqtt-broker. Idem para o n8n.
+
+## Para parar todos os serviços:
+```
+sudo ./stop-nearedge.sh
+```
 
 
 ## Troubleshooting
