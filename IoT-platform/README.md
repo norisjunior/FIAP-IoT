@@ -80,6 +80,8 @@ sudo ./start-nearedge.sh
 ATENÇÃO: quando usar nesse formato, as máquinas docker devem ser apontadas pelo nome ao qual ela foi denominada na criação. Por exemplo:
 Quando o Node-RED precisar acessar o MQTT Broker local, o nome do container criado é mqtt-broker, portanto, no Node-RED, o endereço do MQTT Broker é: mqtt-broker. Idem para o n8n.
 
+**O script start-nearedge.sh também inicializa o influxdb local**
+
 ## Para parar todos os serviços:
 ```
 sudo ./stop-nearedge.sh
