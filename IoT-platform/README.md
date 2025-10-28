@@ -3,9 +3,10 @@
 - MQTT Broker local (mosquitto)
 - Node-RED (com plugins para MQTT, dashboard, telegram, entre outros)
 - n8n
-- grafana
+- InfluxDB
+- Grafana
 
-Script completo que cria todos os arquivos de configuração e sobe os serviços: MQTT Broker, Node-RED, n8n e grafana.
+Script completo que cria todos os arquivos de configuração e sobe os serviços: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
 
 ## Pré-requisitos
 
@@ -37,55 +38,57 @@ git clone https://github.com/norisjunior/FIAP-IoT
 cd FIAP-IoT/IoT-platform/
 ```
 
-### 3. Caso queira controlar os serviços individualmente, use
+### 3. Iniciar todos os serviços como uma plataforma integrada
 ```bash
-sudo ./start-all.sh
+sudo ./start-linux.sh
 ```
 
 O script vai:
-- Criar os diretórios `~/mqtt-broker`, `~/nodered` e `~/n8n`
-- Criar todos os arquivos de configuração (docker-compose.yml, Dockerfile, .env, etc)
-- Fazer build e subir todos os containeres
+- Criar o diretório `~/IoTStack` com subdiretórios para cada serviço
+- Criar todos os arquivos de configuração (docker-compose.yml, settings.js, .env, etc)
+- Fazer build e subir todos os containers em uma única rede Docker
 
 ## Serviços disponíveis
 
-- **MQTT Broker**: `localhost:1883` (MQTT) e `localhost:9001` (WebSocket)
-- **Node-RED**: http://localhost:1880
-- **n8n**: http://localhost:5678
-- **grafana**: http://localhost:3000
+- **MQTT Broker**: `mqtt-broker:1883` (MQTT) e `mqtt-broker:9001` (WebSocket)
+- **Node-RED**: http://localhost:1880 (usuário: admin / senha: FIAPIoT)
+- **n8n**: http://localhost:5678 (usuário/senha: gere ao acessar pela primeira vez)
+- **InfluxDB**: http://localhost:8086 (usuário: admin / senha: FIAP@123)
+  - Org: fiapiot
+  - Bucket: sensores
+  - Token: TOKEN_SUPER_SECRETO_1234567890
+- **Grafana**: http://localhost:3000 (usuário/senha: admin/admin)
 
+## Configurações de rede
 
-- No ESP32, ao usar MQTT: host.wokwi.internal, porta 1883
-- No Node-RED e n8n, quando se referir ao MQTT local: host.docker.internal, porta 1883
+Quando os serviços precisarem se comunicar entre si, use os nomes dos containers:
+- No Node-RED ou n8n, para acessar o MQTT Broker: `mqtt-broker:1883`
+- No Grafana, para acessar o InfluxDB: `influxdb:8086`
+- No ESP32 (Wokwi), para acessar o MQTT: `host.wokwi.internal:1883`
 
 ## Parar todos os serviços
 
 ```bash
-./stop-all.sh
+cd ~/IoTStack && sudo docker compose down
 ```
 
-Ou manualmente em cada diretório:
+Ou usar o script:
 ```bash
-cd IoTStack/mqtt-broker && sudo docker compose down
-cd IoTStack/nodered && sudo docker compose down
-cd IoTStack/n8n && sudo docker compose down
-cd IoTStack/grafana && sudo docker compose down
+./stop-linux.sh
 ```
 
-### 4. Caso queira controlar os serviços como uma plataforma padrão em Docker, use:
-```
-sudo ./start-nearedge.sh
-```
+### ATENÇÃO:
+A máquina docker deve ser apontada pelo nome ao qual ela foi denominada na criação.
 
-ATENÇÃO: quando usar nesse formato, as máquinas docker devem ser apontadas pelo nome ao qual ela foi denominada na criação. Por exemplo:
-Quando o Node-RED precisar acessar o MQTT Broker local, o nome do container criado é mqtt-broker, portanto, no Node-RED, o endereço do MQTT Broker é: mqtt-broker. Idem para o n8n.
+Exemplos:
+- No VSCode/Wokwi, para apontar para o MQTT Broker Local inicializado:
+    ```#define MQTT_SERVER     "host.wokwi.internal"  ```
 
-**O script start-nearedge.sh também inicializa o influxdb local**
+- No _Node-RED_ e no _n8n_, para apontar para o MQTT Broker Local inicializado:
+    Host: *mqtt-broker*
 
-## Para parar todos os serviços:
-```
-sudo ./stop-nearedge.sh
-```
+- No _Node-RED_ e no _grafana_ caso queira usar o InfluxDB Local:
+    Host: *http://influxdb:8086*
 
 
 ## Troubleshooting
@@ -97,6 +100,5 @@ Para solucionar:
 - Verifique se há algum conteiner em execução
     - Caso haja, pare/desligue
 - Outra alternativa é a exclusão do conteiner
-    - o script (start-all.sh) baixará e inicializará novamente
-- Execute novamente o passo relativo ao script ```start-all.sh```
-
+    - o script (start-linux.sh) baixará e inicializará novamente
+- Execute novamente o passo relativo ao script ```start-linux.sh```
