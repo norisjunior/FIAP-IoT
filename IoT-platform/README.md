@@ -62,8 +62,8 @@ O script vai:
 ## Configurações de rede
 
 Quando os serviços precisarem se comunicar entre si, use os nomes dos containers:
-- No Node-RED ou n8n, para acessar o MQTT Broker: `mqtt-broker:1883`
-- No Grafana, para acessar o InfluxDB: `influxdb:8086`
+- No _Node-RED_ ou _n8n_, para acessar o MQTT Broker: `mqtt-broker:1883`
+- No _Node-RED_ ou _grafana_, para acessar o InfluxDB: `influxdb:8086`
 - No ESP32 (Wokwi), para acessar o MQTT: `host.wokwi.internal:1883`
 
 ## Parar todos os serviços
@@ -76,20 +76,6 @@ Ou usar o script:
 ```bash
 ./stop-linux.sh
 ```
-
-### ATENÇÃO:
-A máquina docker deve ser apontada pelo nome ao qual ela foi denominada na criação.
-
-Exemplos:
-- No VSCode/Wokwi, para apontar para o MQTT Broker Local inicializado:
-    ```#define MQTT_SERVER     "host.wokwi.internal"  ```
-
-- No _Node-RED_ e no _n8n_, para apontar para o MQTT Broker Local inicializado:
-    Host: *mqtt-broker*
-
-- No _Node-RED_ e no _grafana_ caso queira usar o InfluxDB Local:
-    Host: *http://influxdb:8086*
-
 
 ## Troubleshooting
 
