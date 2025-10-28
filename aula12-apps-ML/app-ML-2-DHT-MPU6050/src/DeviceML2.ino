@@ -19,10 +19,10 @@ const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_SERVER     "10.76.249.231"   //10.63.106.231 - IP do Raspberry Pi
+#define MQTT_SERVER     "host.wokwi.internal"   //10.63.106.231 - IP do Raspberry Pi
 #define MQTT_PORT       1883
-#define MQTT_PUB_TOPIC  "FIAPIoT/aula09/noris/motor/dados"
-#define MQTT_SUB_TOPIC  "FIAPIoT/aula09/noris/motor/cmd"
+#define MQTT_PUB_TOPIC  "FIAPIoT/aula12/noris/motor/dados"
+#define MQTT_SUB_TOPIC  "FIAPIoT/aula12/noris/motor/cmd"
 // ATENÇÃO: ClientID DEVE SER ÚNICO NO BROKER!
 #define MQTT_CLIENT_ID  "IoTDeviceNoris001"
 PubSubClient mqttClient(wifiClient);
