@@ -19,7 +19,7 @@ const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient;
 
 /* ===================== Config MQTT ===================== */
-#define MQTT_SERVER     "broker.emqx.io"   // Broker público para testes
+#define MQTT_SERVER     "host.wokwi.internal"   // Broker público para testes
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/aula10/noris/dados/cbor"    // Tópico para dados CBOR
 #define MQTT_SUB_TOPIC  "FIAPIoT/aula10/noris/motor/cmd"     // Tópico para comandos
