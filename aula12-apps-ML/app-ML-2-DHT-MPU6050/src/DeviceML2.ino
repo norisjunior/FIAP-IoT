@@ -21,10 +21,10 @@ WiFiClient wifiClient; // Define client WiFi
 /* ---- Config MQTT ---- */
 #define MQTT_SERVER     "host.wokwi.internal"   //10.63.106.231 - IP do Raspberry Pi
 #define MQTT_PORT       1883
-#define MQTT_PUB_TOPIC  "FIAPIoT/aula12/noris/motor/dados"
-#define MQTT_SUB_TOPIC  "FIAPIoT/aula12/noris/motor/cmd"
+#define MQTT_PUB_TOPIC  "FIAPIoT/lab/noris/motor/mov/dados"
+#define MQTT_SUB_TOPIC  "FIAPIoT/lab/noris/motor/mov/cmd"
 // ATENÇÃO: ClientID DEVE SER ÚNICO NO BROKER!
-#define MQTT_CLIENT_ID  "IoTDeviceNoris001"
+#define MQTT_CLIENT_ID  "IoTDeviceNoris002_ML"
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Controle de intervalo de envio ---- */
@@ -47,7 +47,7 @@ void setup() {
   Serial.println("\n\n===================================");
   Serial.println("  SISTEMA DE MONITORAMENTO MOTOR  ");
   Serial.println("===================================");
-  Serial.println("Demonstração: Fog / Near Edge");
+  Serial.println("Device: ML2 - MPU6050 + DHT22");
   Serial.println("===================================\n");
 
   //Inicializa todos os sensores
@@ -68,7 +68,7 @@ void setup() {
   conectarMQTT();
 
   Serial.println("\nSistema embarcado inicializado!");
-  Serial.println("Envio de dados a cada 5 segundos...\n");
+  Serial.println("Envio de dados a cada 3 segundos...\n");
 }
 
 void loop() {
@@ -197,9 +197,9 @@ bool enviarDadosColetados() {
   JsonDocument doc;
   
   doc["device"] = MQTT_CLIENT_ID;
+  doc["ic"] = dadosAmbiente.ic;
   doc["temp"] = dadosAmbiente.temp;
   doc["umid"] = dadosAmbiente.umid;
-  doc["ic"] = dadosAmbiente.ic;
   doc["accel_x"] = dadosAccel.acceleration.x;
   doc["accel_y"] = dadosAccel.acceleration.y;
   doc["accel_z"] = dadosAccel.acceleration.z;

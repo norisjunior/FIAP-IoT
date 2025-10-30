@@ -1,0 +1,243 @@
+[
+    {
+        "id": "70f553bad11f5ca2",
+        "type": "tab",
+        "label": "Flow FIAPIoT ML",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "2475347b4c436397",
+        "type": "group",
+        "z": "70f553bad11f5ca2",
+        "name": "Dispositivo Movimento",
+        "style": {
+            "fill": "#bfdbef",
+            "label": true,
+            "color": "#3f5787"
+        },
+        "nodes": [
+            "f1d61c7b87f7a80e",
+            "936d6e634b654243",
+            "2f2d772fc31b8398"
+        ],
+        "x": 94,
+        "y": 159,
+        "w": 692,
+        "h": 162
+    },
+    {
+        "id": "736c625b194605b8",
+        "type": "group",
+        "z": "70f553bad11f5ca2",
+        "name": "Dispositivo Distância",
+        "style": {
+            "fill": "#ffffbf",
+            "label": true,
+            "color": "#ffC000"
+        },
+        "nodes": [
+            "691dc98f67315786",
+            "9bbf9e198a1bbdd3",
+            "1c23a2a0769c23ca"
+        ],
+        "x": 94,
+        "y": 479,
+        "w": 692,
+        "h": 182
+    },
+    {
+        "id": "f1d61c7b87f7a80e",
+        "type": "mqtt in",
+        "z": "70f553bad11f5ca2",
+        "g": "2475347b4c436397",
+        "name": "",
+        "topic": "FIAPIoT/lab/noris/motor/mov/dados",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "f57bcdae81064000",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 260,
+        "y": 200,
+        "wires": [
+            [
+                "936d6e634b654243",
+                "2f2d772fc31b8398"
+            ]
+        ]
+    },
+    {
+        "id": "936d6e634b654243",
+        "type": "debug",
+        "z": "70f553bad11f5ca2",
+        "g": "2475347b4c436397",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "706c30f0df9e1452",
+        "type": "influxdb out",
+        "z": "70f553bad11f5ca2",
+        "influxdb": "7ef6f5928a9be379",
+        "name": "Enviar InfluxDB",
+        "measurement": "motor_ml",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "e044ac59f07be199",
+        "bucket": "IoTSensores",
+        "x": 900,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "2f2d772fc31b8398",
+        "type": "function",
+        "z": "70f553bad11f5ca2",
+        "g": "2475347b4c436397",
+        "name": "Enviar Dados MOV Brutos InfluxDB",
+        "func": "// --- Leitura do payload ---\nconst p = msg.payload || {};\nconst device = p.device || \"unknown\";\nconst ic = p.ic;\nconst temp = p.temp;\nconst umid = p.umid;\nconst accel_x = p.accel_x;\nconst accel_y = p.accel_y;\nconst accel_z = p.accel_z;\nconst motor_ligado = p.motor_status;\n\n// --- Formato SIMPLES para o nó influxdb out ---\nmsg.payload = {\n    // Identificação do dispositivo\n    dispositivo: device,\n\n    // Dados dos sensores\n    IC: ic,\n    temp: temp,\n    umid: umid,\n    accel_x: accel_x,\n    accel_y: accel_y,\n    accel_z: accel_z,\n    \n    // Status do motor\n    motor_status: motor_ligado ? 1 : 0,\n    motor_text: motor_ligado ? \"ligado\" : \"desligado\",\n    \n    // Timestamp (opcional - InfluxDB pode usar o próprio)\n    timestamp: new Date().toISOString()\n};\n\n// Debug (opcional)\nnode.warn(\"Enviando MOV para InfluxDB: \" + JSON.stringify(msg.payload, null, 2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 280,
+        "wires": [
+            [
+                "706c30f0df9e1452"
+            ]
+        ]
+    },
+    {
+        "id": "691dc98f67315786",
+        "type": "mqtt in",
+        "z": "70f553bad11f5ca2",
+        "g": "736c625b194605b8",
+        "name": "",
+        "topic": "FIAPIoT/lab/noris/motor/dist/dados",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "f57bcdae81064000",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 260,
+        "y": 520,
+        "wires": [
+            [
+                "9bbf9e198a1bbdd3",
+                "1c23a2a0769c23ca"
+            ]
+        ]
+    },
+    {
+        "id": "9bbf9e198a1bbdd3",
+        "type": "function",
+        "z": "70f553bad11f5ca2",
+        "g": "736c625b194605b8",
+        "name": "Enviar Dados DIST Brutos InfluxDB",
+        "func": "// --- Leitura do payload ---\nconst p = msg.payload || {};\nconst device = p.device || \"unknown\";\nconst ic = p.ic;\nconst temp = p.temp;\nconst umid = p.umid;\nconst dist_cm = p.dist_cm;\nconst dist_alarme = p.dist_alarme;\nconst motor_ligado = p.motor_status;\n\n// --- Formato SIMPLES para o nó influxdb out ---\nmsg.payload = {\n    // Identificação do dispositivo\n    dispositivo: device,\n\n    // Dados dos sensores\n    IC: ic,\n    temp: temp,\n    umid: umid,\n    distancia_cm: dist_cm,\n    distancia_alarme: dist_alarme,\n    \n    // Status do motor\n    motor_status: motor_ligado ? 1 : 0,\n    motor_text: motor_ligado ? \"ligado\" : \"desligado\",\n    \n    // Timestamp (opcional - InfluxDB pode usar o próprio)\n    timestamp: new Date().toISOString()\n};\n\n// Debug (opcional)\nnode.warn(\"Enviando DIST para InfluxDB: \" + JSON.stringify(msg.payload, null, 2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 520,
+        "wires": [
+            [
+                "706c30f0df9e1452"
+            ]
+        ]
+    },
+    {
+        "id": "1c23a2a0769c23ca",
+        "type": "debug",
+        "z": "70f553bad11f5ca2",
+        "g": "736c625b194605b8",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "f57bcdae81064000",
+        "type": "mqtt-broker",
+        "name": "MQTT Broker local",
+        "broker": "mqtt-broker",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "7ef6f5928a9be379",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB Bucket IoTSensores",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "0ad77105919c3e79",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]

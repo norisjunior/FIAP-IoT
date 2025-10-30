@@ -50,7 +50,7 @@ namespace ESP32Sensors {
 
 			dist.cm = distancia;
 
-			if (dist.cm >= dist.limiar) {
+			if (dist.cm <= dist.limiar) {
 				dist.alarmar = true;
 			}
 
