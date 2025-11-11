@@ -77,7 +77,7 @@ def inicializar_sistema():
         )
         
         # Detecta nome correto da tabela
-        table_names = ["ML_occupancy", "ml_occupancy", '"ML_occupancy"']
+        table_names = ['"ML_occupancy_sala_FIAP"']
         
         for table_name in table_names:
             try:

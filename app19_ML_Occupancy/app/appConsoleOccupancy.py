@@ -26,6 +26,7 @@ INFLUX_ORG = "e044ac59f07be199"
 INFLUX_BUCKET = "IoTSensores"
 
 MODELO_ARQUIVO = "modelo_ocupacao_best_xgbclassifier.pkl"
+MEASUREMENT = "ML_occupancy_sala_FIAP"
 DISPOSITIVO = "FIAP_IoT_app19_001"  # Conforme mostrado na imagem
 INTERVALO = 10  # segundos
 
@@ -88,7 +89,7 @@ while True:
           "Light",
           "CO2",
           "HumidityRatio"
-        FROM "ML_occupancy"
+        FROM "{MEASUREMENT}"
         WHERE time >= now() - interval '10 minutes'
           AND "dispositivo" = '{DISPOSITIVO}'
         ORDER BY time DESC

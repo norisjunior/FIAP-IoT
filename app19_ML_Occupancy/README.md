@@ -14,12 +14,16 @@
 
 - Crie um virtualenv:
 ```
-python.exe -m pip install --upgrade pip
 python -m venv occypancyEnv
 ```
 - Ative o virtualenv criado:
 ```
 .\occupancyEnv\Scripts\Activate.ps1
+```
+
+- Atualize o pip:
+```
+python -m pip install --upgrade pi
 ```
 
 - Instale as dependências:

@@ -16,7 +16,7 @@ from influxdb_client_3 import InfluxDBClient3
 INFLUX_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
 INFLUX_TOKEN = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ=="
 INFLUX_BUCKET = "IoTSensores"
-TABELA_NOME = "ML_occupancy"
+TABELA_NOME = "ML_occupancy_sala_FIAP"
 
 # Modelo e dispositivo
 MODELO_ARQUIVO = "modelo_ocupacao_best_xgbclassifier.pkl"

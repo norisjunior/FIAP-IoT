@@ -1,0 +1,162 @@
+[
+    {
+        "id": "70f553bad11f5ca2",
+        "type": "tab",
+        "label": "Flow FIAPIoT ML Occupancy",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "2475347b4c436397",
+        "type": "group",
+        "z": "70f553bad11f5ca2",
+        "name": "Dispositivo Sala",
+        "style": {
+            "fill": "#bfdbef",
+            "label": true,
+            "color": "#3f5787"
+        },
+        "nodes": [
+            "f1d61c7b87f7a80e",
+            "936d6e634b654243",
+            "2f2d772fc31b8398"
+        ],
+        "x": 94,
+        "y": 159,
+        "w": 712,
+        "h": 162
+    },
+    {
+        "id": "f1d61c7b87f7a80e",
+        "type": "mqtt in",
+        "z": "70f553bad11f5ca2",
+        "g": "2475347b4c436397",
+        "name": "",
+        "topic": "FIAPIoT/ML_occupancy",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "f57bcdae81064000",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 200,
+        "wires": [
+            [
+                "936d6e634b654243",
+                "2f2d772fc31b8398"
+            ]
+        ]
+    },
+    {
+        "id": "936d6e634b654243",
+        "type": "debug",
+        "z": "70f553bad11f5ca2",
+        "g": "2475347b4c436397",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "706c30f0df9e1452",
+        "type": "influxdb out",
+        "z": "70f553bad11f5ca2",
+        "influxdb": "7ef6f5928a9be379",
+        "name": "Enviar InfluxDB",
+        "measurement": "ML_occupancy",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "e044ac59f07be199",
+        "bucket": "IoTSensores",
+        "x": 940,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "2f2d772fc31b8398",
+        "type": "function",
+        "z": "70f553bad11f5ca2",
+        "g": "2475347b4c436397",
+        "name": "Enviar Dados ML Occupancy InfluxDB",
+        "func": "// --- Leitura do payload ---\nconst p = msg.payload || {};\n\n// --- Formato para o nó influxdb out ---\nmsg.payload = {\n    dispositivo: p.dispositivo || \"unknown\",\n    Temperature: p.Temperature,\n    Humidity: p.Humidity,\n    Light: p.Light,\n    CO2: p.CO2,\n    HumidityRatio: p.HumidityRatio\n};\n\n// Debug\nnode.warn(\"Enviando para InfluxDB: \" + JSON.stringify(msg.payload, null, 2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 280,
+        "wires": [
+            [
+                "706c30f0df9e1452"
+            ]
+        ]
+    },
+    {
+        "id": "f57bcdae81064000",
+        "type": "mqtt-broker",
+        "name": "MQTT Broker local",
+        "broker": "mqtt-broker",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "7ef6f5928a9be379",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB Bucket IoTSensores",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "c7ec532cdddd76b3",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]
