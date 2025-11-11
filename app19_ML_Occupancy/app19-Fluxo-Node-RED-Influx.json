@@ -72,7 +72,7 @@
         "z": "70f553bad11f5ca2",
         "influxdb": "7ef6f5928a9be379",
         "name": "Enviar InfluxDB",
-        "measurement": "ML_occupancy",
+        "measurement": "ML_occupancy_sala_FIAP",
         "precision": "",
         "retentionPolicy": "",
         "database": "database",
@@ -152,7 +152,7 @@
         "rejectUnauthorized": true
     },
     {
-        "id": "c7ec532cdddd76b3",
+        "id": "7eec365be953eaf8",
         "type": "global-config",
         "env": [],
         "modules": {
