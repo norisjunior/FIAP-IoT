@@ -22,7 +22,7 @@ WiFiClient wifiClient;
 #define MQTT_HOST       "host.wokwi.internal"
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/ML_occupancy"
-#define MQTT_DEVICEID   "Noris_ESP32_Aula13"
+#define MQTT_DEVICEID   "FIAP_IoT_app19_001"
 #define MQTT_QOS        0
 #define MQTT_RETAIN     false
 PubSubClient mqttClient(wifiClient);
