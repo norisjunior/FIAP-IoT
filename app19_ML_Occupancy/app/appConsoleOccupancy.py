@@ -26,7 +26,7 @@ INFLUX_ORG = "e044ac59f07be199"
 INFLUX_BUCKET = "IoTSensores"
 
 MODELO_ARQUIVO = "modelo_ocupacao_best_xgbclassifier.pkl"
-DISPOSITIVO = "Noris_ESP32_Aula13"  # Conforme mostrado na imagem
+DISPOSITIVO = "FIAP_IoT_app19_001"  # Conforme mostrado na imagem
 INTERVALO = 10  # segundos
 
 # ===== INICIALIZAÇÃO =====

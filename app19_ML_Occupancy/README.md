@@ -1,4 +1,4 @@
-# Aula 13 - App 19
+# App 19
 
 
 ## 1. Treinar modelo de ML (pipeline)
