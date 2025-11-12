@@ -1,69 +1,130 @@
-# Aula 13 - App 19
+# App 20 - Serviço de Índice de Qualidade do Ar (AQI) aplicando Machine Learning (Redes neurais)
 
+## 1. Treinar o modelo de ML (pipeline)
 
-## 1. Treinar modelo de ML (pipeline)
+* Realize o treinamento da Rede Neural para classificação do **Índice de Qualidade do Ar (AQI)**.
+* Use o pipeline que normaliza os dados e salva o modelo e o scaler.
+* Ao final, salve os arquivos gerados:
 
-- Realizar o treinamento do modelo de ML usando o pipeline com GridSearchCV, que apresentará o melhor modelo.
-- No momento de construção deste app, o melhor modelo gerado (2025), foi o XGBoost (arquivo: modelo_ocupacao_best_xgbclassifier.pkl)
+  * `modelo_aqi_nn.keras`
+  * `preprocess_aqi.pkl`
 
-## 2. Compilar e executar o ESP32
+> O treinamento (e a geração do modelo) pode ser feito no link do Colab apresentado em sala de aula.
 
-- O ESP32 enviará informações de Temperature, Humidity, HumidityRatio, CO2, Light para o InfluxDB
+---
 
-## 3. Inicialização do servidor que obterá os dados do InfluxDB e executará o modelode ML em novos dados coletados continuamente
+## 2. Configurar e executar o ESP32
 
-- Crie um virtualenv:
+* Compile e execute o ESP32 + Wokwi (`iot-app20.ino`)
+* Ele deve publicar as medições no **tópico MQTT**:
+
+  ```
+  FIAPIoT/aqi/dados
+  ```
+* Campos publicados:
+
+  ```
+  PM2.5, PM10, NO, NO2, NOx, NH3, CO, SO2, O3, Benzene, Toluene, Xylene
+  ```
+* Cada valor pode ser simulado com potenciômetros no Wokwi.
+
+---
+
+## 3. Iniciar a plataforma IoT
+
+* Plataforma IoT foi apresentada nas aulas anteriores
+
+Acesse: https://github.com/norisjunior/FIAP-IoT/tree/main/IoT-platform
+
+---
+
+## 4. Subir o serviço de inferência (Flask / Uvicorn)
+
+- Acesse o diretório da aplicação
 ```
-python.exe -m pip install --upgrade pip
-python -m venv occypancyEnv
-```
-- Ative o virtualenv criado:
-```
-.\occupancyEnv\Scripts\Activate.ps1
+cd FIAP-IoT/app20-AQI/AQI_ML_app
 ```
 
-- Instale as dependências:
+* Crie um virtualenv:
+```
+python -m venv venv
+```
+
+* Ative o virtualenv criado:
+```
+.\venv\Scripts\Activate.ps1
+```
+
+* Atualize o pip:
+```
+python -m pip install --upgrade pip
+```
+
+* Instale as dependências:
 ```
 pip install -r requirements.txt
 ```
 
-- Observe, com cautela, o app "ML_app.py"
-    - Caso queira, abra um colab e copie e cole cada célula
-    - Insira no colab o arquivo "modelo_ocupacao_best_xgbclassifier.pkl", pois assim o colab poderá carregar o modelo e executá-lo
-    - Observe o carregamento do modelo, a conexão com o InfluxDB, a estruturação do comando SQL, a estruturação do dataframe (df), a aplicação do método .predict nos dados recentemente coletados.
+* Execute o servidor:
 
-## 4. Execute a aplicação que roda no modo "console"
 ```
-python appConsoleOccupancy.py
+uvicorn service_app:app --reload --port 8000
 ```
-Ela tem uma saída parecida com essa:
 
-🚀 Monitor de Ocupação de Sala usando ML em dados IoT
-==========================================================
-📦 Carregando modelo...
-✅ Modelo carregado: modelo_ocupacao_best_xgbclassifier.pkl
-🌐 Conectando ao InfluxDB...
-✅ Conectado ao InfluxDB
-🔄 Monitorando dispositivo: Noris_ESP32_Aula13
-⏰ Verificando a cada 10 segundos
+* Teste a API com:
 
-🔍 Consultando dados... 🆕 Novo dado encontrado!
-
-📊 Dados dos Sensores (02:58:02):
-   🌡️  Temperature: 24.6 °C
-   💧 Humidity: 40.5 %
-   💡 Light: 216.7 Lux
-   🌫️  CO2: 1323.7 ppm
-   💨 HumidityRatio: 0.004043
-
-🤖 Resultado do Modelo:
-   🟢 SALA VAZIA
-   📈 Confiança: 74.0%
-   📊 Probabilidades:
-      • Vazia: 74.0%
-      • Ocupada: 26.0%
-
-## 5. Execute a aplicação que roda no modo "web"
 ```
-python appWebOccupancy.py
+curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d '{
+  "PM2_5": 342, "PM10": 477, "NO": 10, "NO2": 51, "NOx": 40,
+  "NH3": 42, "CO": 1.7, "SO2": 17, "O3": 91,
+  "Benzene": 5.2, "Toluene": 29, "Xylene": 0.5
+}'
 ```
+
+* Saída esperada:
+
+```
+{"class":"Perigoso","probabilities":{"Aceitável":3.5151686006429372e-06,"Perigoso":0.8978066444396973,"Ruim":0.102189801633358}}
+```
+
+---
+
+## 5. Configurar o n8n
+
+* Importe o arquivo `Fluxo-n8n.json`.
+* Ajuste o nó **MQTT Trigger** para conectar em:
+
+  ```
+  Host: mqtt-broker
+  Port: 1883
+  ```
+* Ajuste o **HTTP Request** para:
+
+  ```
+  URL: http://host.docker.internal:8000/predict
+  ```
+* No nó final, configure o envio para o Telegram:
+
+  * Casos `Aceitável` e `Ruim` → INFO
+  * Caso `Perigoso` → CRITICAL
+
+---
+
+## 6. Executar o fluxo completo
+
+1. **Inicie a Plataforma IoT**
+2. **Execute o serviço Flask**
+3. **Abra o n8n e inicie o workflow**
+4. **Ative o ESP32 (Wokwi)**
+
+Cada nova medição publicada pelo ESP32 será processada pelo n8n, que consultará o modelo via Flask e enviará o alerta correspondente pelo Telegram.
+
+---
+
+## 7. Entendimento do Ciclo
+
+```
+ESP32 → MQTT → n8n → Flask (ML) → Telegram
+```
+
+No próximo passo será mostrado como empacotar tudo isso em containers Docker, automatizando o processo.
