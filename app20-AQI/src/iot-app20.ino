@@ -13,9 +13,9 @@ const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_SERVER     "test.mosquitto.org"   //
+#define MQTT_SERVER     "host.wokwi.internal"   //
 #define MQTT_PORT       1883
-#define MQTT_PUB_TOPIC  "FIAPIoT/aula14/noris/aqi/dados"
+#define MQTT_PUB_TOPIC  "FIAPIoT/aqi/dados"
 // ATENÇÃO: ClientID DEVE SER ÚNICO NO BROKER!
 #define MQTT_CLIENT_ID  "IoTDeviceNorisAQI001"
 PubSubClient mqttClient(wifiClient);

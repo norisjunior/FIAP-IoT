@@ -71,40 +71,40 @@ namespace ESP32Sensors {
 
 			// Leitura e mapeamento de todos os pinos para a estrutura
 			int valPM25 = analogRead(PM25Pin);
-			dados.PM25 = mapFloat(valPM25, 0, 4095, 0, 250.0);
+			dados.PM25 = mapFloat(valPM25, 0, 4095, 0, 342.0);
 
 			int valPM10 = analogRead(PM10Pin);
-			dados.PM10 = mapFloat(valPM10, 0, 4095, 0, 430.0);
+			dados.PM10 = mapFloat(valPM10, 0, 4095, 0, 477.83);
 
 			int valNO = analogRead(NOPin);
-			dados.NO = mapFloat(valNO, 0, 4095, 0, 150.0);
+			dados.NO = mapFloat(valNO, 0, 4095, 0, 9.58);
 
 			int valNO2 = analogRead(NO2Pin);
-			dados.NO2 = mapFloat(valNO2, 0, 4095, 0, 400.0);
+			dados.NO2 = mapFloat(valNO2, 0, 4095, 0, 51.6);
 
 			int valNOx = analogRead(NOxPin);
-			dados.NOx = mapFloat(valNOx, 0, 4095, 0, 400.0);
+			dados.NOx = mapFloat(valNOx, 0, 4095, 0, 39.6);
 
 			int valNH3 = analogRead(NH3Pin);
-			dados.NH3 = mapFloat(valNH3, 0, 4095, 0, 1800.0);
+			dados.NH3 = mapFloat(valNH3, 0, 4095, 0, 41.53);
 
 			int valCO = analogRead(COPin);
-			dados.CO = mapFloat(valCO, 0, 4095, 0, 35.0);
+			dados.CO = mapFloat(valCO, 0, 4095, 0, 1.64);
 
 			int valSO2 = analogRead(SO2Pin);
-			dados.SO2 = mapFloat(valSO2, 0, 4095, 0, 1600.0);
+			dados.SO2 = mapFloat(valSO2, 0, 4095, 0, 16.72);
 
 			int valO3 = analogRead(O3Pin);
-			dados.O3 = mapFloat(valO3, 0, 4095, 0, 210.0);
+			dados.O3 = mapFloat(valO3, 0, 4095, 0, 90.5);
 
 			int valBenzene = analogRead(BenzenePin);
-			dados.Benzene = mapFloat(valBenzene, 0, 4095, 0, 100.0);
+			dados.Benzene = mapFloat(valBenzene, 0, 4095, 0, 5.13);
 
 			int valToluene = analogRead(ToluenePin);
-			dados.Toluene = mapFloat(valToluene, 0, 4095, 0, 200.0);
+			dados.Toluene = mapFloat(valToluene, 0, 4095, 0, 28.44);
 
 			int valXylene = analogRead(XylenePin);
-			dados.Xylene = mapFloat(valXylene, 0, 4095, 0, 50.0);
+			dados.Xylene = mapFloat(valXylene, 0, 4095, 0, 0.42);
 
 			return dados;
 		}
