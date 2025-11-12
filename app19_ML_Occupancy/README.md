@@ -23,7 +23,7 @@ python -m venv occypancyEnv
 
 - Atualize o pip:
 ```
-python -m pip install --upgrade pi
+python -m pip install --upgrade pip
 ```
 
 - Instale as dependências:
