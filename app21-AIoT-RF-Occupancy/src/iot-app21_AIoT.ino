@@ -1,10 +1,7 @@
 /* ==== INCLUDES ===================================================== */
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include "ESP32Sensors.hpp"   // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
-
+#include "ESP32Sensors.hpp"        // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
+#include "RandomForestModel.hpp"   // Modelo ML embarcado
 
 /* ==== Configurações de Hardware =================================================== */
 const uint8_t DHT_PIN   = 26;
@@ -13,28 +10,18 @@ const uint8_t LED_PIN   = 21;
 const uint8_t LDR_PIN   = 35;
 const uint8_t CO2_PIN   = 34;
 
-/* ==== WI-FI =================================================== */
-const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
-const char* WIFI_PASSWORD = "";
-WiFiClient wifiClient;
-
-/* ==== MQTT =================================================== */
-#define MQTT_HOST       "host.wokwi.internal"
-#define MQTT_PORT       1883
-#define MQTT_PUB_TOPIC  "FIAPIoT/ML_occupancy"
-#define MQTT_DEVICEID   "FIAP_IoT_app19_001"
-#define MQTT_QOS        0
-#define MQTT_RETAIN     false
-PubSubClient mqttClient(wifiClient);
-bool wifiConectado = false;
-bool mqttConectado = false;
-unsigned long ultimaTentativaReconexao = 0;
-const unsigned long INTERVALO_RECONEXAO = 5000; // 5 segundos entre tentativas
-
 /* ==== CONSTANTES =================================== */
 static unsigned long lastMs = 0;
-const unsigned long INTERVAL = 30000; // 30s entre envios
+const unsigned long INTERVAL = 10000; // 10s entre inferências
 
+/* ==== ESTATÍSTICAS DO MODELO =================================== */
+struct ModelStats {
+  unsigned long totalInferencias = 0;
+  unsigned long salaOcupada = 0;
+  unsigned long salaVazia = 0;
+  float ultimaConfianca = 0.0;
+  float confiancaMedia = 0.0;
+} stats;
 
 /* ==== MOCK: HumidityRatio ========================================= */
 float humidityRatioMock() {
@@ -42,139 +29,125 @@ float humidityRatioMock() {
   if (!seeded) { randomSeed(esp_random()); seeded = true; }
   const float MIN_HR = 0.002674f;
   const float MAX_HR = 0.006476f;
-  long r = random(0, 10000);        // 0..9999
-  float u = r / 9999.0f;            // 0..1
+  long r = random(0, 10000);
+  float u = r / 9999.0f;
   return MIN_HR + u * (MAX_HR - MIN_HR);
 }
 
-/* ==== AUXILIARES =================================================== */
-void conectarWiFi() {
-  Serial.print("Conectando ao Wi-Fi: ");
-  Serial.println(WIFI_SSID);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  uint8_t tentativas = 0;
-  while (WiFi.status() != WL_CONNECTED && tentativas < 30) {
-    delay(500);
-    Serial.print(".");
-    tentativas++;
-  }
-  Serial.println();
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.print("OK! IP: ");
-    Serial.println(WiFi.localIP());
-    wifiConectado = true;
-  } else {
-    Serial.println("Falha ao conectar Wi-Fi.");
-    wifiConectado = false;
-  }
-}
-
-void conectarMQTT() {
-  if (!wifiConectado) return;
-  
-  Serial.printf("[MQTT] Conectando ao broker %s", MQTT_HOST);
-  
-  int tentativas = 0;
-  while (!mqttClient.connected() && tentativas < 3) {
-    if (mqttClient.connect(MQTT_DEVICEID)) {
-      Serial.println(" --> Conectado ao MQTT Broker!");
-      mqttConectado = true;
-    } else {
-      Serial.printf(" Falha, rc=%d", mqttClient.state());
-      tentativas++;
-      if (tentativas < 3) {
-        Serial.println(" Tentando novamente em 3s...");
-        delay(3000);
-      }
-    }
-  }
-  
-  if (!mqttConectado) {
-    Serial.println(" --> Falha final na conexão MQTT");
-  }
-}
-
-bool buildAndPublishJSON() {
+/* ==== FUNÇÃO PRINCIPAL: COLETA + INFERÊNCIA LOCAL =================================== */
+bool coletaDados_e_realizaInferencia() {
+  // 1. COLETA DE DADOS DOS SENSORES
   ESP32Sensors::Ambiente::AMBIENTE  amb = ESP32Sensors::Ambiente::medirAmbiente();
   ESP32Sensors::LDR::DADOS_LDR      luz = ESP32Sensors::LDR::ler();
   ESP32Sensors::CO2::DADOS_CO2      co2 = ESP32Sensors::CO2::ler();
 
   if (!amb.valido || !luz.valido || !co2.valido) {
-    Serial.println("Leituras inválidas: sem envio de dados!");
+    Serial.println("[ERRO] Leituras inválidas dos sensores!");
     return false;
   }
 
   float hr = humidityRatioMock();
 
-  /* === Log no Serial Monitor === */
-  Serial.printf("[DADOS] Temp: %.2f °C | Umid: %.2f %% | Light: %.1f lux | CO2: %.1f ppm | HR: %.6f\n",
-                amb.temp, amb.umid, luz.lux, co2.ppm, hr);
-  Serial.println("");
-
-  /* === Montagem do JSON === */
-  JsonDocument doc;
-  doc["dispositivo"]   = MQTT_DEVICEID;
-  doc["Temperature"]   = amb.temp;
-  doc["Humidity"]      = amb.umid;
-  doc["Light"]         = luz.lux;
-  doc["CO2"]           = co2.ppm;
-  doc["HumidityRatio"] = hr;
-
-  char payload[300];
-  serializeJson(doc, payload);
-
-  /* === Publicação MQTT === */
-  bool ok = mqttClient.publish(MQTT_PUB_TOPIC, payload, MQTT_RETAIN);
-  Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
-  if (ok) {
-    Serial.println(String("Enviado: \n") + payload);
-    Serial.println("");
+  // 2. EXIBIR DADOS BRUTOS
+  Serial.println("\n========== INFERÊNCIA LOCAL ML ==========");
+  Serial.println("[SENSORES] Dados coletados:");
+  Serial.printf("  Temperature: %.2f °C\n", amb.temp); Serial.println("");
+  Serial.printf("  Humidity: %.2f %%\n", amb.umid); Serial.println("");
+  Serial.printf("  Light: %.1f lux\n", luz.lux); Serial.println("");
+  Serial.printf("  CO2: %.1f ppm\n", co2.ppm); Serial.println("");
+  Serial.printf("  HumidityRatio: %.6f\n", hr); Serial.println("");
+  
+  // 3. PREPARAR DADOS PARA O MODELO
+  float dadosBrutos[5] = {
+    amb.temp,    // Temperature
+    amb.umid,    // Humidity
+    luz.lux,     // Light
+    co2.ppm,     // CO2
+    hr           // HumidityRatio
+  };
+  
+  // 4. NORMALIZAÇÃO (StandardScaler)
+  float dadosNormalizados[5];
+  Scaler::normalize(dadosBrutos, dadosNormalizados);
+  
+  Serial.println("\n[NORMALIZAÇÃO] Dados processados:");
+  Serial.printf("  Temp: %.3f | Hum: %.3f | Light: %.3f | CO2: %.3f | HR: %.3f\n",
+                dadosNormalizados[0], dadosNormalizados[1], 
+                dadosNormalizados[2], dadosNormalizados[3], 
+                dadosNormalizados[4]); Serial.println("");
+  
+  // 5. INFERÊNCIA COM RANDOM FOREST
+  double inputModelo[5];
+  for(int i = 0; i < 5; i++) {
+    inputModelo[i] = (double)dadosNormalizados[i];
   }
   
-  return ok;
+  double probabilidades[2];
+  RandomForest::score(inputModelo, probabilidades);
+  
+  // 6. INTERPRETAÇÃO DOS RESULTADOS
+  int predicao = RandomForest::predict(probabilidades);
+  float confianca = RandomForest::getConfidence(probabilidades);
+  
+  const char* statusSala = (predicao == 1) ? "OCUPADA" : "VAZIA";
+  
+  // 7. ATUALIZAR ESTATÍSTICAS
+  stats.totalInferencias++;
+  if (predicao == 1) {
+    stats.salaOcupada++;
+    ESP32Sensors::LED::on();
+  } else {
+    stats.salaVazia++;
+    ESP32Sensors::LED::off();
+  }
+  stats.ultimaConfianca = confianca;
+  stats.confiancaMedia = (stats.confiancaMedia * (stats.totalInferencias - 1) + confianca) / stats.totalInferencias;
+  
+  // 8. EXIBIR RESULTADO DA INFERÊNCIA
+  Serial.println("\n[RESULTADO ML]");
+  Serial.printf("  --> SALA %s (Confiança: %.1f%%)\n", statusSala, confianca); Serial.println("");
+  Serial.printf("  --> Probabilidades: Vazia=%.1f%% | Ocupada=%.1f%%\n", 
+                probabilidades[0] * 100, probabilidades[1] * 100); Serial.println("");
+  Serial.printf("  --> LED: %s\n", (predicao == 1) ? "LIGADO" : "DESLIGADO"); Serial.println("");
+  
+  // 9. EXIBIR ESTATÍSTICAS ACUMULADAS
+  Serial.printf("\n[STATS] Total: %lu | Quantas vezes ocupada: %lu (%.1f%%) | Quantas vezes vazia: %lu (%.1f%%) | Conf.Média: %.1f%%\n",
+                stats.totalInferencias,
+                stats.salaOcupada, (float)stats.salaOcupada/stats.totalInferencias * 100,
+                stats.salaVazia, (float)stats.salaVazia/stats.totalInferencias * 100,
+                stats.confiancaMedia); Serial.println("");
+  
+  Serial.println("==========================================\n");
+  
+  return true;
 }
 
 /* ==== SETUP / LOOP ================================================ */
 void setup() {
   Serial.begin(115200);
+  delay(1000);
+  
+  Serial.println("\n\n==========================================");
+  Serial.println("ESP32 - AIoT - ML EMBARCADO (100% LOCAL)");
+  Serial.println("Modelo: Random Forest - Ocupação de Sala");
+  Serial.println("Modo: SEM CONECTIVIDADE (offline)");
+  Serial.println("==========================================");
+  
+  // Inicializar sensores
   ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, LDR_PIN, CO2_PIN);
+  Serial.println("Sensores inicializados!");
+  Serial.println("Sistema pronto para inferências locais.\n");
   
-  conectarWiFi();
-  
-  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-  conectarMQTT();
-  
-  Serial.println("Sistema inicializado!");
+  delay(2000);
 }
 
 void loop() {
-  if (wifiConectado && !mqttClient.connected()) {
-    conectarMQTT();
-  }
-
-  if (mqttConectado) {
-    mqttClient.loop();
-  } else {
-    Serial.println("MQTT desconectado. Pulando ciclo de leitura.");
-    delay(100);
-    return;
-  }
-
   unsigned long now = millis();
-
+  
   if (now - lastMs >= INTERVAL) {
-    Serial.println("Preparando dados para envio ao MQTT");
-    
-    ESP32Sensors::LED::on();
-    bool ok = buildAndPublishJSON();
-    ESP32Sensors::LED::off();
-    
-    if (!ok) {
-      Serial.println("Falha no envio ao MQTT.");
-    }
-    
-    lastMs = now; // reprograma próximo envio
+    coletaDados_e_realizaInferencia();
+    lastMs = now;
   }
+  
   delay(100);
 }
