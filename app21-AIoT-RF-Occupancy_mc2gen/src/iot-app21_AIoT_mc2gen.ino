@@ -1,6 +1,7 @@
 /* ==== INCLUDES ===================================================== */
-#include <ArduinoJson.h>
-#include "ESP32Sensors.hpp"        // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
+#include "ESP32Sensors.hpp"              // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
+#include "AIoTOccupancyRFScaler.hpp"     // StandardScaler para normalização
+#include "AIoTRandomForest_mc2gen.hpp"   // Modelo Random Forest mc2gen
 
 /* ==== Configurações de Hardware =================================================== */
 const uint8_t DHT_PIN   = 26;
@@ -11,7 +12,7 @@ const uint8_t CO2_PIN   = 34;
 
 /* ==== CONSTANTES =================================== */
 static unsigned long lastMs = 0;
-const unsigned long INTERVAL = 10000; // 10s entre inferências
+const unsigned long INTERVAL = 5000; // 5s entre inferências
 
 /* ==== ESTATÍSTICAS DO MODELO =================================== */
 struct ModelStats {
@@ -48,11 +49,11 @@ bool coletaDados_e_realizaInferencia() {
   // 2. EXIBIR DADOS BRUTOS
   Serial.println("\n========== INFERÊNCIA LOCAL ML ==========");
   Serial.println("[SENSORES] Dados coletados:");
-  Serial.printf("  Temperature: %.2f °C\n", amb.temp); Serial.println("");
-  Serial.printf("  Humidity: %.2f %%\n", amb.umid); Serial.println("");
-  Serial.printf("  Light: %.1f lux\n", luz.lux); Serial.println("");
-  Serial.printf("  CO2: %.1f ppm\n", co2.ppm); Serial.println("");
-  Serial.printf("  HumidityRatio: %.6f\n", hr); Serial.println("");
+  Serial.printf("  Temperature: %.2f °C", amb.temp); Serial.println("");
+  Serial.printf("  Humidity: %.2f %%", amb.umid); Serial.println("");
+  Serial.printf("  Light: %.1f lux", luz.lux); Serial.println("");
+  Serial.printf("  CO2: %.1f ppm", co2.ppm); Serial.println("");
+  Serial.printf("  HumidityRatio: %.6f", hr); Serial.println("");
   
   // 3. PREPARAR DADOS PARA O MODELO
   float dadosBrutos[5] = {
@@ -68,7 +69,7 @@ bool coletaDados_e_realizaInferencia() {
   Scaler::normalize(dadosBrutos, dadosNormalizados);
   
   Serial.println("\n[NORMALIZAÇÃO] Dados processados:");
-  Serial.printf("  Temp: %.3f | Hum: %.3f | Light: %.3f | CO2: %.3f | HR: %.3f\n",
+  Serial.printf("  Temp: %.2f | Hum: %.2f | Light: %.2f | CO2: %.3f | HR: %.3f",
                 dadosNormalizados[0], dadosNormalizados[1], 
                 dadosNormalizados[2], dadosNormalizados[3], 
                 dadosNormalizados[4]); Serial.println("");
@@ -83,7 +84,8 @@ bool coletaDados_e_realizaInferencia() {
   RandomForest::score(inputModelo, probabilidades);
   
   // 6. INTERPRETAÇÃO DOS RESULTADOS
-  int predicao = RandomForest::predict(probabilidades);
+  // O modelo retorna probabilidades para [classe_0 (vazia), classe_1 (ocupada)]
+  int predicao = (probabilidades[1] > probabilidades[0]) ? 1 : 0;
   
   const char* statusSala = (predicao == 1) ? "OCUPADA" : "VAZIA";
   
@@ -99,15 +101,16 @@ bool coletaDados_e_realizaInferencia() {
   
   // 8. EXIBIR RESULTADO DA INFERÊNCIA
   Serial.println("\n[RESULTADO ML]");
-  Serial.printf("  --> Probabilidades: Vazia=%.1f%% | Ocupada=%.1f%%\n", 
+  Serial.printf("  --> Sala: %s", statusSala); Serial.println("");
+  Serial.printf("  --> Probabilidades: Vazia=%.1f%% | Ocupada=%.1f%%", 
                 probabilidades[0] * 100, probabilidades[1] * 100); Serial.println("");
-  Serial.printf("  --> LED: %s\n", (predicao == 1) ? "LIGADO" : "DESLIGADO"); Serial.println("");
+  Serial.printf("  --> LED: %s", (predicao == 1) ? "LIGADO" : "DESLIGADO"); Serial.println("\n");
   
   // 9. EXIBIR ESTATÍSTICAS ACUMULADAS
-  Serial.printf("\n[STATS] Total: %lu | Quantas vezes ocupada: %lu (%.1f%%) | Quantas vezes vazia: %lu (%.1f%%)\n",
+  Serial.printf("[STATS] Total: %lu | Quantas vezes ocupada: %lu (%.1f%%) | Quantas vezes vazia: %lu (%.1f%%)\n",
                 stats.totalInferencias,
                 stats.salaOcupada, (float)stats.salaOcupada/stats.totalInferencias * 100,
-                stats.salaVazia, (float)stats.salaVazia/stats.totalInferencias * 100); Serial.println("");
+                stats.salaVazia, (float)stats.salaVazia/stats.totalInferencias * 100);  Serial.println("");
   
   Serial.println("==========================================\n");
   
