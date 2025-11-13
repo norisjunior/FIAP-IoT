@@ -1,7 +1,6 @@
 /* ==== INCLUDES ===================================================== */
 #include <ArduinoJson.h>
 #include "ESP32Sensors.hpp"        // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
-#include "RandomForestModel.hpp"   // Modelo ML embarcado
 
 /* ==== Configurações de Hardware =================================================== */
 const uint8_t DHT_PIN   = 26;
@@ -19,8 +18,6 @@ struct ModelStats {
   unsigned long totalInferencias = 0;
   unsigned long salaOcupada = 0;
   unsigned long salaVazia = 0;
-  float ultimaConfianca = 0.0;
-  float confiancaMedia = 0.0;
 } stats;
 
 /* ==== MOCK: HumidityRatio ========================================= */
@@ -87,7 +84,6 @@ bool coletaDados_e_realizaInferencia() {
   
   // 6. INTERPRETAÇÃO DOS RESULTADOS
   int predicao = RandomForest::predict(probabilidades);
-  float confianca = RandomForest::getConfidence(probabilidades);
   
   const char* statusSala = (predicao == 1) ? "OCUPADA" : "VAZIA";
   
@@ -100,22 +96,18 @@ bool coletaDados_e_realizaInferencia() {
     stats.salaVazia++;
     ESP32Sensors::LED::off();
   }
-  stats.ultimaConfianca = confianca;
-  stats.confiancaMedia = (stats.confiancaMedia * (stats.totalInferencias - 1) + confianca) / stats.totalInferencias;
   
   // 8. EXIBIR RESULTADO DA INFERÊNCIA
   Serial.println("\n[RESULTADO ML]");
-  Serial.printf("  --> SALA %s (Confiança: %.1f%%)\n", statusSala, confianca); Serial.println("");
   Serial.printf("  --> Probabilidades: Vazia=%.1f%% | Ocupada=%.1f%%\n", 
                 probabilidades[0] * 100, probabilidades[1] * 100); Serial.println("");
   Serial.printf("  --> LED: %s\n", (predicao == 1) ? "LIGADO" : "DESLIGADO"); Serial.println("");
   
   // 9. EXIBIR ESTATÍSTICAS ACUMULADAS
-  Serial.printf("\n[STATS] Total: %lu | Quantas vezes ocupada: %lu (%.1f%%) | Quantas vezes vazia: %lu (%.1f%%) | Conf.Média: %.1f%%\n",
+  Serial.printf("\n[STATS] Total: %lu | Quantas vezes ocupada: %lu (%.1f%%) | Quantas vezes vazia: %lu (%.1f%%)\n",
                 stats.totalInferencias,
                 stats.salaOcupada, (float)stats.salaOcupada/stats.totalInferencias * 100,
-                stats.salaVazia, (float)stats.salaVazia/stats.totalInferencias * 100,
-                stats.confiancaMedia); Serial.println("");
+                stats.salaVazia, (float)stats.salaVazia/stats.totalInferencias * 100); Serial.println("");
   
   Serial.println("==========================================\n");
   
