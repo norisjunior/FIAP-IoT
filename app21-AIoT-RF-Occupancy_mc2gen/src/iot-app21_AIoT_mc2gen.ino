@@ -126,6 +126,7 @@ void setup() {
   Serial.println("ESP32 - AIoT - ML EMBARCADO (100% LOCAL)");
   Serial.println("Modelo: Random Forest - Ocupação de Sala");
   Serial.println("Modo: SEM CONECTIVIDADE (offline)");
+  Serial.println("Biblioteca: MC2GEN");
   Serial.println("==========================================");
   
   // Inicializar sensores
