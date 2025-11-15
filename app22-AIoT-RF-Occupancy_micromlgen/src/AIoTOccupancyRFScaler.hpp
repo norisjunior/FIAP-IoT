@@ -10,7 +10,7 @@ namespace Scaler {
         1.0544937977f, 4.9767829467f, 210.8370594788f, 311.6631533248f, 0.0007684509f
     };
     
-    inline void normalize(const float* input, float* output) {
+    inline void std(const float* input, float* output) {
         for (int i = 0; i < 5; i++) {
             output[i] = (input[i] - means[i]) / scales[i];
         }

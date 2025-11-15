@@ -69,18 +69,18 @@ bool coletaDados_e_realizaInferencia() {
   };
   
   // 4. NORMALIZAÇÃO (StandardScaler)
-  float dadosNormalizados[5];
-  Scaler::normalize(dadosBrutos, dadosNormalizados);
+  float dadosPadronizados[5];
+  Scaler::std(dadosBrutos, dadosPadronizados);
   
   Serial.println("\n[NORMALIZAÇÃO] Dados processados:");
   Serial.printf("  Temp: %.2f | Hum: %.2f | Light: %.2f | CO2: %.3f | HR: %.3f",
-                dadosNormalizados[0], dadosNormalizados[1], 
-                dadosNormalizados[2], dadosNormalizados[3], 
-                dadosNormalizados[4]); Serial.println("");
+                dadosPadronizados[0], dadosPadronizados[1], 
+                dadosPadronizados[2], dadosPadronizados[3], 
+                dadosPadronizados[4]); Serial.println("");
   
   // 5. INFERÊNCIA COM RANDOM FOREST MICROMLGEN
   // MUDANÇA: Usar método predict() do micromlgen em vez de score()
-  int predicao = modeloRF.predict(dadosNormalizados);
+  int predicao = modeloRF.predict(dadosPadronizados);
   
   // 6. INTERPRETAÇÃO DOS RESULTADOS
   // MUDANÇA: micromlgen retorna diretamente a classe (0=vazia, 1=ocupada)
