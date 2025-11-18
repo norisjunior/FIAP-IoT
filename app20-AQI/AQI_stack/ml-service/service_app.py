@@ -4,8 +4,29 @@ import joblib, numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 from tensorflow import keras
+import tensorflow as tf
 
 app = FastAPI()
+
+# ===== CONFIGURAÇÃO GPU =====
+print("\n" + "="*60)
+print("Iniciando aplicação AQI com TensorFlow", tf.__version__)
+print("="*60)
+
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    print(f"GPU HABILITADA: {gpus[0].name}")
+    print(f"   Dispositivo: NVIDIA GeForce GTX 1650 (4GB)")
+    try:
+        # Permitir crescimento dinâmico de memória
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        print("--> Memória GPU configurada (crescimento dinâmico)")
+    except RuntimeError as e:
+        print(f"!! Erro ao configurar GPU: {e}")
+else:
+    print("--> GPU não detectada - usando CPU")
+print("="*60 + "\n")
 
 # Carrega apenas 1x (rápido nas requisições)
 #MODEL_PATH = "modelo_aqi_nn.keras"

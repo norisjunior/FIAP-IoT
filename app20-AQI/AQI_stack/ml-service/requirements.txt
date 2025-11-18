@@ -1,3 +1,5 @@
+tensorflow[and-cuda]==2.19.0
+keras==3.10.0
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
 scikit-learn==1.5.2
