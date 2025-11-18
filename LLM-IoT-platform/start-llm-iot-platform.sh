@@ -9,8 +9,8 @@ echo "================================================"
 echo "Configurando e iniciando plataforma IoT..."
 echo "================================================"
 
-mkdir -p IoTStack
-cd IoTStack
+mkdir -p LLMIoTStack
+cd LLMIoTStack
 
 # ============================================
 # ESTRUTURA DE DIRETÓRIOS
@@ -108,17 +108,18 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ./ollama:/root/.ollama # Persiste os modelos
-    # Comando para iniciar o Ollama e, em seguida, baixar os modelos
-    # O "&" garante que o servidor Ollama continue rodando em background
-    command: >
-      sh -c "ollama serve & 
-      sleep 10 && 
-      ollama pull llama3.2 && 
-      ollama pull nomic-embed-text" 
+      - ./ollama:/root/.ollama
     restart: unless-stopped
     networks:
       - iot-network
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "ollama serve & 
+      pid=$!;
+      sleep 5;
+      ollama pull llama3.2;
+      ollama pull nomic-embed-text;
+      wait $pid"
 
   # MQTT Broker
   mosquitto:
