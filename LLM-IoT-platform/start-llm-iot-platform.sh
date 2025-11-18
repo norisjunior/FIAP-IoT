@@ -112,6 +112,13 @@ services:
     restart: unless-stopped
     networks:
       - iot-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     entrypoint: ["/bin/bash", "-c"]
     command: >
       "ollama serve & 
@@ -288,5 +295,5 @@ echo "  sudo docker logs influxdb"
 echo "  sudo docker logs grafana"
 echo ""
 echo "Parar todos os serviços:"
-echo "  cd IoTStack && sudo docker compose down"
+echo "  cd LLMIoTStack && sudo docker compose down"
 echo ""
