@@ -51,8 +51,14 @@ python -m venv venv
 ```
 
 * Ative o virtualenv criado:
+-> Windows:
 ```
 .\venv\Scripts\Activate.ps1
+```
+
+-> Linux
+```
+source venv/bin/activate
 ```
 
 * Atualize o pip:
