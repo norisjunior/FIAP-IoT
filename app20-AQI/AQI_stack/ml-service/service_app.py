@@ -65,11 +65,31 @@ def predict(item: AQIItem):
         "NH3": item.NH3, "CO": item.CO, "SO2": item.SO2, "O3": item.O3,
         "Benzene": item.Benzene, "Toluene": item.Toluene, "Xylene": item.Xylene
     }
-    x = np.array([[float(payload[col]) for col in FEATURES]], dtype=np.float32)
-    x_std = scaler.transform(x).astype(np.float32)
+    #x = np.array([[float(payload[col]) for col in FEATURES]], dtype=np.float32)
+    #x_std = scaler.transform(x).astype(np.float32)
+
+    # Cria uma lista de valores na ordem correta
+    values = [float(payload[col]) for col in FEATURES]
+    
+    # 1. Cria um DataFrame com os nomes das FEATURES
+    # Isso resolve o warning!
+    x_df = pd.DataFrame([values], columns=FEATURES) 
+    
+    # 2. Transforma o DataFrame
+    x_std = scaler.transform(x_df).astype(np.float32)
+
     proba = model(x_std, training=False).numpy()[0]
     idx = int(np.argmax(proba))
-    return {
+
+    # Estrutura do resultado
+    result = {
         "class": classes[idx],
         "probabilities": {cls: float(p) for cls, p in zip(classes, proba)}
     }
+
+    # Mostra resultado no terminal
+    print("--- Resultado da Predição AQI ---")
+    print(result)
+    print("---------------------------------")    
+
+    return result
