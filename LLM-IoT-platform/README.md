@@ -180,34 +180,38 @@ CONTEXTO DO LOCAL
 #### Tool `aqi_atual`:
 
 ##### Description:
-Essa ferramenta se chama: "aqi_atual" e responde como está a qualidade do ar agora, nesse instante. Tool ou ferramenta para informar a qualidade do ar mais recentemente observada.
+  ```
+  Essa ferramenta se chama: "aqi_atual" e responde como está a qualidade do ar agora, nesse instante. Tool ou ferramenta para informar a qualidade do ar mais recentemente observada.
+  ```
 
 ##### Query:
-```sql
-SELECT class, timestamp_medicao, periodo
-FROM aqi_medicoes
-ORDER BY created_at DESC
-LIMIT 1;
-```
+  ```sql
+  SELECT class, timestamp_medicao, periodo
+  FROM aqi_medicoes
+  ORDER BY created_at DESC
+  LIMIT 1;
+  ```
 
 
 #### Tool `aqi_historico`:
 
 ##### Description:
-Esta ferramenta consulta dados históricos de qualidade do ar. Sempre que você usá-la, envie Query_Parameters como uma string no formato: "AAAA-MM-DD, periodo", por exemplo: "2025-11-19, madrugada".
-O campo periodo deve ser uma destas palavras exatas: madrugada, manhã, tarde, noite.
+  ```
+  Esta ferramenta consulta dados históricos de qualidade do ar. Sempre que você usá-la, envie Query_Parameters como uma string no formato: "AAAA-MM-DD, periodo", por exemplo: "2025-11-19, madrugada".
+  O campo periodo deve ser uma destas palavras exatas: madrugada, manhã, tarde, noite.
 
-**NÃO USE ESSA FERRAMENTA OU TOOL PARA RESPONDER À PERGUNTAS DE COMO A QUALIDADE DO AR ESTÁ AGORA, OU QUAL A QUALIDADE DO AR MAIS RECENTE**
+  **NÃO USE ESSA FERRAMENTA OU TOOL PARA RESPONDER À PERGUNTAS DE COMO A QUALIDADE DO AR ESTÁ AGORA, OU QUAL A QUALIDADE DO AR MAIS RECENTE**"
+  ```
 
 ##### Query:
-```sql
-SELECT class,
-       timestamp_medicao,
-       periodo
-FROM aqi_medicoes
-WHERE DATE(timestamp_medicao::timestamp) = $1
-  AND periodo = $2
-ORDER BY created_at DESC
-LIMIT 1;
-```
+  ```sql
+  SELECT class,
+        timestamp_medicao,
+        periodo
+  FROM aqi_medicoes
+  WHERE DATE(timestamp_medicao::timestamp) = $1
+    AND periodo = $2
+  ORDER BY created_at DESC
+  LIMIT 1;
+  ```
 
