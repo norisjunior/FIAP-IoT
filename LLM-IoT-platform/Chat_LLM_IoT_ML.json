@@ -22,41 +22,6 @@
     },
     {
       "parameters": {
-        "options": {
-          "systemMessage": "=Você é um assistente de qualidade do ar. \n\nCONTEXTO TEMPORAL IMPORTANTE:\n- Data atual: {{ $now.format('yyyy-MM-DD') }}\n- Hora atual: {{ $now.format('HH:mm') }}\n- Dia da semana: {{ $now.format('EEEE') }}\n\nPERÍODOS DO DIA:\n- madrugada: 00:00 às 05:59\n- manhã: 06:00 às 11:59\n- tarde: 12:00 às 17:59\n- noite: 18:00 às 23:59\n\nQuando o usuário perguntar sobre qualidade do ar em um período específico (ex: \"nesta madrugada\", \"hoje de manhã\"), use a ferramenta aqi_historico com os parâmetros no formato: \"AAAA-MM-DD, periodo\"\n\nExemplos:\n- \"Como estava nesta madrugada?\" → \"{{ $now.format('yyyy-MM-DD') }}, madrugada\"\n- \"Como estava ontem à noite?\" → \"{{ $now.minus({days: 1}).format('yyyy-MM-DD') }}, noite\"\n\nPara perguntas sobre \"agora\" ou \"atualmente\", use a ferramenta aqi_atual.\n\nLIMITAÇÕES\n- Não invente valores de AQI. Sempre baseie sua resposta somente nos dados retornados pelas ferramentas.\n\nCONTEXTO DO LOCAL\n- A medição de qualidade do ar é em uma fábrica. Portanto, em medições perigosas, informe que não se deve permanecer dentro da fábrica.\n"
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 2.2,
-      "position": [
-        -96,
-        -64
-      ],
-      "id": "ff8aa4b7-a0e1-463f-b511-e2ef75b5923b",
-      "name": "AI Agent"
-    },
-    {
-      "parameters": {
-        "model": "llama3.2:latest",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
-      "typeVersion": 1,
-      "position": [
-        -240,
-        128
-      ],
-      "id": "80335d9a-222b-4fa5-82ab-b7277e4021c4",
-      "name": "Ollama Chat Model",
-      "credentials": {
-        "ollamaApi": {
-          "id": "NrojdgDH4WRP2HxM",
-          "name": "Ollama account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "descriptionType": "manual",
         "toolDescription": "Essa ferramenta se chama: \"aqi_atual\" e responde como está a qualidade do ar agora, nesse instante. Tool ou ferramenta para informar a qualidade do ar mais recentemente observada.",
         "operation": "executeQuery",
@@ -66,7 +31,7 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [
-        128,
+        32,
         160
       ],
       "id": "a10de43f-6f0f-4c42-b935-3ca56843fe20",
@@ -83,8 +48,8 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        -32,
-        144
+        -96,
+        160
       ],
       "id": "89ea8f06-67b7-4b3e-94de-364e3f954f47",
       "name": "Simple Memory"
@@ -102,8 +67,8 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [
-        320,
-        128
+        160,
+        160
       ],
       "id": "d50f8db4-298f-4a06-a2d8-ad2ddc84477a",
       "name": "aqi_historico",
@@ -111,6 +76,41 @@
         "postgres": {
           "id": "206W8viNhQB2K0QF",
           "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Você é um assistente de qualidade do ar. \n\nCONTEXTO TEMPORAL IMPORTANTE:\n- Data atual: {{ $now.format('yyyy-LL-dd') }}\n- Hora atual: {{ $now.format('HH:mm') }}\n- Dia da semana: {{ $now.format('EEEE') }}\n\nPERÍODOS DO DIA:\n- madrugada: 00:00 às 05:59\n- manhã: 06:00 às 11:59\n- tarde: 12:00 às 17:59\n- noite: 18:00 às 23:59\n\nQuando o usuário perguntar sobre qualidade do ar em um período específico (ex: \"nesta madrugada\", \"hoje de manhã\"), use a ferramenta aqi_historico com os parâmetros no formato: \"AAAA-MM-DD, periodo\"\n\nExemplos:\n- \"Como estava nesta madrugada?\" → \"{{ $now.format('yyyy-LL-dd') }}, madrugada\"\n- \"Como estava ontem à noite?\" → \"{{ $now.minus({days: 1}).format('yyyy-LL-dd') }}, noite\"\n\nPara perguntas sobre \"agora\" ou \"atualmente\", use a ferramenta aqi_atual.\n\nLIMITAÇÕES\n- Não invente valores de AQI. Sempre baseie sua resposta somente nos dados retornados pelas ferramentas.\n\nCONTEXTO DO LOCAL\n- A medição de qualidade do ar é em uma fábrica. Portanto, em medições perigosas, informe que não se deve permanecer dentro da fábrica.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -112,
+        -64
+      ],
+      "id": "ff8aa4b7-a0e1-463f-b511-e2ef75b5923b",
+      "name": "FIoT Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        144
+      ],
+      "id": "86bad146-bb07-4908-bbc2-51455be2dd51",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "NrojdgDH4WRP2HxM",
+          "name": "Ollama account"
         }
       }
     }
@@ -121,19 +121,8 @@
       "main": [
         [
           {
-            "node": "AI Agent",
+            "node": "FIoT Agent",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ollama Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -143,7 +132,7 @@
       "ai_tool": [
         [
           {
-            "node": "AI Agent",
+            "node": "FIoT Agent",
             "type": "ai_tool",
             "index": 0
           }
@@ -154,7 +143,7 @@
       "ai_memory": [
         [
           {
-            "node": "AI Agent",
+            "node": "FIoT Agent",
             "type": "ai_memory",
             "index": 0
           }
@@ -165,8 +154,19 @@
       "ai_tool": [
         [
           {
-            "node": "AI Agent",
+            "node": "FIoT Agent",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -177,7 +177,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "cdb45e56-62cd-4b80-9b4f-26016c4a938a",
+  "versionId": "efe0b72f-b100-4883-9cea-23e274696990",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
