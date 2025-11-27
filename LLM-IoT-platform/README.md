@@ -55,6 +55,12 @@ cd FIAP-IoT/LLM-IoT-platform/
 sudo ./start-llm-iot-platform.sh
 ```
 
+### 4. Parar (sem excluir) todos os serviços
+```bash
+sudo ./stop-llm-iot-platform.sh
+```
+
+
 O script vai:
 - Criar o diretório `LLMIoTStack` com subdiretórios para cada serviço
 - Criar todos os arquivos de configuração (docker-compose.yml, settings.js, .env, etc)
