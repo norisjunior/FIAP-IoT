@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../FIAP-IoT-eval"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}
