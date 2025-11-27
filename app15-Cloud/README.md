@@ -4,6 +4,38 @@
 
 Esta aplicação demonstra arquitetura de computação em nuvem (Cloud Computing) para IoT, implementando um sistema de monitoramento de motor industrial. O ESP32 coleta dados de sensores e publica via MQTT, além de receber comandos remotos para controle do motor.
 
+## Pré-requisitos
+
+### Inicializar a Plataforma IoT
+
+Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+
+1. **Acessar WSL2 Ubuntu:**
+   ```bash
+   wsl -d ubuntu
+   ```
+
+2. **Clonar o repositório (se ainda não clonou):**
+   ```bash
+   cd ~
+   git clone https://github.com/norisjunior/FIAP-IoT
+   ```
+
+3. **Iniciar todos os serviços:**
+   ```bash
+   cd FIAP-IoT/IoT-platform/
+   sudo ./start-linux.sh
+   ```
+
+Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
+
+**Serviços disponíveis:**
+- MQTT Broker: localhost:1883
+- Node-RED: http://localhost:1880 (admin/FIAPIoT)
+- n8n: http://localhost:5678
+- InfluxDB: http://localhost:8086 (admin/FIAP@123)
+- Grafana: http://localhost:3000 (admin/admin)
+
 ### Sensores e Atuadores
 
 **Sensores:**

@@ -4,6 +4,40 @@
 
 Esta aplicação demonstra arquitetura de computação de borda (Edge Computing) e névoa (Fog Computing), implementando processamento local próximo aos sensores. O sistema conecta-se a um broker MQTT rodando em Raspberry Pi (camada Fog) para processamento intermediário antes do envio à nuvem.
 
+## Pré-requisitos
+
+### Inicializar a Plataforma IoT
+
+Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+
+1. **Acessar WSL2 Ubuntu:**
+   ```bash
+   wsl -d ubuntu
+   ```
+
+2. **Clonar o repositório (se ainda não clonou):**
+   ```bash
+   cd ~
+   git clone https://github.com/norisjunior/FIAP-IoT
+   ```
+
+3. **Iniciar todos os serviços:**
+   ```bash
+   cd FIAP-IoT/IoT-platform/
+   sudo ./start-linux.sh
+   ```
+
+Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
+
+**Serviços disponíveis:**
+- MQTT Broker: localhost:1883 (nome do container: mqtt-broker)
+- Node-RED: http://localhost:1880 (admin/FIAPIoT)
+- n8n: http://localhost:5678
+- InfluxDB: http://localhost:8086 (admin/FIAP@123)
+- Grafana: http://localhost:3000 (admin/admin)
+
+**Nota:** Para este app, você pode usar o broker MQTT local (plataforma IoT) ou configurar um Raspberry Pi como camada Fog intermediária.
+
 ### Sensores e Atuadores
 
 **Sensores:**

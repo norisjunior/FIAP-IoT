@@ -4,6 +4,40 @@
 
 Esta aplicação demonstra o uso de CBOR (Concise Binary Object Representation) para comunicação eficiente em sistemas IoT. O ESP32 coleta dados de sensores, serializa em formato binário compacto CBOR, armazena localmente em SD Card e envia em lotes via MQTT, otimizando largura de banda.
 
+## Pré-requisitos
+
+### Inicializar a Plataforma IoT
+
+Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+
+1. **Acessar WSL2 Ubuntu:**
+   ```bash
+   wsl -d ubuntu
+   ```
+
+2. **Clonar o repositório (se ainda não clonou):**
+   ```bash
+   cd ~
+   git clone https://github.com/norisjunior/FIAP-IoT
+   ```
+
+3. **Iniciar todos os serviços:**
+   ```bash
+   cd FIAP-IoT/IoT-platform/
+   sudo ./start-linux.sh
+   ```
+
+Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
+
+**Serviços disponíveis:**
+- MQTT Broker: localhost:1883 (para ESP32: host.wokwi.internal:1883)
+- Node-RED: http://localhost:1880 (admin/FIAPIoT)
+- n8n: http://localhost:5678
+- InfluxDB: http://localhost:8086 (admin/FIAP@123)
+- Grafana: http://localhost:3000 (admin/admin)
+
+**Dica:** Use o Node-RED ou n8n para decodificar e visualizar os dados CBOR recebidos via MQTT.
+
 ### Sensores e Atuadores
 
 **Sensores:**
