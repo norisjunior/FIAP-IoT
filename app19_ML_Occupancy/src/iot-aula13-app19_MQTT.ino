@@ -99,7 +99,7 @@ bool buildAndPublishJSON() {
 
   /* === Log no Serial Monitor === */
   Serial.printf("[DADOS] Temp: %.2f °C | Umid: %.2f %% | Light: %.1f lux | CO2: %.1f ppm | HR: %.6f\n",
-                amb.temp, amb.umid, luz.lux, co2.ppm, hr);
+                amb.temp, amb.umid, luz.lux, co2.ppm, hr.valor);
   Serial.println("");
 
   /* === Montagem do JSON === */
