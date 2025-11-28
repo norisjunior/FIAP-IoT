@@ -12,6 +12,7 @@ const uint8_t DHT_MODEL = DHT22;
 const uint8_t LED_PIN   = 21;
 const uint8_t LDR_PIN   = 35;
 const uint8_t CO2_PIN   = 34;
+const uint8_t HR_PIN    = 32;
 
 /* ==== WI-FI =================================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
@@ -34,18 +35,6 @@ const unsigned long INTERVALO_RECONEXAO = 5000; // 5 segundos entre tentativas
 /* ==== CONSTANTES =================================== */
 static unsigned long lastMs = 0;
 const unsigned long INTERVAL = 30000; // 30s entre envios
-
-
-/* ==== MOCK: HumidityRatio ========================================= */
-float humidityRatioMock() {
-  static bool seeded = false;
-  if (!seeded) { randomSeed(esp_random()); seeded = true; }
-  const float MIN_HR = 0.002674f;
-  const float MAX_HR = 0.006476f;
-  long r = random(0, 10000);        // 0..9999
-  float u = r / 9999.0f;            // 0..1
-  return MIN_HR + u * (MAX_HR - MIN_HR);
-}
 
 /* ==== AUXILIARES =================================================== */
 void conectarWiFi() {
@@ -99,13 +88,14 @@ bool buildAndPublishJSON() {
   ESP32Sensors::Ambiente::AMBIENTE  amb = ESP32Sensors::Ambiente::medirAmbiente();
   ESP32Sensors::LDR::DADOS_LDR      luz = ESP32Sensors::LDR::ler();
   ESP32Sensors::CO2::DADOS_CO2      co2 = ESP32Sensors::CO2::ler();
+  ESP32Sensors::HR::DADOS_HR        hr  = ESP32Sensors::HR::ler();
 
   if (!amb.valido || !luz.valido || !co2.valido) {
     Serial.println("Leituras inválidas: sem envio de dados!");
     return false;
   }
 
-  float hr = humidityRatioMock();
+  //float hr = humidityRatioMock();
 
   /* === Log no Serial Monitor === */
   Serial.printf("[DADOS] Temp: %.2f °C | Umid: %.2f %% | Light: %.1f lux | CO2: %.1f ppm | HR: %.6f\n",
@@ -119,7 +109,7 @@ bool buildAndPublishJSON() {
   doc["Humidity"]      = amb.umid;
   doc["Light"]         = luz.lux;
   doc["CO2"]           = co2.ppm;
-  doc["HumidityRatio"] = hr;
+  doc["HumidityRatio"] = hr.valor;
 
   char payload[300];
   serializeJson(doc, payload);
@@ -138,7 +128,7 @@ bool buildAndPublishJSON() {
 /* ==== SETUP / LOOP ================================================ */
 void setup() {
   Serial.begin(115200);
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, LDR_PIN, CO2_PIN);
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, LDR_PIN, CO2_PIN, HR_PIN);
   
   conectarWiFi();
   
