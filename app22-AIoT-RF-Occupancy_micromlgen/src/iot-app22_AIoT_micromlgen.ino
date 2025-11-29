@@ -9,6 +9,7 @@ const uint8_t DHT_MODEL = DHT22;
 const uint8_t LED_PIN   = 21;
 const uint8_t LDR_PIN   = 35;
 const uint8_t CO2_PIN   = 34;
+const uint8_t HR_PIN    = 32;
 
 /* ==== CONSTANTES =================================== */
 static unsigned long lastMs = 0;
@@ -25,30 +26,18 @@ struct ModelStats {
 // MUDANÇA: Criar instância do modelo micromlgen
 Eloquent::ML::Port::RandomForest modeloRF;
 
-/* ==== MOCK: HumidityRatio ========================================= */
-float humidityRatioMock() {
-  static bool seeded = false;
-  if (!seeded) { randomSeed(esp_random()); seeded = true; }
-  const float MIN_HR = 0.002674f;
-  const float MAX_HR = 0.006476f;
-  long r = random(0, 10000);
-  float u = r / 9999.0f;
-  return MIN_HR + u * (MAX_HR - MIN_HR);
-}
-
 /* ==== FUNÇÃO PRINCIPAL: COLETA + INFERÊNCIA LOCAL =================================== */
 bool coletaDados_e_realizaInferencia() {
   // 1. COLETA DE DADOS DOS SENSORES
   ESP32Sensors::Ambiente::AMBIENTE  amb = ESP32Sensors::Ambiente::medirAmbiente();
   ESP32Sensors::LDR::DADOS_LDR      luz = ESP32Sensors::LDR::ler();
   ESP32Sensors::CO2::DADOS_CO2      co2 = ESP32Sensors::CO2::ler();
+  ESP32Sensors::HR::DADOS_HR        hr  = ESP32Sensors::HR::ler();
 
   if (!amb.valido || !luz.valido || !co2.valido) {
     Serial.println("[ERRO] Leituras inválidas dos sensores!");
     return false;
   }
-
-  float hr = humidityRatioMock();
 
   // 2. EXIBIR DADOS BRUTOS
   Serial.println("\n========== INFERÊNCIA LOCAL ML ==========");
@@ -57,7 +46,7 @@ bool coletaDados_e_realizaInferencia() {
   Serial.printf("  Humidity: %.2f %%", amb.umid); Serial.println("");
   Serial.printf("  Light: %.1f lux", luz.lux); Serial.println("");
   Serial.printf("  CO2: %.1f ppm", co2.ppm); Serial.println("");
-  Serial.printf("  HumidityRatio: %.6f", hr); Serial.println("");
+  Serial.printf("  HumidityRatio: %.6f", hr.valor); Serial.println("");
   
   // 3. PREPARAR DADOS PARA O MODELO
   float dadosBrutos[5] = {
@@ -65,7 +54,7 @@ bool coletaDados_e_realizaInferencia() {
     amb.umid,    // Humidity
     luz.lux,     // Light
     co2.ppm,     // CO2
-    hr           // HumidityRatio
+    hr.valor     // HumidityRatio
   };
   
   // 4. NORMALIZAÇÃO (StandardScaler)
@@ -127,7 +116,7 @@ void setup() {
   Serial.println("==========================================");
   
   // Inicializar sensores
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, LDR_PIN, CO2_PIN);
+  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, LDR_PIN, CO2_PIN, HR_PIN);
   Serial.println("Sensores inicializados!");
   Serial.println("Sistema pronto para inferências locais.\n");
   
