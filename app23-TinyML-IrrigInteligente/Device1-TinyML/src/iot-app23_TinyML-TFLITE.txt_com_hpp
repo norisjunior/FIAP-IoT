@@ -1,0 +1,133 @@
+/* ===========================================================================
+ * ESP32 TinyML - Irrigação Inteligente
+ * 
+ * Sistema de irrigação autônomo com rede neural embarcada.
+ * O modelo TFLite decide se a bomba deve ser ligada com base em:
+ *   - dryness: nível de secura do solo (0-1023)
+ *   - temp: temperatura ambiente (°C)
+ * ===========================================================================*/
+
+/* ==== INCLUDES ============================================================ */
+#include "ESP32Sensors.hpp"              // DHT22, LED, Dryness
+#include "ESP32TFLite.hpp"               // Camada de abstração TFLite
+#include "modelo_irrig_inteligente.h"    // Modelo TFLite convertido
+
+/* ==== Configurações de Hardware =========================================== */
+const uint8_t DHT_PIN     = 26;
+const uint8_t DHT_MODEL   = DHT22;
+const uint8_t LED_PIN     = 21;
+const uint8_t DRYNESS_PIN = 32;
+
+/* ==== Configurações do Modelo ============================================= */
+const int MODEL_NUM_INPUTS  = 2;   // dryness, temp
+const int MODEL_NUM_OUTPUTS = 1;   // probabilidade bomba ligar
+const float LIMIAR_ATIVACAO = 0.5; // threshold para ligar bomba
+
+/* ==== Controle de Tempo =================================================== */
+static unsigned long lastMs = 0;
+const unsigned long INTERVAL = 5000; // 5s entre inferências
+
+/* ==== Estatísticas ======================================================== */
+static int totalInferencias = 0;
+static int bombaLigada = 0;
+
+/* ==== FUNÇÃO PRINCIPAL: COLETA + INFERÊNCIA =============================== */
+bool coletaDados_e_realizaInferencia() {
+    
+    // 1. COLETA DE DADOS DOS SENSORES
+    ESP32Sensors::Ambiente::AMBIENTE amb = ESP32Sensors::Ambiente::medirAmbiente();
+    ESP32Sensors::Dryness::DRY dry = ESP32Sensors::Dryness::ler();
+
+    if (!amb.valido || !dry.valido) {
+        Serial.println("[ERRO] Leituras inválidas dos sensores!");
+        return false;
+    }
+
+    // 2. PREPARA ENTRADA PARA O MODELO (valores CRUS - normalização está no modelo)
+    float entradas[MODEL_NUM_INPUTS] = {
+        dry.valor,    // dryness: 0-1023
+        amb.temp      // temperatura: °C
+    };
+
+    // 3. EXECUTA INFERÊNCIA
+    float saidas[MODEL_NUM_OUTPUTS];
+    
+    if (!ESP32TFLite::inferir(entradas, saidas)) {
+        Serial.println("[ERRO] Falha na inferência!");
+        return false;
+    }
+
+    float probabilidade = saidas[0];
+    bool deveIrrigar = (probabilidade >= LIMIAR_ATIVACAO);
+
+    // 4. ATUA NO LED (simula bomba)
+    if (deveIrrigar) {
+        ESP32Sensors::LED::on();
+        bombaLigada++;
+    } else {
+        ESP32Sensors::LED::off();
+    }
+
+    totalInferencias++;
+
+    // 5. EXIBE RESULTADOS
+    Serial.println("\n========== INFERÊNCIA TinyML ==========");
+    Serial.println("[SENSORES] Dados coletados:");
+    Serial.printf("  Dryness: %.1f (0-1023)\n", dry.valor);
+    Serial.printf("  Temperatura: %.1f °C\n", amb.temp);
+    
+    Serial.println("\n[MODELO TFLite]");
+    Serial.printf("  Prob. Irrigar: %.1f%%\n", probabilidade * 100.0);
+    Serial.printf("  Decisão: %s\n", deveIrrigar ? "LIGAR BOMBA" : "MANTER DESLIGADA");
+    Serial.printf("  LED: %s\n", deveIrrigar ? "ACESO" : "APAGADO");
+
+    float percLigada = (totalInferencias > 0) ? (bombaLigada * 100.0 / totalInferencias) : 0;
+    Serial.printf("\n[STATS] Total: %d | Bomba ligada: %d (%.1f%%)\n", 
+                  totalInferencias, bombaLigada, percLigada);
+    Serial.println("========================================");
+
+    return true;
+}
+
+/* ==== SETUP =============================================================== */
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+
+    Serial.println("\n\n==========================================");
+    Serial.println("  ESP32 TinyML - IRRIGAÇÃO INTELIGENTE");
+    Serial.println("==========================================");
+    Serial.println("Modelo: Rede Neural (TensorFlow Lite)");
+    Serial.println("Modo: 100% OFFLINE (Edge AI)");
+    Serial.println("==========================================\n");
+
+    // Inicializar sensores
+    Serial.println("Inicializando sensores...");
+    ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, DRYNESS_PIN);
+    Serial.println("Sensores OK!");
+
+    // Inicializar TFLite
+    Serial.println("\nCarregando modelo TFLite...");
+    if (!ESP32TFLite::inicializar(modelo_irrig_inteligente, 
+                                   modelo_irrig_inteligente_len,
+                                   MODEL_NUM_INPUTS, 
+                                   MODEL_NUM_OUTPUTS)) {
+        Serial.println("ERRO FATAL: Não foi possível carregar o modelo!");
+        while (1) { delay(1000); }
+    }
+
+    Serial.println("\n>> Sistema pronto para inferências!\n");
+    delay(2000);
+}
+
+/* ==== LOOP ================================================================ */
+void loop() {
+    unsigned long now = millis();
+
+    if (now - lastMs >= INTERVAL) {
+        coletaDados_e_realizaInferencia();
+        lastMs = now;
+    }
+
+    delay(100);
+}
