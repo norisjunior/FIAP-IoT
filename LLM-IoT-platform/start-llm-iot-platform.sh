@@ -266,6 +266,10 @@ echo "✓ docker-compose.yml criado"
 # INICIALIZAR SERVIÇOS
 # ============================================
 echo ""
+echo "Atualizando imagem do n8n..."
+sudo docker pull n8nio/n8n:latest
+
+echo ""
 echo "Subindo todos os serviços..."
 sudo docker compose up -d
 
