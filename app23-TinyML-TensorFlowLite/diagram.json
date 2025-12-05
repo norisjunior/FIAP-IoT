@@ -39,6 +39,13 @@
       "top": 113.2,
       "left": -220.8,
       "attrs": { "hornColor": "#000088", "horn": "double" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text3",
+      "top": 115.2,
+      "left": -249.6,
+      "attrs": { "text": "Bomba d'água" }
     }
   ],
   "connections": [
