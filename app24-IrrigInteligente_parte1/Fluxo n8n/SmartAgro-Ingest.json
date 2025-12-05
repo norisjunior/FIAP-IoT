@@ -1,0 +1,314 @@
+{
+  "name": "SmartAgro-Ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS smartirrig (\n  id SERIAL PRIMARY KEY,\n\n  status_bomba BOOLEAN,           -- true = ligada, false = desligada\n  origem_comando TEXT,            -- local, cloud, human\n  dispositivo TEXT,               -- quem enviou o comando: ESP32, cloud_n8n, etc.\n\n  timestamp_estado TIMESTAMPTZ,   -- timestamp real do evento\n  periodo TEXT,                   -- manhã, tarde, noite, madrugada\n\n  motivo TEXT,                    -- (opcional) futuro: override de chuva, comando humano etc.\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO smartirrig (\n  status_bomba,\n  origem_comando,\n  dispositivo,\n  timestamp_estado,\n  periodo\n)\nVALUES (\n  {{ $json.value.StatusBomba }},\n  '{{$json.value.origemDoComando}}',\n  '{{$json.value.dispositivo}}',\n  '{{$json.value.timestamp}}',\n  '{{$json.value.periodo}}'\n);\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        320,
+        48
+      ],
+      "id": "1779db53-9d77-4780-915d-97b277a7492f",
+      "name": "Armazena medições",
+      "credentials": {
+        "postgres": {
+          "id": "X5FMiVM7mdcDAxNI",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\n\nconst times = (body.hourly && body.hourly.time) || [];\nconst precipitation = (body.hourly && body.hourly.precipitation) || [];\n\nif (times.length === 0 || precipitation.length === 0) {\n  return [{\n    json: {\n      chuvaPrevista2h: 0,\n      deveDesligarCloud: false,\n      aviso: 'Sem dados de previsão'\n    }\n  }];\n}\n\n// Hora atual (assumindo n8n com timezone America/Sao_Paulo)\nconst now = new Date();\n\n// Primeiro horário retornado pela API\nconst firstTime = new Date(times[0]);\n\n// Diferença em horas entre agora e o primeiro horário\nconst diffMs = now - firstTime;\nlet indexAtual = Math.floor(diffMs / (1000 * 60 * 60));\n\n// Proteções de borda\nif (isNaN(indexAtual) || indexAtual < 0) indexAtual = 0;\nif (indexAtual >= precipitation.length) indexAtual = precipitation.length - 1;\n\n// Soma da precipitação da hora atual + próxima hora\nlet soma2h = 0;\nfor (let i = 0; i < 2; i++) {\n  const idx = indexAtual + i;\n  if (idx < precipitation.length) {\n    soma2h += precipitation[idx];\n  }\n}\n\n//soma2h = 25;\n\nreturn [{\n  json: {\n    chuvaPrevista2h: soma2h,\n    ligarbomba: !(soma2h >= 10),\n    horaAtualUTCAPI: times[indexAtual]\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        224
+      ],
+      "id": "9885b2e0-0743-46c5-8906-68ebbcdc808e",
+      "name": "Calcula chuva nas próx 2 h"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "21abb020-81b6-4299-89d8-d20fcb04a700",
+              "leftValue": "={{ $json.bomba }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1024,
+        224
+      ],
+      "id": "edbbac1f-62dd-407f-8300-63362fbc61f0",
+      "name": "Se Device 1 ligou irrigação"
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={\n  \"latitude\": -23.55,\n  \"longitude\": -46.63,\n  \"hourly\": [\"precipitation\"],\n  \"timezone\": \"America/Sao_Paulo\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -800,
+        224
+      ],
+      "id": "223c1532-598c-476b-9b82-c96d895dd216",
+      "name": "Consulta Previsão de chuva"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Usa o campo message\nconst dados = $input.first().json;\n\n// 3) Monta um objeto\nreturn {\n    json: {\n        dispositivo: \"cloud_n8n\",\n        bomba: dados.ligarbomba,\n        origemDoComando: \"cloud\"\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        224
+      ],
+      "id": "9cb96fc5-e104-402e-87b7-275a363d256c",
+      "name": "Estrutura payload JSON para envio à bomba d'água"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "17041019-dd4e-418b-bdb9-f6e5cfc2f391",
+              "leftValue": "={{ $json.chuvaPrevista2h }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -352,
+        224
+      ],
+      "id": "41750f03-05a5-4858-bb78-ec4110959e6e",
+      "name": "Se chuva > 10 mm cancelar irrigação"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Timestamp internacional + timezone correto\nconst now = new Date().toLocaleString(\"sv-SE\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour12: false\n});\n\n// Converte hour para número\nconst hour = Number(\n  new Date().toLocaleString(\"en-US\", { \n    timeZone: \"America/Sao_Paulo\", \n    hour: \"numeric\", \n    hour12: false \n  })\n);\n\n// Período\nlet periodo = \"madrugada\";\nif (hour >= 6 && hour < 12) periodo = \"manhã\";\nelse if (hour >= 12 && hour < 18) periodo = \"tarde\";\nelse if (hour >= 18) periodo = \"noite\";\n\nreturn [{\n  key: \"irrigacao\",\n  value: {\n    dispositivo: data.dispositivo,\n    StatusBomba: data.bomba,\n    origemDoComando: data.origemDoComando,\n    timestamp: now,\n    periodo\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        48
+      ],
+      "id": "58dfd9a1-160a-497a-9559-009e2c86b487",
+      "name": "Formata medição incluindo timestamp e período"
+    },
+    {
+      "parameters": {
+        "topic": "FIAPIoT/smartagro/cmd/cloud",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        96,
+        272
+      ],
+      "id": "7774d1c1-5446-4b30-b7b6-19c1f16e4df1",
+      "name": "Envio de comando para bomba d'água",
+      "credentials": {
+        "mqtt": {
+          "id": "xne1ZYCGDs5i3Vx6",
+          "name": "MQTT account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "topics": "FIAPIoT/smartagro/cmd/+",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        144
+      ],
+      "id": "bad10964-5914-4861-895a-59584d8a5eb4",
+      "name": "Decisão Device com TFLITE",
+      "credentials": {
+        "mqtt": {
+          "id": "xne1ZYCGDs5i3Vx6",
+          "name": "MQTT account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1) Usa o campo message e topic\nconst msg = $json.message;\nconst topic = $json.topic;\n\n// 2) Armazena na variável data e o timestamp correto\nconst data = JSON.parse(msg);\n\n// 3) Define a origem da tomada de decisão\n// O método split('/') divide a string em um array. [2] pega o terceiro elemento (local, cloud, human)\n// Exemplo: \"FIAPIoT/smartagro/cmd/local\".split('/') -> [\"FIAPIoT\", \"smartagro\", \"cmd\", \"local\"]\nconst origem = topic.split('/').pop();\n\n// 4) Monta um objeto de saída\nreturn {\n    json: {\n        dispositivo: data.dispositivo,\n        bomba: data.bomba,\n        // Adiciona a nova informação da origem\n        origemDoComando: origem\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1248,
+        144
+      ],
+      "id": "4f2f659e-3e0c-48e0-95f4-a31d97d4ec81",
+      "name": "Formata (gera JSON) decisão"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Calcula chuva nas próx 2 h": {
+      "main": [
+        [
+          {
+            "node": "Se chuva > 10 mm cancelar irrigação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se Device 1 ligou irrigação": {
+      "main": [
+        [
+          {
+            "node": "Consulta Previsão de chuva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consulta Previsão de chuva": {
+      "main": [
+        [
+          {
+            "node": "Calcula chuva nas próx 2 h",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estrutura payload JSON para envio à bomba d'água": {
+      "main": [
+        [
+          {
+            "node": "Envio de comando para bomba d'água",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Formata medição incluindo timestamp e período",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se chuva > 10 mm cancelar irrigação": {
+      "main": [
+        [
+          {
+            "node": "Estrutura payload JSON para envio à bomba d'água",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata medição incluindo timestamp e período": {
+      "main": [
+        [
+          {
+            "node": "Armazena medições",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decisão Device com TFLITE": {
+      "main": [
+        [
+          {
+            "node": "Formata (gera JSON) decisão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata (gera JSON) decisão": {
+      "main": [
+        [
+          {
+            "node": "Se Device 1 ligou irrigação",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Formata medição incluindo timestamp e período",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "122abb0f-e7f8-4b2b-a840-f0823f0cce2c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "UShHKRwwF2VBaQMl",
+  "tags": []
+}

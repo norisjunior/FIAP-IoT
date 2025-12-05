@@ -1,0 +1,189 @@
+{
+  "name": "SmartAgro-LLM",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Olá! 👋\nEu sou o FIoT. Como posso ajudá-lo?",
+        "options": {
+          "subtitle": "SIstema de Irrigação Inteligente",
+          "title": "Smart Agro"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "28acdd49-3b39-42eb-b386-86e42cff93f0",
+      "name": "When chat message received",
+      "webhookId": "cd69ff2d-1f0f-4942-ae59-9fc4e593751e"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Você é um assistente de irrigação inteligente de uma fazenda.\n\nCONTEXTO TEMPORAL IMPORTANTE:\n- Data atual: {{ $now.format('yyyy-LL-dd') }}\n- Hora atual: {{ $now.format('HH:mm') }}\n- Dia da semana: {{ $now.format('EEEE') }}\n\nPERÍODOS DO DIA:\n- madrugada: 00:00 às 05:59\n- manhã: 06:00 às 11:59\n- tarde: 12:00 às 17:59\n- noite: 18:00 às 23:59\n\nFERRAMENTAS DISPONÍVEIS:\n\n1) irrigacao_estado_atual\nUse esta ferramenta para responder perguntas sobre o estado ATUAL da irrigação, por exemplo:\n- \"A irrigação está ligada?\"\n- \"A bomba está funcionando agora?\"\n- \"Quem mandou desligar a irrigação?\"\n- \"Por que a irrigação foi desligada?\"\n\nEsta ferramenta retorna a última linha registrada no banco, com:\n- timestamp_estado\n- status_bomba (true = ligada, false = desligada)\n- origem_comando (LOCAL, CLOUD ou HUMAN)\n- motivo (texto curto explicando o motivo do último comando)\n\n\n2) irrigacao_historico\nUse esta ferramenta para perguntas sobre o PASSADO em um dia/período específico, por exemplo:\n- \"Como estava ontem à tarde?\"\n- \"Ela ficou ligada hoje de manhã?\"\n- \"A irrigação estava ligada nesta madrugada?\"\n\nSempre que você usar esta ferramenta, envie Query_Parameters como uma string no formato:\n\"AAAA-MM-DD, periodo\"\n\nO campo periodo deve ser uma destas palavras exatas:\nmadrugada, manhã, tarde, noite.\n\nExemplos:\n- \"Como estava nesta madrugada?\" → \"{{ $now.format('yyyy-LL-dd') }}, madrugada\"\n- \"Como estava ontem à noite?\" → \"{{ $now.minus({days: 1}).format('yyyy-LL-dd') }}, noite\"\n\n\nREGRAS IMPORTANTES:\n\n- Para perguntas sobre \"agora\", \"atualmente\", \"neste momento\", \"está ligada?\" → use irrigacao_estado_atual.\n- Para perguntas sobre \"ontem\", \"hoje de manhã\", \"nesta madrugada\", \"semana passada\" (quando o usuário indicar um dia/período específico) → use irrigacao_historico.\n- Nunca invente se a irrigação está ligada ou desligada. Sempre baseie sua resposta SOMENTE nos dados retornados pelas ferramentas.\n- Use o campo \"motivo\" para explicar por que a irrigação foi ligada ou desligada (por exemplo: override da nuvem por previsão de chuva, comando do gestor, decisão local do TinyML).\n- Se não houver dados suficientes, explique isso claramente ao usuário, em português do Brasil.\n- Responda sempre em português do Brasil, de forma clara, direta e educada.\n- NUNCA mencione o nome das ferramentas, do banco de dados ou de queries na resposta ao usuário. Responda como se você mesmo tivesse o conhecimento.\n\nREGRAS DE USO DE MEMÓRIA E FERRAMENTAS (IMPORTANTE):\n\n- Você tem acesso ao histórico da conversa (memória simples).\n- Antes de chamar QUALQUER ferramenta, você deve se perguntar:\n  \"Preciso MESMO consultar o banco de dados para responder esta mensagem?\"\n\n- NUNCA chame ferramentas quando a mensagem do usuário for:\n  - apenas saudação (\"olá\", \"boa tarde\", \"oi, eu sou o José\"),\n  - apresentação pessoal,\n  - agradecimento,\n  - teste de conversa,\n  - perguntas sobre quem você é ou como pode ajudar.\n\n  Nesses casos, responda APENAS com conversa normal, sem usar ferramentas.\n\n- Só use ferramentas quando houver uma PERGUNTA CLARA sobre irrigação ou histórico, por exemplo:\n  - \"a irrigação está ligada?\"\n  - \"quem mandou desligar?\"\n  - \"como estava ontem à noite?\"\n  - \"a bomba ficou ligada hoje de manhã?\"\n\n- Se a nova pergunta puder ser respondida apenas com base na sua própria resposta anterior,\n  NÃO chame ferramenta de novo. Use somente o histórico da conversa.\n\n- Exemplos:\n  1) Usuário: \"A irrigação está ligada agora?\"\n     → use irrigacao_estado_atual.\n     Depois você responde algo como:\n     \"Ela está desligada, último comando veio da CLOUD às 10:41.\"\n\n     Se em seguida o usuário perguntar:\n     \"Quem mandou desligar?\"\n     \"Por que ela foi desligada?\"\n     → NÃO use ferramentas. Use a informação que você já sabe.\n\n  2) Usuário: \"Como estava ontem à noite?\"\n     → use irrigacao_historico.\n\n  3) Usuário: \"E hoje de manhã?\"\n     → use irrigacao_historico com outra data/período.\n\n- Em caso de dúvida entre usar ferramenta ou não, prefira NÃO usar ferramenta\n  e responda de forma educada pedindo ao usuário que especifique melhor a dúvida.\n\nREGRA CRÍTICA SOBRE MEMÓRIA:\n\n- Ignore qualquer lembrança antiga do estado da irrigação.\n- Nunca use mensagens de sessões anteriores para responder sobre estado atual.\n- O único estado válido é SEMPRE o retornado pela ferramenta mais recente, a menos que o usuário peça histórico explicitamente.\n\nREGRAS OBRIGATÓRIAS SOBRE CAMPOS DO BANCO (NÃO IGNORAR):\n\nSempre que você usar a ferramenta \"irrigacao_estado_atual\", você DEVE incluir na resposta:\n\n- status_bomba (ligada/desligada)\n- origem_comando (quem enviou o último comando: LOCAL, CLOUD ou HUMAN)\n- timestamp_estado (data e hora da última alteração, no horário da fazenda)\n\nNUNCA diga que \"a ferramenta não retornou horário\" se o campo timestamp_estado existir,\ne nunca omita a origem_comando. Esses dois campos fazem PARTE da resposta obrigatória.\n\nSe por algum motivo a ferramenta retornar valores nulos, você deve escrever claramente:\n\"Não há registro do horário\" ou \"Não há registro da origem do comando\".\nMas se os campos existirem, VOCÊ DEVE incluí-los na resposta.\n\nREGRAS PARA FOLLOW-UP:\n- Se o usuário perguntar \"que horas a bomba foi desligada?\" depois de você já ter dito o timestamp,\n  você NÃO deve chamar a ferramenta novamente. Apenas repita o valor que você já informou.\n- Se você ainda não informou timestamp_estado, E a ferramenta o possui, consulte a ferramenta.\n- Se o usuário perguntar sem mudar o tempo (\"agora\", \"nesse momento\"), NÃO use irrigacao_historico.\n\nToda resposta sobre estado atual deve conter:\n\"Status atual: [ligada/desligada]. Último comando às [timestamp_estado].\"\n\nSe a memória contiver estados antigos diferentes do estado atual, você deve desconsiderá-los completamente. Memória antiga nunca substitui os dados das ferramentas.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        336,
+        0
+      ],
+      "id": "4f475abb-840e-44a3-b695-ff123cb32af6",
+      "name": "FIoT Agent - Smart Agro"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Essa ferramenta se chama \"irrigacao_estado_atual\" e responde como está a irrigação agora, nesse instante.\nEla retorna a última linha da tabela smartirrig, com:\n\n- timestamp_estado: horário do último estado registrado\n- status_bomba: true (bomba LIGADA) ou false (bomba DESLIGADA)\n- origem_comando: LOCAL, CLOUD ou HUMAN\n- dispositivo: quem enviou o comando (ex.: ESP32, cloud_n8n)\n- periodo: madrugada, manhã, tarde ou noite\n- motivo: texto curto explicando por que a irrigação foi ligada ou desligada (se disponível)\n\nUse SEMPRE essa ferramenta para perguntas sobre o estado ATUAL da irrigação,\ncomo \"a irrigação está ligada agora?\", \"quem mandou desligar?\" ou \"por que desligou?\".\n\n**NÃO use esta ferramenta se o usuário estiver apenas pedindo um detalhamento da sua resposta anterior**\nsobre o estado atual (por exemplo: \"quem mandou desligar?\" logo depois de você já ter dito que foi a CLOUD).\nNesses casos, use apenas o histórico da conversa.\n",
+        "operation": "executeQuery",
+        "query": "SELECT\n  timestamp_estado,\n  status_bomba,\n  origem_comando,\n  dispositivo,\n  periodo,\n  motivo\nFROM smartirrig\nORDER BY timestamp_estado DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        544,
+        224
+      ],
+      "id": "f380dde9-1be7-4825-b243-683e762bbb14",
+      "name": "irrigacao_estado_atual",
+      "credentials": {
+        "postgres": {
+          "id": "X5FMiVM7mdcDAxNI",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta se chama \"irrigacao_historico\" e consulta dados históricos de irrigação.\n\nSempre que você usá-la, envie Query_Parameters como uma string no formato:\n\"AAAA-MM-DD, periodo\"\n\nO campo periodo deve ser uma destas palavras exatas:\nmadrugada, manhã, tarde, noite.\n\nExemplos de Query_Parameters:\n- \"2025-12-05, manhã\"\n- \"2025-12-04, noite\"\n\nEla retorna:\n- timestamp_estado\n- status_bomba (true/false)\n- origem_comando (LOCAL, CLOUD, HUMAN)\n- dispositivo\n- periodo (madrugada, manhã, tarde, noite)\n- motivo (texto explicando por que ligou/desligou, se disponível)\n\nNÃO use essa ferramenta para responder perguntas sobre o estado ATUAL da irrigação.\nEla é apenas para perguntas sobre o passado (ontem, hoje de manhã, nesta madrugada etc.).\n",
+        "operation": "executeQuery",
+        "query": "SELECT\n  timestamp_estado,\n  status_bomba,\n  origem_comando,\n  dispositivo,\n  periodo,\n  motivo\nFROM smartirrig\nWHERE DATE(timestamp_estado) = $1\n  AND periodo = $2\nORDER BY timestamp_estado DESC\nLIMIT 1;\n",
+        "options": {
+          "queryReplacement": "={{ $fromAI('Query_Parameters', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        736,
+        224
+      ],
+      "id": "db4ffb8c-6716-4f84-b64d-944e7f7b7786",
+      "name": "irrigacao_historico",
+      "credentials": {
+        "postgres": {
+          "id": "X5FMiVM7mdcDAxNI",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        240
+      ],
+      "id": "47328a86-3e72-4662-b211-9a9d4e034916",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        160,
+        240
+      ],
+      "id": "03afd0bf-9805-4074-8b3e-946f0a24bd2e",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "REwS0Tr9kP9sKfKx",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "FIoT Agent - Smart Agro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "irrigacao_estado_atual": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent - Smart Agro",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "irrigacao_historico": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent - Smart Agro",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "FIoT Agent - Smart Agro",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FIoT Agent - Smart Agro",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5887ddc0-73a1-4f0b-a349-12d8db982a68",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "sud9nnjNhmZxROt6",
+  "tags": []
+}

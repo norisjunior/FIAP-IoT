@@ -88,7 +88,7 @@ void loop() {
     float probabilidade = modelGetOutput(0);
     bool deveIrrigar    = (probabilidade >= 0.5f);
 
-    // 5. ATUAR NO LED (SIMULA A BOMBA D'ÁGUA)
+    // 5. LIGAR OU NÃO LIGAR A BOMBA D'ÁGUA
     if (deveIrrigar) {
         ESP32Sensors::LED::on();
         ESP32Sensors::MiniServo::ligar();
