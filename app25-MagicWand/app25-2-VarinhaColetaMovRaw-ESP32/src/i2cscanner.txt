@@ -1,0 +1,50 @@
+#include <Wire.h>
+#include <Arduino.h>
+
+// Pinos que você definiu no seu projeto
+const uint8_t SCL_PIN = 23;
+const uint8_t SDA_PIN = 22;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial);
+  
+  Serial.println("\nI2C Scanner - Iniciando...");
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(10000); // Reduz para 10kHz (padrão é 400kHz)
+
+
+}
+
+void loop() {
+  byte error, address;
+  int nDevices = 0;
+
+  Serial.println("Escaneando...");
+
+  for (address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+
+    if (error == 0) {
+      Serial.print("Dispositivo I2C encontrado no endereço 0x");
+      if (address < 16) Serial.print("0");
+      Serial.print(address, HEX);
+      Serial.println(" !");
+      nDevices++;
+    } 
+    else if (error == 4) {
+      Serial.print("Erro desconhecido no endereço 0x");
+      if (address < 16) Serial.print("0");
+      Serial.println(address, HEX);
+    }
+  }
+
+  if (nDevices == 0) {
+    Serial.println("Nenhum dispositivo I2C encontrado.\n");
+  } else {
+    Serial.println("Fim do escaneamento.\n");
+  }
+
+  delay(5000); 
+}
