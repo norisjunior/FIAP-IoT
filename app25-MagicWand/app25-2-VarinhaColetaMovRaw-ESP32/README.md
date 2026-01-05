@@ -1,75 +1,73 @@
 # Physical Computing, Embedded AI, Robotics & Cognitive IoT
 
-## Aplicação 16 - Arquitetura Edge/Fog Computing
+## **Aplicação 25 - 1 - Coleta de dados para detecção de gestos usando ESP32 e MPU6050**
 
-Esta aplicação demonstra arquitetura de computação de borda (Edge Computing) e névoa (Fog Computing), implementando processamento local próximo aos sensores. O sistema conecta-se a um broker MQTT rodando em Raspberry Pi (camada Fog) para processamento intermediário antes do envio à nuvem.
+Sistema de coleta de dados de movimento usando ESP32 e sensor MPU6050 para treinamento de modelos de Machine Learning no Edge Impulse.
 
-## Pré-requisitos
+## Hardware Necessário
 
-### Inicializar a Plataforma IoT
+- ESP32 DevKit
+- MPU6050 (acelerômetro e giroscópio)
+- 3 LEDs (vermelho, verde, azul)
 
-Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+## Conexões
 
-1. **Acessar WSL2 Ubuntu:**
+**MPU6050:**
+- VCC → 3V3
+- GND → GND
+- SDA → GPIO 22
+- SCL → GPIO 23
+- AD0 → GND (endereço I2C 0x68)
+
+**LEDs:**
+- LED Vermelho → GPIO 21
+- LED Verde → GPIO 19
+- LED Azul → GPIO 18
+
+## Configuração
+
+O sistema coleta dados a **50Hz** (20ms entre amostras) com 6 eixos:
+- Acelerômetro: x, y, z (m/s²)
+- Giroscópio: x, y, z (rad/s)
+
+## Como Usar
+
+1. **Compile e faça upload do código**
+
+2. **Abra o Monitor Serial (apenas para constatar que a aplicação está UP)**
+   - F1 -> PlatformIO New Terminal
+
    ```bash
-   wsl -d ubuntu
+   pio device monitor -b 115200
    ```
+5. **Feche o monitor serial**
+   - Assim, a porta COM estará liberada para uso pela ferramenta de encaminhamento de dados do Edge Impulse (*edge-impulse-data-forwarder*)
 
-2. **Clonar o repositório (se ainda não clonou):**
-   ```bash
-   cd ~
-   git clone https://github.com/norisjunior/FIAP-IoT
-   ```
 
-3. **Iniciar todos os serviços:**
-   ```bash
-   cd FIAP-IoT/IoT-platform/
-   sudo ./start-linux.sh
-   ```
+4. **Capture dados no Edge Impulse**
+   - Acesse [studio.edgeimpulse.com](https://studio.edgeimpulse.com)
+   - Vá em "Data acquisition"
+   - Conecte via Serial
+   - Configure: 50Hz, 1500ms de janela
+   - Realize o gesto e clique em "Start sampling"
 
-Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
+## Formato de Saída
 
-**Serviços disponíveis:**
-- MQTT Broker: localhost:1883 (nome do container: mqtt-broker)
-- Node-RED: http://localhost:1880 (admin/FIAPIoT)
-- n8n: http://localhost:5678
-- InfluxDB: http://localhost:8086 (admin/FIAP@123)
-- Grafana: http://localhost:3000 (admin/admin)
+```
+ax,ay,az,gx,gy,gz
+9.234567,-1.456789,0.123456,0.012345,-0.023456,0.034567
+```
 
-**Nota:** Para este app, você pode usar o broker MQTT local (plataforma IoT) ou configurar um Raspberry Pi como camada Fog intermediária.
+Dados separados por vírgula, 6 casas decimais.
 
-### Sensores e Atuadores
+## Simulação
 
-**Sensores:**
-- DHT22 (Temperatura e Umidade) - Pino GPIO 26
-- MPU6050 (Acelerômetro/Giroscópio) - Pinos I2C:
-  - SDA: GPIO 18
-  - SCL: GPIO 19
+Compatível com Wokwi Simulator - use o arquivo `diagram.json` incluído.
 
-**Atuadores:**
-- LED - Pino GPIO 27 (Indicador de status do motor)
+## Bibliotecas
 
-### Funcionamento
+- Adafruit MPU6050
+- Adafruit Unified Sensor
+- Adafruit BusIO
 
-O sistema implementa arquitetura hierárquica Edge-Fog-Cloud, com processamento distribuído em múltiplas camadas:
-
-**Tópico de Publicação (Dados):**
-- `FIAPIoT/aula09/noris/motor/dados`
-- Envia dados a cada 3 segundos em formato JSON
-- Campos: temperatura, umidade, aceleração (x, y, z), status do motor
-
-**Tópico de Subscrição (Comandos):**
-- `FIAPIoT/aula09/noris/motor/cmd`
-- Recebe comandos para ligar/desligar o motor
-
-**Configuração MQTT:**
-- Broker: Raspberry Pi (IP local configurável)
-- Porta: 1883
-- Client ID: IoTDeviceNoris001
-
-**Arquitetura demonstrada:**
-- **Edge Layer:** ESP32 com sensores fazendo pré-processamento local
-- **Fog Layer (Near Edge):** Raspberry Pi executando broker MQTT, realizando agregação e filtragem de dados
-- **Cloud Layer:** Servidores remotos para análise avançada e armazenamento de longo prazo
-
-Esta arquitetura reduz latência, economiza largura de banda e permite operação parcial mesmo com conectividade intermitente à nuvem. O processamento próximo à origem dos dados (Edge) permite respostas rápidas para controle crítico.
+(Instaladas automaticamente pelo PlatformIO)
