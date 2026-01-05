@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": 147.82, "left": 136.72, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 217.2,
+      "left": 128.6,
+      "attrs": { "color": "red", "flip": "1" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn1",
+      "top": 74.6,
+      "left": 134.4,
+      "attrs": { "color": "black", "xray": "1" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "imu1:VCC", "esp:3V3", "red", [ "v-144", "h-211.12" ] ],
+    [ "imu1:GND", "esp:GND.2", "black", [ "v-134.4", "h-95.92" ] ],
+    [ "imu1:SCL", "esp:23", "limegreen", [ "v0" ] ],
+    [ "imu1:SDA", "esp:22", "green", [ "v0" ] ],
+    [ "led1:C", "esp:GND.1", "black", [ "v9.6", "h-153.6", "v-96" ] ],
+    [ "imu1:AD0", "esp:GND.3", "orange", [ "v0" ] ],
+    [ "btn1:1.l", "esp:GND.2", "black", [ "h0", "v-28.8" ] ],
+    [ "btn1:2.l", "esp:21", "green", [ "h0" ] ],
+    [ "led1:A", "esp:2", "green", [ "v0", "h-18.8", "v-67.2" ] ]
+  ],
+  "dependencies": {}
+}
