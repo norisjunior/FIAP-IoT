@@ -30,7 +30,7 @@
       "typeVersion": 2,
       "position": [
         -576,
-        224
+        216
       ],
       "id": "9885b2e0-0743-46c5-8906-68ebbcdc808e",
       "name": "Calcula chuva nas próx 2 h"
@@ -63,7 +63,7 @@
       "typeVersion": 2.2,
       "position": [
         -1024,
-        224
+        216
       ],
       "id": "edbbac1f-62dd-407f-8300-63362fbc61f0",
       "name": "Se Device 1 ligou irrigação"
@@ -80,7 +80,7 @@
       "typeVersion": 4.3,
       "position": [
         -800,
-        224
+        216
       ],
       "id": "223c1532-598c-476b-9b82-c96d895dd216",
       "name": "Consulta Previsão de chuva"
@@ -93,7 +93,7 @@
       "typeVersion": 2,
       "position": [
         -128,
-        224
+        216
       ],
       "id": "9cb96fc5-e104-402e-87b7-275a363d256c",
       "name": "Estrutura payload JSON para envio à bomba d'água"
@@ -126,7 +126,7 @@
       "typeVersion": 2.2,
       "position": [
         -352,
-        224
+        216
       ],
       "id": "41750f03-05a5-4858-bb78-ec4110959e6e",
       "name": "Se chuva > 10 mm cancelar irrigação"
@@ -153,7 +153,7 @@
       "typeVersion": 1,
       "position": [
         96,
-        272
+        264
       ],
       "id": "7774d1c1-5446-4b30-b7b6-19c1f16e4df1",
       "name": "Envio de comando para bomba d'água",
@@ -304,7 +304,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "122abb0f-e7f8-4b2b-a840-f0823f0cce2c",
+  "versionId": "12693715-1465-4fd8-a5e8-f3074eca36d4",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"

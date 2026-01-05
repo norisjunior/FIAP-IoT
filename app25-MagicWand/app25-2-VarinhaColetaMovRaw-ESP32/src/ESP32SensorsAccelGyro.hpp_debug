@@ -1,0 +1,74 @@
+#pragma once
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+
+namespace ESP32Sensors {
+  namespace AccelGyro {
+
+    // Use um I2C dedicado (evita conflitos e garante que o mpu usa o mesmo barramento)
+    static TwoWire I2C = TwoWire(0);
+    static Adafruit_MPU6050 mpu;
+
+    struct DADOS {
+      sensors_event_t accel, gyro, temp;
+    };
+
+    inline void inicializar(uint8_t sdaPin, uint8_t sclPin) {
+      I2C.begin(sdaPin, sclPin, 100000); // já seta clock aqui
+      delay(50);
+
+      // (Opcional) scan usando I2C dedicado
+      Serial.println("Escaneando...");
+      int nDevices = 0;
+      for (uint8_t address = 1; address < 127; address++) {
+        I2C.beginTransmission(address);
+        uint8_t error = I2C.endTransmission();
+        if (error == 0) {
+          Serial.print("Dispositivo I2C encontrado no endereço 0x");
+          if (address < 16) Serial.print("0");
+          Serial.print(address, HEX);
+          Serial.println(" !");
+          nDevices++;
+        }
+      }
+      if (nDevices == 0) Serial.println("Nenhum dispositivo I2C encontrado.\n");
+      else Serial.println("Fim do escaneamento.\n");
+
+
+      I2C.beginTransmission(0x68);
+      I2C.write(0x75); // WHO_AM_I
+      uint8_t err = I2C.endTransmission(false);
+
+      if (err == 0 && I2C.requestFrom((uint8_t)0x68, (uint8_t)1) == 1) {
+        uint8_t who = I2C.read();
+        Serial.print("WHO_AM_I (0x75) = 0x");
+        Serial.println(who, HEX);
+      } else {
+        Serial.println("Falha ao ler WHO_AM_I");
+      }
+
+
+      // Tenta 0x68 e depois 0x69 (fallback)
+      bool ok = mpu.begin(0x68, &I2C);
+      if (!ok) ok = mpu.begin(0x69, &I2C);
+
+      if (!ok) {
+        Serial.println("Erro: MPU6050 não encontrado pela biblioteca (WHO_AM_I não bate).");
+        Serial.println("Dica: verifique se o dispositivo em 0x68 é realmente um MPU6050 (DS3231 também usa 0x68).");
+        while (1) delay(10);
+      }
+
+      mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
+      mpu.setGyroRange(MPU6050_RANGE_250_DEG);
+      mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+    }
+
+    inline DADOS medirAccelGyro() {
+      DADOS d;
+      mpu.getEvent(&d.accel, &d.gyro, &d.temp);
+      return d;
+    }
+  }
+}
