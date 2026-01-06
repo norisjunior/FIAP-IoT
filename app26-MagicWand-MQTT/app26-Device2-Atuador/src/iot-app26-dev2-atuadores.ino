@@ -7,7 +7,7 @@
 #include "ESP32Sensors.hpp"
 
 /* ==== Configurações de Hardware =========================================== */
-const static uint8_t BUZZER_PIN   = 15;
+const static uint8_t BUZZER_PIN   = 18;
 const static uint8_t LED_PIN      = 27;
 const static uint8_t SERVO_PIN    = 13;
 
@@ -52,21 +52,31 @@ void atualizarBuzzer();
 void setup() {
   Serial.begin(115200);
     
-  Serial.println("\n\n===================================");
-  Serial.println("  CONTROLE DA BOMBA D'ÁGUA  ");
-  Serial.println("===================================");
+  Serial.println("\n\n=====================================");
+  Serial.println("  CONTROLE DA BOMBA D'ÁGUA + BUZZER  ");
+  Serial.println("=====================================");
 
   //Inicializa todos os sensores
   Serial.println("Inicializando atuadores...");
   ESP32Sensors::beginAll(BUZZER_PIN, LED_PIN, SERVO_PIN);
 
-  // Teste dos atuadores
+  // Teste dos atuadores (SEPARADO para evitar pico de corrente)
   ESP32Sensors::LED::off();
+
+  // Teste 1: Servo (bomba)
+  Serial.println("Testando servo/bomba...");
   ESP32Sensors::MiniServo::ligar();
-  ESP32Sensors::Audio::ativarAlarme();
-  delay(1000);
+  delay(500);
   ESP32Sensors::MiniServo::desligar();
+  delay(500);
+
+  // Teste 2: Buzzer
+  Serial.println("Testando buzzer...");
+  ESP32Sensors::Audio::ativarAlarme();
+  delay(500);
   ESP32Sensors::Audio::desativarAlarme();
+  delay(500);
+
   bombaLigada = false;
   buzzerLigado = false;
   Serial.println("Atuadores inicializados:");
@@ -194,7 +204,7 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
   // Valida campos obrigatórios: "atuador" e "comando"
-  if (!doc.containsKey("atuador") || !doc.containsKey("comando")) {
+  if (!doc["atuador"].is<const char*>() || !doc["comando"].is<bool>()) {
       Serial.println("JSON inválido: faltam campos 'atuador' ou 'comando'. IGNORADO.");
       return;
   }
@@ -264,13 +274,19 @@ void atualizarBomba() {
 
   if (ligar && !bombaLigada) {
     Serial.println("AÇÃO: Ligar bomba d'água.");
+    Serial.println("[DEBUG] Ligando LED...");
     ESP32Sensors::LED::on();
+    Serial.println("[DEBUG] Acionando servo para posição 90°...");
     ESP32Sensors::MiniServo::ligar();
+    Serial.println("[DEBUG] Servo acionado!");
     bombaLigada = true;
   } else if (!ligar && bombaLigada) {
     Serial.println("AÇÃO: Desligar bomba d'água.");
+    Serial.println("[DEBUG] Desligando LED...");
     ESP32Sensors::LED::off();
+    Serial.println("[DEBUG] Acionando servo para posição 0°...");
     ESP32Sensors::MiniServo::desligar();
+    Serial.println("[DEBUG] Servo desacionado!");
     bombaLigada = false;
   } else {
     Serial.println("AÇÃO: Nenhuma mudança (estado já correspondente).");

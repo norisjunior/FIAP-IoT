@@ -41,7 +41,7 @@
     [ "servo1:V+", "esp:5V", "red", [ "h-38.4", "v86.5", "h268.65" ] ],
     [ "servo1:PWM", "esp:13", "green", [ "h-19.2", "v57.8", "h230.4", "v-57.6" ] ],
     [ "servo1:GND", "esp:GND.1", "black", [ "h-28.8", "v86.4", "h249.6", "v-76.8" ] ],
-    [ "bz1:2", "esp:15", "green", [ "v0" ] ],
+    [ "bz1:2", "esp:18", "green", [ "v0" ] ],
     [ "bz1:1", "esp:GND.3", "black", [ "v0" ] ]
   ],
   "dependencies": {}

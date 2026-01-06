@@ -37,7 +37,10 @@ float best_val = 0.0f;
 size_t best_ix = 0;
 
 //MQTT
-#define MQTT_HOST       "host.wokwi.internal"
+// Atenção para o endereço do MQTT Broker:
+// Estando o ESP32 e o notebook conectados no WiFi do celular
+// Verificar o IP atribuído ao notebook (que estará com o MQTT Broker executando em docker)
+#define MQTT_HOST       "10.191.136.155"
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/smartagro/cmd/local"
 #define MQTT_DEVICEID   "FIAPIoTapp26Dev1"
