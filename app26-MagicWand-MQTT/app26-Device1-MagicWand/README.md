@@ -154,8 +154,8 @@ app25-2-VarinhaMLDetectaMov-ESP32/
 |-------|-----|---------|---------|------|
 | Círculo | Verde | 3342 | `true` | Liga bomba d'água |
 | Cima-baixo | Vermelho | 3342 | `false` | Desliga bomba d'água |
-| Lateral-parabaixo | Azul | 3338 | `true` | Liga irrigação |
-| Descanso-parabaixo | Branco | 3338 | `false` | Desliga irrigação |
+| Lateral-parabaixo | Azul | 3338 | `true` | Liga buzzer |
+| Descanso-parabaixo | Branco | 3338 | `false` | Desliga buzzer |
 
 
 ## Bibliotecas
