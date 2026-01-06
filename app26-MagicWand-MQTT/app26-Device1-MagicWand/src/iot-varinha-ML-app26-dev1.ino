@@ -8,8 +8,8 @@
 
 /* ---- Configurações ---- */
 //WiFi
-const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
-const char* WIFI_PASSWORD = "";
+const char* WIFI_SSID     = "IoTNJ";   // Rede pública do simulador
+const char* WIFI_PASSWORD = "Th1ng$IoT";
 WiFiClient wifiClient;
 
 //Sensores
@@ -290,13 +290,16 @@ void EdgeAI_predict() {
                 result.timing.dsp,
                 result.timing.classification);
 
+    // Resetar variáveis antes de encontrar a maior probabilidade
+    best_val = 0.0f;
+    best_ix = 0;
+
     // Encontrar maior probabilidade
-    
     for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
         float v = result.classification[ix].value;
         const char *lab = result.classification[ix].label;
         ei_printf("  %s: %.3f\n", lab, v);
-        
+
         if (v > best_val) {
             best_val = v;
             best_ix = ix;
