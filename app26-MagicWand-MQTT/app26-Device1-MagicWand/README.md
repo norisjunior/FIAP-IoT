@@ -1,14 +1,19 @@
 # Physical Computing, Embedded AI, Robotics & Cognitive IoT
 
-## Aplicação 25 - 2 - Detecção de Gestos em Tempo Real com ESP32 e Edge Impulse
+## Aplicação 26 - Device 1 - Varinha Mágica com MQTT para Controle de Atuadores
 
-Sistema de reconhecimento de gestos usando TinyML no ESP32 (usando a plataforma Edge Impulse). Detecta 4 gestos diferentes em tempo real: cima-baixo, círculo, lateral-parabaixo e descanso-parabaixo.
+Sistema de reconhecimento de gestos usando TinyML no ESP32 (Edge Impulse) que envia comandos MQTT para controlar atuadores remotos. Detecta 4 gestos diferentes em tempo real e aciona atuadores via protocolo MQTT:
+- **Círculo**: Liga bomba d'água (atuador 3342)
+- **Cima-baixo**: Desliga bomba d'água (atuador 3342)
+- **Lateral-parabaixo**: Liga irrigação (atuador 3338)
+- **Descanso-parabaixo**: Desliga irrigação (atuador 3338)
 
 ## Hardware Necessário
 
 - ESP32 DevKit
 - MPU6050 (acelerômetro e giroscópio)
-- 3 LEDs (vermelho, verde, azul)
+- 3 LEDs (vermelho, verde, azul) - feedback visual
+- Broker MQTT (ex: Mosquitto, HiveMQ)
 
 ## Conexões
 
@@ -19,10 +24,27 @@ Sistema de reconhecimento de gestos usando TinyML no ESP32 (usando a plataforma 
 - SCL → GPIO 23
 - AD0 → GND (endereço I2C 0x68)
 
-**LEDs:**
-- LED Vermelho → GPIO 21
-- LED Verde → GPIO 19
-- LED Azul → GPIO 18
+**LEDs (Feedback Visual):**
+- LED Vermelho → GPIO 21 (gesto cima-baixo)
+- LED Verde → GPIO 19 (gesto círculo)
+- LED Azul → GPIO 18 (gesto lateral-parabaixo)
+
+## Configuração MQTT
+
+**Broker MQTT:**
+- Host: `host.wokwi.internal` (ou seu broker)
+- Porta: `1883`
+- Tópico de publicação: `FIAPIoT/smartagro/cmd/local`
+- Device ID: `FIAPIoTapp26Dev1`
+
+**Formato do payload JSON:**
+```json
+{
+  "deviceId": "FIAPIoTapp26Dev1",
+  "atuador": "3342",
+  "comando": true
+}
+```
 
 ## Instalação da Biblioteca Edge Impulse
 
@@ -168,31 +190,73 @@ for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
 const char *gesto = result.classification[best_ix].label;
 ```
 
-### 9. Acionamento dos LEDs
+### 9. Acionamento dos LEDs e Envio de Comandos MQTT
 
 ```cpp
 // Threshold de 60% para evitar falsos positivos
 if (best_val >= 0.6f) {
     if (strcmp(gesto, "cima-baixo") == 0) {
-        led_cima_baixo();      // LED vermelho
+        led_cima_baixo();              // LED vermelho
+        enviarComando("3342", false);  // Desliga bomba
     } else if (strcmp(gesto, "circulo") == 0) {
-        led_circulo();         // LED verde
+        led_circulo();                 // LED verde
+        enviarComando("3342", true);   // Liga bomba
     } else if (strcmp(gesto, "lateral-parabaixo") == 0) {
-        led_lateral_parabaixo(); // LED azul
+        led_lateral_parabaixo();       // LED azul
+        enviarComando("3338", true);   // Liga irrigação
     } else if (strcmp(gesto, "descanso-parabaixo") == 0) {
-        led_descanso_parabaixo(); // LEDs branco (todos)
+        led_descanso_parabaixo();      // LEDs branco (todos)
+        enviarComando("3338", false);  // Desliga irrigação
+    }
+}
+```
+
+### 10. Função de Envio de Comandos MQTT
+
+```cpp
+void enviarComando(const char* atuador, bool comando) {
+    if (!mqttConectado) {
+        conectarMQTT();
+        if (!mqttConectado) return;
+    }
+
+    JsonDocument doc;
+    doc["deviceId"] = MQTT_DEVICEID;
+    doc["atuador"] = atuador;
+    doc["comando"] = comando;
+
+    char payload[200];
+    serializeJson(doc, payload);
+
+    if (mqttClient.publish(MQTT_PUB_TOPIC, payload)) {
+        Serial.printf("[MQTT] Comando enviado -> Atuador: %s, Comando: %s\n",
+                      atuador, comando ? "true" : "false");
+    } else {
+        Serial.println("[MQTT] Falha ao enviar comando");
+        mqttConectado = false;
     }
 }
 ```
 
 ## Como Funciona (Resumo)
 
-1. **Coleta contínua** a 50Hz (20ms entre amostras)
-2. **Buffer acumula 60 amostras** (1200ms de dados)
-3. **FFT extrai características** espectrais
-4. **Rede neural classifica** o gesto
-5. **LED acende** se probabilidade > 60%
-6. **Buffer reseta** e processo recomeça
+1. **Conecta ao WiFi e Broker MQTT** no setup
+2. **Coleta contínua** a 50Hz (20ms entre amostras)
+3. **Buffer acumula 60 amostras** (1200ms de dados)
+4. **FFT extrai características** espectrais
+5. **Rede neural classifica** o gesto
+6. **LED acende** se probabilidade > 60%
+7. **Comando MQTT é enviado** para o atuador correspondente
+8. **Buffer reseta** e processo recomeça
+
+## Mapeamento Gestos → Atuadores
+
+| Gesto | LED | Atuador | Comando | Ação |
+|-------|-----|---------|---------|------|
+| Círculo | Verde | 3342 | `true` | Liga bomba d'água |
+| Cima-baixo | Vermelho | 3342 | `false` | Desliga bomba d'água |
+| Lateral-parabaixo | Azul | 3338 | `true` | Liga irrigação |
+| Descanso-parabaixo | Branco | 3338 | `false` | Desliga irrigação |
 
 ## Compilação e Upload
 
@@ -204,7 +268,10 @@ pio device monitor
 ## Saída no Monitor Serial
 
 ```
-=== ESP32 + MPU6050 + Edge Impulse ===
+=== App26: ESP32 + MPU6050 + Edge Impulse + MQTT ===
+Conectando ao Wi-Fi: Wokwi-GUEST
+OK! IP: 192.168.1.100
+[MQTT] Conectando ao broker host.wokwi.internal --> Conectado ao MQTT Broker!
 Pronto para detectar gestos!
 Tamanho do buffer: 360
 
@@ -214,6 +281,7 @@ Timing -> DSP: 45 ms, Class: 12 ms
   lateral-parabaixo: 0.056
   descanso-parabaixo: 0.030
 => Gesto detectado: circulo (89.10%)
+[MQTT] Comando enviado -> Atuador: 3342, Comando: true
 ```
 
 ## Parâmetros do Modelo
@@ -232,4 +300,38 @@ Compatível com Wokwi Simulator - use o arquivo `diagram.json` incluído.
 - Adafruit MPU6050
 - Adafruit Unified Sensor
 - Adafruit BusIO
+- PubSubClient (MQTT)
+- ArduinoJson
+- WiFi (ESP32)
 - Edge Impulse SDK (em `lib/`)
+
+## Arquitetura do Sistema
+
+```
+┌─────────────────────────┐
+│   ESP32 + MPU6050       │
+│   (Device 1 - Varinha)  │
+│                         │
+│  1. Detecta Gesto       │
+│  2. Classifica (ML)     │
+│  3. Publica MQTT        │
+└───────────┬─────────────┘
+            │
+            │ MQTT Publish
+            │ Topic: FIAPIoT/smartagro/cmd/local
+            ▼
+┌─────────────────────────┐
+│     Broker MQTT         │
+│   (host.wokwi.internal) │
+└───────────┬─────────────┘
+            │
+            │ MQTT Subscribe
+            ▼
+┌─────────────────────────┐
+│   ESP32 Atuadores       │
+│   (Device 2)            │
+│                         │
+│  - Bomba (3342)         │
+│  - Irrigação (3338)     │
+└─────────────────────────┘
+```
