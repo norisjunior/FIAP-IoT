@@ -32,18 +32,21 @@ const unsigned long INTERVALO_RECONEXAO = 5000; // 5 segundos entre tentativas
 #define MQTT_TOPIC_LOCAL     "FIAPIoT/smartagro/cmd/local"
 #define MQTT_TOPIC_CLOUD     "FIAPIoT/smartagro/cmd/cloud"
 #define MQTT_TOPIC_HUMAN     "FIAPIoT/smartagro/cmd/human"
-// Controle dos comandos recebidos
-String ultimoComando = "NONE";        // "ON" | "OFF" | "NONE"
+// Controle dos comandos recebidos - SEPARADO POR ATUADOR
+String ultimoComandoBomba = "NONE";     // "ON" | "OFF" | "NONE"
+String ultimoComandoBuzzer = "NONE";    // "ON" | "OFF" | "NONE"
 String origemUltimoComando = "NENHUMA";
 
-/* ==== Controle do motor =================================================== */
+/* ==== Controle dos atuadores ============================================== */
 bool bombaLigada = false;
+bool buzzerLigado = false;
 
 /* ==== Protótipos ========================================================== */
 void conectarWiFi();
 void conectarMQTT();
 void callbackMQTT(char* topic, byte* payload, unsigned int length);
 void atualizarBomba();
+void atualizarBuzzer();
 
 /* ==== SETUP =============================================================== */
 void setup() {
@@ -54,10 +57,10 @@ void setup() {
   Serial.println("===================================");
 
   //Inicializa todos os sensores
-  Serial.println("Inicializando bomba d'água...");
+  Serial.println("Inicializando atuadores...");
   ESP32Sensors::beginAll(BUZZER_PIN, LED_PIN, SERVO_PIN);
 
-  // Liga LED indicando motor funcionando
+  // Teste dos atuadores
   ESP32Sensors::LED::off();
   ESP32Sensors::MiniServo::ligar();
   ESP32Sensors::Audio::ativarAlarme();
@@ -65,7 +68,10 @@ void setup() {
   ESP32Sensors::MiniServo::desligar();
   ESP32Sensors::Audio::desativarAlarme();
   bombaLigada = false;
-  Serial.println("Bomba d'água inicializada - ESTADO INICIAL: DESLIGADA");
+  buzzerLigado = false;
+  Serial.println("Atuadores inicializados:");
+  Serial.println("  - Bomba d'água (3342): DESLIGADA");
+  Serial.println("  - Buzzer/Irrigação (3338): DESLIGADO");
 
   //Conecta no WiFi
   conectarWiFi();
@@ -187,72 +193,117 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
   serializeJson(doc, Serial);
   Serial.println();
 
-  // Se o JSON não tem bomba: IGNORAR
-  JsonVariant statusVar = doc["bomba"];
-  if (!statusVar.is<bool>()) {
-      Serial.println("JSON sem 'bomba' booleano. Comando IGNORADO.");
+  // Valida campos obrigatórios: "atuador" e "comando"
+  if (!doc.containsKey("atuador") || !doc.containsKey("comando")) {
+      Serial.println("JSON inválido: faltam campos 'atuador' ou 'comando'. IGNORADO.");
       return;
   }
+
   // Lê campos do JSON
-  const char* dispositivo = doc["dispositivo"] | "desconhecido";
-  bool bomba = statusVar.as<bool>();  // true/false
+  const char* deviceId = doc["deviceId"] | "desconhecido";
+  const char* atuador = doc["atuador"];
+  bool comando = doc["comando"];
 
-  Serial.print("Dispositivo origem: ");
-  Serial.println(dispositivo);
-  Serial.print("bomba: ");
-  Serial.println(bomba ? "true" : "false");
+  Serial.print("Device ID: ");
+  Serial.println(deviceId);
+  Serial.print("Atuador: ");
+  Serial.println(atuador);
+  Serial.print("Comando: ");
+  Serial.println(comando ? "true" : "false");
 
-  // Converte bool para "ON"/"OFF"
-  String comando = bomba ? "ON" : "OFF";
-
-  // Identifica origam
+  // Identifica origem
   String origem = "ERRO_ORIGEM";
-
   if (topico == MQTT_TOPIC_LOCAL) origem = "LOCAL";
   else if (topico == MQTT_TOPIC_CLOUD) origem = "CLOUD";
   else if (topico == MQTT_TOPIC_HUMAN) origem = "HUMAN";
 
-  // Atualiza o comando mais recente
-  ultimoComando = comando;
-  origemUltimoComando = origem;
-
-  Serial.println("---- NOVO COMANDO ----");
+  Serial.println("---- PROCESSANDO COMANDO ----");
   Serial.print("Origem: "); Serial.println(origem);
-  Serial.print("Comando: "); Serial.println(comando);
 
-  // Aplica o comando recebido
-  atualizarBomba();
+  // Processa comando conforme o atuador
+  String atuadorStr = String(atuador);
+
+  if (atuadorStr == "3342") {
+    // Bomba d'água
+    ultimoComandoBomba = comando ? "ON" : "OFF";
+    origemUltimoComando = origem;
+    Serial.println("Atuador: BOMBA D'ÁGUA (3342)");
+    atualizarBomba();
+  }
+  else if (atuadorStr == "3338") {
+    // Buzzer/Irrigação
+    ultimoComandoBuzzer = comando ? "ON" : "OFF";
+    origemUltimoComando = origem;
+    Serial.println("Atuador: BUZZER/IRRIGAÇÃO (3338)");
+    atualizarBuzzer();
+  }
+  else {
+    Serial.print("Atuador desconhecido: ");
+    Serial.println(atuador);
+  }
 }
 
 /* ========================================================================== */
 /* Função: atualizarBomba                                                     */
-/*   - Aplica o comando recebido                                              */
+/*   - Aplica o comando recebido para a bomba d'água (atuador 3342)          */
 /* ========================================================================== */
 void atualizarBomba() {
-  if (ultimoComando == "NONE") {
-    Serial.println("Nenhum comando recebido ainda.");
+  if (ultimoComandoBomba == "NONE") {
+    Serial.println("Nenhum comando recebido ainda para a bomba.");
     return;
   }
 
-  bool ligar = (ultimoComando == "ON");
+  bool ligar = (ultimoComandoBomba == "ON");
 
   Serial.println("----------------------------------------");
-  Serial.print("Aplicando comando: ");
+  Serial.print("Aplicando comando BOMBA: ");
   Serial.print(ligar ? "LIGAR" : "DESLIGAR");
   Serial.print(" | Origem: ");
   Serial.println(origemUltimoComando);
   Serial.println("----------------------------------------");
 
   if (ligar && !bombaLigada) {
-    Serial.println("AÇÃO: Ligar bomba.");
+    Serial.println("AÇÃO: Ligar bomba d'água.");
     ESP32Sensors::LED::on();
     ESP32Sensors::MiniServo::ligar();
     bombaLigada = true;
   } else if (!ligar && bombaLigada) {
-    Serial.println("AÇÃO: Desligar bomba.");
+    Serial.println("AÇÃO: Desligar bomba d'água.");
     ESP32Sensors::LED::off();
     ESP32Sensors::MiniServo::desligar();
     bombaLigada = false;
+  } else {
+    Serial.println("AÇÃO: Nenhuma mudança (estado já correspondente).");
+  }
+}
+
+/* ========================================================================== */
+/* Função: atualizarBuzzer                                                    */
+/*   - Aplica o comando recebido para o buzzer/irrigação (atuador 3338)      */
+/* ========================================================================== */
+void atualizarBuzzer() {
+  if (ultimoComandoBuzzer == "NONE") {
+    Serial.println("Nenhum comando recebido ainda para o buzzer.");
+    return;
+  }
+
+  bool ligar = (ultimoComandoBuzzer == "ON");
+
+  Serial.println("----------------------------------------");
+  Serial.print("Aplicando comando BUZZER: ");
+  Serial.print(ligar ? "LIGAR" : "DESLIGAR");
+  Serial.print(" | Origem: ");
+  Serial.println(origemUltimoComando);
+  Serial.println("----------------------------------------");
+
+  if (ligar && !buzzerLigado) {
+    Serial.println("AÇÃO: Ligar buzzer/irrigação.");
+    ESP32Sensors::Audio::ativarAlarme();
+    buzzerLigado = true;
+  } else if (!ligar && buzzerLigado) {
+    Serial.println("AÇÃO: Desligar buzzer/irrigação.");
+    ESP32Sensors::Audio::desativarAlarme();
+    buzzerLigado = false;
   } else {
     Serial.println("AÇÃO: Nenhuma mudança (estado já correspondente).");
   }
