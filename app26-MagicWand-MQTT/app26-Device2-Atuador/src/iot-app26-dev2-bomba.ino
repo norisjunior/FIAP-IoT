@@ -32,8 +32,9 @@ const unsigned long INTERVALO_RECONEXAO = 5000; // 5 segundos entre tentativas
 #define MQTT_TOPIC_LOCAL     "FIAPIoT/smartagro/cmd/local"
 #define MQTT_TOPIC_CLOUD     "FIAPIoT/smartagro/cmd/cloud"
 #define MQTT_TOPIC_HUMAN     "FIAPIoT/smartagro/cmd/human"
-// Controle dos comandos recebidos
-String ultimoComando = "NONE";        // "ON" | "OFF" | "NONE"
+// Controle dos comandos recebidos - SEPARADO POR ATUADOR
+String ultimoComandoBomba = "NONE";     // "ON" | "OFF" | "NONE"
+String ultimoComandoBuzzer = "NONE";    // "ON" | "OFF" | "NONE"
 String origemUltimoComando = "NENHUMA";
 
 /* ==== Controle dos atuadores ============================================== */
@@ -224,14 +225,14 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
 
   if (atuadorStr == "3342") {
     // Bomba d'água
-    ultimoComando = comando ? "ON" : "OFF";
+    ultimoComandoBomba = comando ? "ON" : "OFF";
     origemUltimoComando = origem;
     Serial.println("Atuador: BOMBA D'ÁGUA (3342)");
     atualizarBomba();
   }
   else if (atuadorStr == "3338") {
     // Buzzer/Irrigação
-    ultimoComando = comando ? "ON" : "OFF";
+    ultimoComandoBuzzer = comando ? "ON" : "OFF";
     origemUltimoComando = origem;
     Serial.println("Atuador: BUZZER/IRRIGAÇÃO (3338)");
     atualizarBuzzer();
@@ -247,12 +248,12 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
 /*   - Aplica o comando recebido para a bomba d'água (atuador 3342)          */
 /* ========================================================================== */
 void atualizarBomba() {
-  if (ultimoComando == "NONE") {
-    Serial.println("Nenhum comando recebido ainda.");
+  if (ultimoComandoBomba == "NONE") {
+    Serial.println("Nenhum comando recebido ainda para a bomba.");
     return;
   }
 
-  bool ligar = (ultimoComando == "ON");
+  bool ligar = (ultimoComandoBomba == "ON");
 
   Serial.println("----------------------------------------");
   Serial.print("Aplicando comando BOMBA: ");
@@ -281,12 +282,12 @@ void atualizarBomba() {
 /*   - Aplica o comando recebido para o buzzer/irrigação (atuador 3338)      */
 /* ========================================================================== */
 void atualizarBuzzer() {
-  if (ultimoComando == "NONE") {
-    Serial.println("Nenhum comando recebido ainda.");
+  if (ultimoComandoBuzzer == "NONE") {
+    Serial.println("Nenhum comando recebido ainda para o buzzer.");
     return;
   }
 
-  bool ligar = (ultimoComando == "ON");
+  bool ligar = (ultimoComandoBuzzer == "ON");
 
   Serial.println("----------------------------------------");
   Serial.print("Aplicando comando BUZZER: ");
