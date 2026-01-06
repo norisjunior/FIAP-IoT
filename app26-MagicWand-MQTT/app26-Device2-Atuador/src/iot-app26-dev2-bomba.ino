@@ -7,8 +7,9 @@
 #include "ESP32Sensors.hpp"
 
 /* ==== Configurações de Hardware =========================================== */
-const static uint8_t LED_PIN   = 27;
-const static uint8_t SERVO_PIN = 13;
+const static uint8_t BUZZER_PIN   = 15;
+const static uint8_t LED_PIN      = 27;
+const static uint8_t SERVO_PIN    = 13;
 
 /* ==== WI-FI ======================+++++==================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
@@ -54,15 +55,17 @@ void setup() {
 
   //Inicializa todos os sensores
   Serial.println("Inicializando bomba d'água...");
-  ESP32Sensors::beginAll(LED_PIN, SERVO_PIN);
+  ESP32Sensors::beginAll(BUZZER_PIN, LED_PIN, SERVO_PIN);
 
   // Liga LED indicando motor funcionando
   ESP32Sensors::LED::off();
   ESP32Sensors::MiniServo::ligar();
+  ESP32Sensors::Audio::ativarAlarme();
   delay(1000);
   ESP32Sensors::MiniServo::desligar();
+  ESP32Sensors::Audio::desativarAlarme();
   bombaLigada = false;
-  Serial.println("Bomba d'água inicializada");
+  Serial.println("Bomba d'água inicializada - ESTADO INICIAL: DESLIGADA");
 
   //Conecta no WiFi
   conectarWiFi();

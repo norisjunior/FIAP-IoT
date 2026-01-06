@@ -4,7 +4,13 @@
   "editor": "wokwi",
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
-    { "type": "wokwi-led", "id": "led1", "top": 44.4, "left": -53.8, "attrs": { "color": "blue" } },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 44.4,
+      "left": -53.8,
+      "attrs": { "color": "blue" }
+    },
     {
       "type": "wokwi-servo",
       "id": "servo1",
@@ -18,6 +24,13 @@
       "top": 115.2,
       "left": -249.6,
       "attrs": { "text": "Bomba d'água" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": -45.6,
+      "left": 126.6,
+      "attrs": { "volume": "0.1" }
     }
   ],
   "connections": [
@@ -25,9 +38,11 @@
     [ "esp:RX", "$serialMonitor:TX", "", [] ],
     [ "led1:A", "esp:27", "green", [ "v0" ] ],
     [ "led1:C", "esp:GND.1", "black", [ "v0" ] ],
-    [ "servo1:GND", "esp:GND.3", "black", [ "h-28.8", "v86.4", "h355.2" ] ],
     [ "servo1:V+", "esp:5V", "red", [ "h-38.4", "v86.5", "h268.65" ] ],
-    [ "servo1:PWM", "esp:13", "green", [ "h-19.2", "v57.8", "h230.4", "v-57.6" ] ]
+    [ "servo1:PWM", "esp:13", "green", [ "h-19.2", "v57.8", "h230.4", "v-57.6" ] ],
+    [ "servo1:GND", "esp:GND.1", "black", [ "h-28.8", "v86.4", "h249.6", "v-76.8" ] ],
+    [ "bz1:2", "esp:15", "green", [ "v0" ] ],
+    [ "bz1:1", "esp:GND.3", "black", [ "v0" ] ]
   ],
   "dependencies": {}
 }
