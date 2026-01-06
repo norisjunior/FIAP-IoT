@@ -47,19 +47,6 @@ bool mqttConectado = false;
 unsigned long ultimaTentativaReconexao = 0;
 const unsigned long INTERVALO_RECONEXAO = 5000; // 5 segundos entre tentativas
 
-
-// /* ---- Funções ---- */
-// void conectarWiFi();
-// void conectarMQTT();
-// void leds_off();
-// void led_cima_baixo();
-// void led_circulo();
-// void led_lateral_parabaixo();
-// void led_descanso_parabaixo();
-// void ei_printf(const char *format, ...);
-// void EdgeAI_fft();
-// void EdgeAI_predict();
-
 /* ---- Setup ---- */
 void setup() {
     Serial.begin(115200);
@@ -73,8 +60,9 @@ void setup() {
     //Configura MQTT e conecta no Broker
     mqttClient.setServer(MQTT_HOST, MQTT_PORT);
     mqttClient.setKeepAlive(60);     // Manter conexão viva por 60s
-    mqttClient.setSocketTimeout(60); // Timeout de 60s  
-    mqttClient.setBufferSize(512);   // Buffer adequado considerando o payload gerado    
+    mqttClient.setSocketTimeout(60); // Timeout de 60s
+    mqttClient.setBufferSize(512);   // Buffer adequado considerando o payload gerado
+    conectarMQTT();
 
     // Configurar LEDs
     pinMode(LED_R_PIN, OUTPUT);
@@ -107,6 +95,8 @@ void setup() {
 
 /* ---- Loop principal ---- */
 void loop() {
+    mqttClient.loop();
+
     if (millis() > last_interval_ms + INTERVAL_MS) {
         last_interval_ms = millis();
 
@@ -137,18 +127,22 @@ void loop() {
             const char *gesto = result.classification[best_ix].label;
             ei_printf("=> Gesto detectado: %s (%.2f%%)\n", gesto, best_val * 100);
 
-            // Acionar LED correspondente (threshold de 60%)
+            // Acionar LED correspondente E enviar comando MQTT (threshold de 60%)
             if (best_val < 0.6f) {
                 leds_off();
             } else {
                 if (strcmp(gesto, "cima-baixo") == 0) {
                     led_cima_baixo();
+                    enviarComando("3342", false);
                 } else if (strcmp(gesto, "circulo") == 0) {
                     led_circulo();
+                    enviarComando("3342", true);
                 } else if (strcmp(gesto, "lateral-parabaixo") == 0) {
                     led_lateral_parabaixo();
+                    enviarComando("3338", true);
                 } else if (strcmp(gesto, "descanso-parabaixo") == 0) {
                     led_descanso_parabaixo();
+                    enviarComando("3338", false);
                 } else {
                     leds_off();
                 }
@@ -186,9 +180,9 @@ void conectarWiFi() {
 
 void conectarMQTT() {
   if (!wifiConectado) return;
-  
+
   Serial.printf("[MQTT] Conectando ao broker %s", MQTT_HOST);
-  
+
   int tentativas = 0;
   while (!mqttClient.connected() && tentativas < 3) {
     if (mqttClient.connect(MQTT_DEVICEID)) {
@@ -203,10 +197,33 @@ void conectarMQTT() {
       }
     }
   }
-  
+
   if (!mqttConectado) {
     Serial.println(" --> Falha final na conexão MQTT");
   }
+}
+
+void enviarComando(const char* atuador, bool comando) {
+    if (!mqttConectado) {
+        conectarMQTT();
+        if (!mqttConectado) return;
+    }
+
+    JsonDocument doc;
+    doc["deviceId"] = MQTT_DEVICEID;
+    doc["atuador"] = atuador;
+    doc["comando"] = comando;
+
+    char payload[200];
+    serializeJson(doc, payload);
+
+    if (mqttClient.publish(MQTT_PUB_TOPIC, payload)) {
+        Serial.printf("[MQTT] Comando enviado -> Atuador: %s, Comando: %s\n",
+                      atuador, comando ? "true" : "false");
+    } else {
+        Serial.println("[MQTT] Falha ao enviar comando");
+        mqttConectado = false;
+    }
 }
 
 void leds_off() {
