@@ -36,6 +36,15 @@ ei_impulse_result_t result;
 float best_val = 0.0f;
 size_t best_ix = 0;
 
+//Máquina de estados para controle de comandos
+enum Estado { IDLE, AGUARDANDO_GESTO1, AGUARDANDO_GESTO2 };
+Estado estadoAtual = IDLE;
+int contadorLateralParaBaixo = 0;
+String gesto1 = "";
+String gesto2 = "";
+unsigned long ultimoGestoDetectado = 0;
+const unsigned long TIMEOUT_GESTO = 5000; // 5 segundos para completar sequência
+
 //MQTT
 // Atenção para o endereço do MQTT Broker:
 // Estando o ESP32 e o notebook conectados no WiFi do celular
@@ -130,25 +139,11 @@ void loop() {
             const char *gesto = result.classification[best_ix].label;
             ei_printf("=> Gesto detectado: %s (%.2f%%)\n", gesto, best_val * 100);
 
-            // Acionar LED correspondente E enviar comando MQTT (threshold de 60%)
-            if (best_val < 0.6f) {
-                leds_off();
+            // Processa gesto apenas se confiança >= 60%
+            if (best_val >= 0.6f) {
+                processarGesto(gesto);
             } else {
-                if (strcmp(gesto, "cima-baixo") == 0) {
-                    led_cima_baixo();
-                    enviarComando("3342", false);
-                } else if (strcmp(gesto, "circulo") == 0) {
-                    led_circulo();
-                    enviarComando("3342", true);
-                } else if (strcmp(gesto, "lateral-parabaixo") == 0) {
-                    led_lateral_parabaixo();
-                    enviarComando("3338", true);
-                } else if (strcmp(gesto, "descanso-parabaixo") == 0) {
-                    led_descanso_parabaixo();
-                    enviarComando("3338", false);
-                } else {
-                    leds_off();
-                }
+                leds_off();
             }
 
             // Resetar buffer para próxima janela
@@ -227,6 +222,130 @@ void enviarComando(const char* atuador, bool comando) {
         Serial.println("[MQTT] Falha ao enviar comando");
         mqttConectado = false;
     }
+}
+
+void piscarLEDs(int vezes, int delayMs = 200) {
+    for (int i = 0; i < vezes; i++) {
+        digitalWrite(LED_R_PIN, HIGH);
+        digitalWrite(LED_G_PIN, HIGH);
+        digitalWrite(LED_B_PIN, HIGH);
+        delay(delayMs);
+        leds_off();
+        delay(delayMs);
+    }
+}
+
+void processarGesto(const char* gesto) {
+    String gestoStr = String(gesto);
+
+    // Máquina de estados
+    switch (estadoAtual) {
+        case IDLE:
+            // Aguardando 3x lateral-parabaixo para ativar
+            if (gestoStr == "lateral-parabaixo") {
+                contadorLateralParaBaixo++;
+                led_lateral_parabaixo();
+                Serial.printf("Ativação: %d/3\n", contadorLateralParaBaixo);
+
+                if (contadorLateralParaBaixo >= 3) {
+                    Serial.println("\n=== MODO ATIVADO ===");
+                    Serial.println("Aguardando 2 gestos...");
+                    piscarLEDs(3, 150);
+                    estadoAtual = AGUARDANDO_GESTO1;
+                    contadorLateralParaBaixo = 0;
+                    ultimoGestoDetectado = millis();
+                }
+            } else {
+                // Resetar contador se outro gesto for detectado
+                if (contadorLateralParaBaixo > 0) {
+                    Serial.println("Sequência de ativação cancelada.");
+                }
+                contadorLateralParaBaixo = 0;
+                acenderLED(gesto);
+            }
+            break;
+
+        case AGUARDANDO_GESTO1:
+            // Captura primeiro gesto
+            gesto1 = gestoStr;
+            Serial.printf("Gesto 1: %s\n", gesto1.c_str());
+            acenderLED(gesto);
+            delay(500); // Pausa entre gestos
+            estadoAtual = AGUARDANDO_GESTO2;
+            ultimoGestoDetectado = millis();
+            break;
+
+        case AGUARDANDO_GESTO2:
+            // Captura segundo gesto e processa comando
+            gesto2 = gestoStr;
+            Serial.printf("Gesto 2: %s\n", gesto2.c_str());
+            acenderLED(gesto);
+
+            // Processa combinação
+            processarComandoDuplo();
+
+            // Volta para modo IDLE
+            estadoAtual = IDLE;
+            gesto1 = "";
+            gesto2 = "";
+            break;
+    }
+
+    // Timeout: volta para IDLE se demorar muito
+    if (estadoAtual != IDLE && (millis() - ultimoGestoDetectado > TIMEOUT_GESTO)) {
+        Serial.println("\nTimeout! Voltando ao modo IDLE.");
+        estadoAtual = IDLE;
+        gesto1 = "";
+        gesto2 = "";
+        leds_off();
+    }
+}
+
+void acenderLED(const char* gesto) {
+    if (strcmp(gesto, "cima-baixo") == 0) {
+        led_cima_baixo();
+    } else if (strcmp(gesto, "circulo") == 0) {
+        led_circulo();
+    } else if (strcmp(gesto, "lateral-parabaixo") == 0) {
+        led_lateral_parabaixo();
+    } else if (strcmp(gesto, "descanso-parabaixo") == 0) {
+        led_descanso_parabaixo();
+    } else {
+        leds_off();
+    }
+}
+
+void processarComandoDuplo() {
+    Serial.println("\n=== PROCESSANDO COMANDO ===");
+    Serial.printf("Combinação: %s + %s\n", gesto1.c_str(), gesto2.c_str());
+
+    // círculo + cima-baixo: liga servo (bomba)
+    if (gesto1 == "circulo" && gesto2 == "cima-baixo") {
+        Serial.println("Comando: LIGAR BOMBA");
+        enviarComando("3342", true);
+    }
+    // círculo + lateral-parabaixo: desliga servo (bomba)
+    else if (gesto1 == "circulo" && gesto2 == "lateral-parabaixo") {
+        Serial.println("Comando: DESLIGAR BOMBA");
+        enviarComando("3342", false);
+    }
+    // lateral-parabaixo + lateral-parabaixo: liga buzzer
+    else if (gesto1 == "lateral-parabaixo" && gesto2 == "lateral-parabaixo") {
+        Serial.println("Comando: LIGAR BUZZER");
+        enviarComando("3338", true);
+    }
+    // descanso-parabaixo + descanso-parabaixo: desliga buzzer
+    else if (gesto1 == "descanso-parabaixo" && gesto2 == "descanso-parabaixo") {
+        Serial.println("Comando: DESLIGAR BUZZER");
+        enviarComando("3338", false);
+    }
+    else {
+        Serial.println("Combinação inválida! Nenhum comando enviado.");
+    }
+
+    Serial.println("=== FIM DO COMANDO ===\n");
+    delay(1000);
+    leds_off();
 }
 
 void leds_off() {

@@ -1,75 +1,130 @@
 # Physical Computing, Embedded AI, Robotics & Cognitive IoT
 
-## Aplicação 16 - Arquitetura Edge/Fog Computing
+## Aplicação 26 - Device 2 - Atuadores MQTT (Bomba + Buzzer)
 
-Esta aplicação demonstra arquitetura de computação de borda (Edge Computing) e névoa (Fog Computing), implementando processamento local próximo aos sensores. O sistema conecta-se a um broker MQTT rodando em Raspberry Pi (camada Fog) para processamento intermediário antes do envio à nuvem.
+Sistema embarcado que recebe comandos MQTT e controla dois atuadores independentes:
+- **Bomba d'água** (servo motor) - Atuador IPSO 3342
+- **Buzzer/Irrigação** (alarme sonoro) - Atuador IPSO 3338
 
-## Pré-requisitos
+## O que faz
 
-### Inicializar a Plataforma IoT
+Este dispositivo **assina** tópicos MQTT usando wildcard e **executa comandos** recebidos de diferentes origens (Device 1 com varinha mágica, nuvem, ou interface humana). Cada comando especifica qual atuador deve ser ligado/desligado através de payload JSON padronizado.
 
-Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+## Hardware Necessário
 
-1. **Acessar WSL2 Ubuntu:**
-   ```bash
-   wsl -d ubuntu
-   ```
+- ESP32 DevKit
+- Servo motor (simula bomba d'água)
+- Buzzer passivo
+- LED (feedback visual)
 
-2. **Clonar o repositório (se ainda não clonou):**
-   ```bash
-   cd ~
-   git clone https://github.com/norisjunior/FIAP-IoT
-   ```
+## Conexões
 
-3. **Iniciar todos os serviços:**
-   ```bash
-   cd FIAP-IoT/IoT-platform/
-   sudo ./start-linux.sh
-   ```
+**Servo Motor (Bomba d'água):**
+- VCC → 5V
+- GND → GND
+- PWM → GPIO 13
 
-Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
+**Buzzer:**
+- Positivo → GPIO 18
+- Negativo → GND
 
-**Serviços disponíveis:**
-- MQTT Broker: localhost:1883 (nome do container: mqtt-broker)
-- Node-RED: http://localhost:1880 (admin/FIAPIoT)
-- n8n: http://localhost:5678
-- InfluxDB: http://localhost:8086 (admin/FIAP@123)
-- Grafana: http://localhost:3000 (admin/admin)
+**LED (Indicador):**
+- Anodo → GPIO 27
+- Catodo → GND
 
-**Nota:** Para este app, você pode usar o broker MQTT local (plataforma IoT) ou configurar um Raspberry Pi como camada Fog intermediária.
+## Configuração MQTT
 
-### Sensores e Atuadores
+**Broker:**
+- Host: `host.wokwi.internal` (ou IP do broker)
+- Porta: `1883`
+- Client ID: `FIAPIoTapp26B`
 
-**Sensores:**
-- DHT22 (Temperatura e Umidade) - Pino GPIO 26
-- MPU6050 (Acelerômetro/Giroscópio) - Pinos I2C:
-  - SDA: GPIO 18
-  - SCL: GPIO 19
+**Tópico de subscrição (com wildcard):**
+```
+FIAPIoT/smartagro/cmd/+
+```
 
-**Atuadores:**
-- LED - Pino GPIO 27 (Indicador de status do motor)
+Aceita comandos de:
+- `FIAPIoT/smartagro/cmd/local` (Device 1 - Varinha mágica)
+- `FIAPIoT/smartagro/cmd/cloud` (Servidor/Automação)
+- `FIAPIoT/smartagro/cmd/human` (Interface manual)
 
-### Funcionamento
+## Formato do JSON Esperado
 
-O sistema implementa arquitetura hierárquica Edge-Fog-Cloud, com processamento distribuído em múltiplas camadas:
+```json
+{
+  "deviceId": "FIAPIoTapp26Dev1",
+  "atuador": "3342",
+  "comando": true
+}
+```
 
-**Tópico de Publicação (Dados):**
-- `FIAPIoT/aula09/noris/motor/dados`
-- Envia dados a cada 3 segundos em formato JSON
-- Campos: temperatura, umidade, aceleração (x, y, z), status do motor
+**Campos obrigatórios:**
+- `atuador` (string): Código IPSO do atuador
+  - `"3342"`: Bomba d'água (On/Off Switch)
+  - `"3338"`: Buzzer/Irrigação
+- `comando` (boolean):
+  - `true`: Liga o atuador
+  - `false`: Desliga o atuador
 
-**Tópico de Subscrição (Comandos):**
-- `FIAPIoT/aula09/noris/motor/cmd`
-- Recebe comandos para ligar/desligar o motor
+**Campos opcionais:**
+- `deviceId` (string): Identificação do dispositivo que enviou o comando
 
-**Configuração MQTT:**
-- Broker: Raspberry Pi (IP local configurável)
-- Porta: 1883
-- Client ID: IoTDeviceNoris001
+## Fluxo de Funcionamento
 
-**Arquitetura demonstrada:**
-- **Edge Layer:** ESP32 com sensores fazendo pré-processamento local
-- **Fog Layer (Near Edge):** Raspberry Pi executando broker MQTT, realizando agregação e filtragem de dados
-- **Cloud Layer:** Servidores remotos para análise avançada e armazenamento de longo prazo
+```
+┌─────────────────────────┐
+│   Inicialização         │
+│  - WiFi                 │
+│  - MQTT Broker          │
+│  - Atuadores (teste)    │
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│  Aguarda comando MQTT   │◄───────┐
+│  (subscriber)           │        │
+└────────┬────────────────┘        │
+         │                         │
+         │ Comando recebido        │
+         ▼                         │
+┌─────────────────────────┐        │
+│  Parse JSON             │        │
+│  Valida campos          │        │
+└────────┬────────────────┘        │
+         │                         │
+         ▼                         │
+┌─────────────────────────┐        │
+│  Identifica atuador     │        │
+│  3342 → Bomba           │        │
+│  3338 → Buzzer          │        │
+└────────┬────────────────┘        │
+         │                         │
+         ▼                         │
+┌─────────────────────────┐        │
+│  Executa comando        │        │
+│  - Liga/Desliga servo   │        │
+│  - Liga/Desliga buzzer  │        │
+└────────┬────────────────┘        │
+         │                         │
+         └─────────────────────────┘
+```
 
-Esta arquitetura reduz latência, economiza largura de banda e permite operação parcial mesmo com conectividade intermitente à nuvem. O processamento próximo à origem dos dados (Edge) permite respostas rápidas para controle crítico.
+## Mapeamento Atuadores
+
+| Atuador IPSO | Descrição | Hardware | Ação |
+|--------------|-----------|----------|------|
+| 3342 | On/Off Switch | Servo motor + LED | Liga/desliga bomba d'água |
+| 3338 | Buzzer | Buzzer passivo | Ativa/desativa alarme sonoro |
+
+## Lógica de Controle
+
+### Bomba d'água (3342)
+- **Liga** (`comando: true`): Servo → 90°, LED acende
+- **Desliga** (`comando: false`): Servo → 0°, LED apaga
+- **Prevenção**: Ignora comandos duplicados (evita desgaste do servo)
+
+### Buzzer (3338)
+- **Liga** (`comando: true`): PWM de 500 Hz no canal 15
+- **Desliga** (`comando: false`): PWM desativado
+- **Prevenção**: Ignora comandos duplicados
