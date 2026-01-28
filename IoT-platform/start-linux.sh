@@ -228,6 +228,7 @@ echo "✓ docker-compose.yml criado"
 # ============================================
 echo ""
 echo "Subindo todos os serviços..."
+sudo docker compose pull
 sudo docker compose up -d
 
 echo ""
