@@ -1,75 +1,30 @@
 # Physical Computing, Embedded AI, Robotics & Cognitive IoT
 
-## Aplicação 16 - Arquitetura Edge/Fog Computing
+## Aplicação 24 - Device 2 - Controle da Bomba d'Água
 
-Esta aplicação demonstra arquitetura de computação de borda (Edge Computing) e névoa (Fog Computing), implementando processamento local próximo aos sensores. O sistema conecta-se a um broker MQTT rodando em Raspberry Pi (camada Fog) para processamento intermediário antes do envio à nuvem.
+Este repositório contém o firmware para um ESP32 que controla uma bomba d'água simulada (servo + LED) via MQTT. O dispositivo recebe comandos JSON, identifica a origem e liga/desliga a bomba atuando sobre um servo e um LED.
 
-## Pré-requisitos
+**O que a aplicação faz**
+- Conecta ao Wi‑Fi e a um broker MQTT.
+- Inscreve-se em `FIAPIoT/smartagro/cmd/+` e processa comandos de controle.
+- Recebe JSON com `bomba` (boolean) e `dispositivo` (string).
+- Liga/desliga o servo e acende/apaga o LED conforme `bomba: true|false`.
 
-### Inicializar a Plataforma IoT
+**Fluxo resumido**
+1. Inicializa módulos (`ESP32Sensors`).
+2. Conecta ao Wi‑Fi e ao broker MQTT (padrão: `host.wokwi.internal:1883`).
+3. Escuta `FIAPIoT/smartagro/cmd/+`.
+4. Ao receber JSON válido com `bomba`, aplica comando: ligar/desligar.
 
-Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+**Tópicos MQTT e exemplo**
+- Subscrição: `FIAPIoT/smartagro/cmd/+` (ex.: `.../cmd/local`, `.../cmd/cloud`, `.../cmd/human`).
+- Exemplo de payload:
 
-1. **Acessar WSL2 Ubuntu:**
-   ```bash
-   wsl -d ubuntu
-   ```
+```json
+{ "dispositivo": "FIAPIoTapp24B", "bomba": true }
+```
 
-2. **Clonar o repositório (se ainda não clonou):**
-   ```bash
-   cd ~
-   git clone https://github.com/norisjunior/FIAP-IoT
-   ```
+**Pinos usados**
+- LED: GPIO 27
+- Servo: GPIO 13
 
-3. **Iniciar todos os serviços:**
-   ```bash
-   cd FIAP-IoT/IoT-platform/
-   sudo ./start-linux.sh
-   ```
-
-Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
-
-**Serviços disponíveis:**
-- MQTT Broker: localhost:1883 (nome do container: mqtt-broker)
-- Node-RED: http://localhost:1880 (admin/FIAPIoT)
-- n8n: http://localhost:5678
-- InfluxDB: http://localhost:8086 (admin/FIAP@123)
-- Grafana: http://localhost:3000 (admin/admin)
-
-**Nota:** Para este app, você pode usar o broker MQTT local (plataforma IoT) ou configurar um Raspberry Pi como camada Fog intermediária.
-
-### Sensores e Atuadores
-
-**Sensores:**
-- DHT22 (Temperatura e Umidade) - Pino GPIO 26
-- MPU6050 (Acelerômetro/Giroscópio) - Pinos I2C:
-  - SDA: GPIO 18
-  - SCL: GPIO 19
-
-**Atuadores:**
-- LED - Pino GPIO 27 (Indicador de status do motor)
-
-### Funcionamento
-
-O sistema implementa arquitetura hierárquica Edge-Fog-Cloud, com processamento distribuído em múltiplas camadas:
-
-**Tópico de Publicação (Dados):**
-- `FIAPIoT/aula09/noris/motor/dados`
-- Envia dados a cada 3 segundos em formato JSON
-- Campos: temperatura, umidade, aceleração (x, y, z), status do motor
-
-**Tópico de Subscrição (Comandos):**
-- `FIAPIoT/aula09/noris/motor/cmd`
-- Recebe comandos para ligar/desligar o motor
-
-**Configuração MQTT:**
-- Broker: Raspberry Pi (IP local configurável)
-- Porta: 1883
-- Client ID: IoTDeviceNoris001
-
-**Arquitetura demonstrada:**
-- **Edge Layer:** ESP32 com sensores fazendo pré-processamento local
-- **Fog Layer (Near Edge):** Raspberry Pi executando broker MQTT, realizando agregação e filtragem de dados
-- **Cloud Layer:** Servidores remotos para análise avançada e armazenamento de longo prazo
-
-Esta arquitetura reduz latência, economiza largura de banda e permite operação parcial mesmo com conectividade intermitente à nuvem. O processamento próximo à origem dos dados (Edge) permite respostas rápidas para controle crítico.
