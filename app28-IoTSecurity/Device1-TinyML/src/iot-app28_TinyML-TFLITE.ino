@@ -34,7 +34,7 @@ WiFiClient wifiClient;
 #define MQTT_HOST       "host.wokwi.internal"
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/smartagro/cmd/local"
-#define MQTT_DEVICEID   "FIAPIoTapp24Dev1"
+#define MQTT_DEVICEID   "FIAPIoTapp28Dev1"
 PubSubClient mqttClient(wifiClient);
 bool wifiConectado = false;
 bool mqttConectado = false;

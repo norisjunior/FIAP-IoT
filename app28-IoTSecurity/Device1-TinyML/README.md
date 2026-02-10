@@ -1,6 +1,6 @@
 # Physical Computing, Embedded AI, Robotics & Cognitive IoT
 
-## Aplicação 24 - Device 1 - AIoT: Irrigação Inteligente com TensorFlow Lite
+## Aplicação 28 - Device 1 - AIoT: Irrigação Inteligente com TensorFlow Lite
 
 Esta aplicação demonstra **Inteligência Artificial de Coisas (AIoT)** com Machine Learning 100% embarcado no ESP32. Um modelo de rede neural treinado em TensorFlow é compilado para TFLite, exportado e executado localmente no microcontrolador para tomar decisões autônomas de irrigação baseadas em sensores ambientais.
 
@@ -409,7 +409,7 @@ FIAPIoT/smartagro/cmd/local
 **Payload:**
 ```json
 {
-  "dispositivo": "FIAPIoTapp24Dev1",
+  "dispositivo": "FIAPIoTapp28Dev1",
   "bomba": true
 }
 ```
