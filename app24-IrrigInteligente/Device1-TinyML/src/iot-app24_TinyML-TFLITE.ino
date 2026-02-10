@@ -90,7 +90,7 @@ void setup() {
     mqttClient.setSocketTimeout(60); // Timeout de 60s  
     mqttClient.setBufferSize(512);   // Buffer adequado considerando o payload gerado
 
-    Serial.println("\nSistema AQI inicializado!");
+    Serial.println("\nSistema Irrigação Inteligente inicializado!");
     Serial.printf("Envio de dados a cada %d segundos...", (INTERVAL/1000)); Serial.println("");
 
 
