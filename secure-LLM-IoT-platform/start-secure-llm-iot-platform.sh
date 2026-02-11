@@ -61,8 +61,8 @@ cat > mqtt-broker/acl << 'EOF'
 #   topic write FIAPIoT/smartagro/sensores/#
 EOF
 
-# Cria arquivo de senhas vazio (será populado pelos alunos)
-touch mqtt-broker/passwd
+# Cria arquivo de senhas vazio (será populado depois)
+install -m 0600 /dev/null mqtt-broker/passwd
 
 echo "✓ MQTT configurado (autenticação + ACL vazios - configurar depois)"
 
@@ -320,15 +320,12 @@ echo ""
 echo "  ┌─────────────────────────────────────────────────────────────┐"
 echo "  │  PASSO 1 - Criar usuários e senhas no broker               │"
 echo "  ├─────────────────────────────────────────────────────────────┤"
-echo "  │  Primeiro usuário (flag -c cria o arquivo passwd):          │"
-echo "  │    sudo docker exec -it mqtt-broker \\                       │"
-echo "  │      mosquitto_passwd -c /mosquitto/config/passwd device1   │"
 echo "  │                                                             │"
-echo "  │  Demais usuários (SEM -c, senão apaga os anteriores!):      │"
 echo "  │    sudo docker exec -it mqtt-broker \\                       │"
 echo "  │      mosquitto_passwd /mosquitto/config/passwd device2      │"
 echo "  │    sudo docker exec -it mqtt-broker \\                       │"
 echo "  │      mosquitto_passwd /mosquitto/config/passwd admin        │"
+echo "  │                                                             │"
 echo "  └─────────────────────────────────────────────────────────────┘"
 echo ""
 echo "  ┌─────────────────────────────────────────────────────────────┐"
