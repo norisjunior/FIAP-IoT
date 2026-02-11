@@ -52,6 +52,10 @@ EOF
 
 cat > mqtt-broker/acl << 'EOF'
 # Arquivo de ACL do Mosquitto
+# Admin com acesso total (pré-configurado)
+user admin
+topic readwrite #
+#
 # Adicione regras de acesso abaixo seguindo o formato:
 #   user <nome_do_usuario>
 #   topic read|write|readwrite <topico>
@@ -297,6 +301,13 @@ sudo docker pull n8nio/n8n:latest
 echo ""
 echo "Subindo todos os serviços..."
 sudo docker compose up -d
+
+echo ""
+echo "Criando usuário admin no MQTT Broker..."
+sleep 3
+sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd admin FIAP1234
+sudo docker compose restart mosquitto
+echo "✓ Usuário MQTT admin criado (admin/FIAP1234)"
 
 echo ""
 echo "================================================"
