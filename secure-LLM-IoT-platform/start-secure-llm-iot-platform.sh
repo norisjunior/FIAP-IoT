@@ -306,7 +306,7 @@ echo ""
 echo "Criando usuário admin no MQTT Broker..."
 sleep 3
 sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd admin FIAP1234
-sudo docker compose restart mosquitto
+sudo docker compose restart mqtt-broker
 echo "✓ Usuário MQTT admin criado (admin/FIAP1234)"
 
 echo ""
@@ -351,9 +351,6 @@ echo "  │    topic write FIAPIoT/smartagro/#                          │"
 echo "  │                                                             │"
 echo "  │    user device2                                             │"
 echo "  │    topic read FIAPIoT/smartagro/cmd/#                       │"
-echo "  │                                                             │"
-echo "  │    user admin                                               │"
-echo "  │    topic readwrite #                                        │"
 echo "  └─────────────────────────────────────────────────────────────┘"
 echo ""
 echo "  ┌─────────────────────────────────────────────────────────────┐"

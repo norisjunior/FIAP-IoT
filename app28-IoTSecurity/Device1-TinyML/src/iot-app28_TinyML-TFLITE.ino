@@ -35,6 +35,8 @@ WiFiClient wifiClient;
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/smartagro/cmd/local"
 #define MQTT_DEVICEID   "FIAPIoTapp28Dev1"
+// Credencial MQTT
+const char* MQTT_PASS = "FIAP1234";
 PubSubClient mqttClient(wifiClient);
 bool wifiConectado = false;
 bool mqttConectado = false;
@@ -196,7 +198,7 @@ void conectarMQTT() {
   
   int tentativas = 0;
   while (!mqttClient.connected() && tentativas < 3) {
-    if (mqttClient.connect(MQTT_DEVICEID)) {
+    if (mqttClient.connect(MQTT_DEVICEID, MQTT_DEVICEID, MQTT_PASS)) {
       Serial.println(" --> Conectado ao MQTT Broker!");
       mqttConectado = true;
     } else {
