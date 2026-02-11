@@ -64,6 +64,8 @@ EOF
 # Cria arquivo de senhas vazio (será populado depois)
 install -m 0600 /dev/null mqtt-broker/passwd
 
+sudo chown 1883:1883 mqtt-broker/mosquitto.conf mqtt-broker/acl mqtt-broker/passwd
+
 echo "✓ MQTT configurado (autenticação + ACL vazios - configurar depois)"
 
 # Node-RED
