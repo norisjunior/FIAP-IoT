@@ -305,7 +305,7 @@ sudo docker compose up -d
 echo ""
 echo "Criando usuário admin no MQTT Broker..."
 sleep 3
-sudo docker exec mqtt-broker mosquitto_passwd /mosquitto/config/passwd admin FIAP1234
+sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd admin FIAP1234
 sudo docker compose restart mosquitto
 echo "✓ Usuário MQTT admin criado (admin/FIAP1234)"
 
