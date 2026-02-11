@@ -89,18 +89,10 @@ O broker MQTT está configurado com `allow_anonymous false`. É necessário cria
 
 #### Passo 1 - Criar usuários e senhas no broker
 
-Primeiro usuário (flag `-c` cria o arquivo de senhas):
+Execute:
 ```bash
 sudo docker exec -it mqtt-broker \
-  mosquitto_passwd -c /mosquitto/config/passwd device1
-```
-
-Demais usuários (**sem** `-c`, senão apaga os anteriores):
-```bash
-sudo docker exec -it mqtt-broker \
-  mosquitto_passwd /mosquitto/config/passwd device2
-sudo docker exec -it mqtt-broker \
-  mosquitto_passwd /mosquitto/config/passwd admin
+  mosquitto_passwd /mosquitto/config/passwd device
 ```
 
 #### Passo 2 - Configurar ACL (quem publica/assina onde)
