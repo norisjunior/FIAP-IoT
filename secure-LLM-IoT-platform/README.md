@@ -1,6 +1,6 @@
-# Plataforma IoT com Machine Learning e LLM
+# Plataforma IoT Segura com Machine Learning e LLM
 
-Aplicação IoT + ML + LLM local + Banco + Notificações.
+Aplicação IoT + ML + LLM local + Banco + Notificações + MQTT seguro (autenticação e ACL).
 
 ## Fluxo do Sistema
 
@@ -47,26 +47,27 @@ git clone https://github.com/norisjunior/FIAP-IoT
 
 ### 2. Acessar o diretório que contém o script automático para inicialização dos serviços
 ```bash
-cd FIAP-IoT/LLM-IoT-platform/
+cd FIAP-IoT/secure-LLM-IoT-platform/
 ```
 
 ### 3. Iniciar todos os serviços como uma plataforma integrada
 ```bash
-sudo ./start-llm-iot-platform.sh
+sudo ./start-secure-llm-iot-platform.sh
 ```
 
 ### 4. Parar (sem excluir) todos os serviços
 ```bash
-sudo ./stop-llm-iot-platform.sh
+sudo ./stop-secure-llm-iot-platform.sh
 ```
 
 
 O script vai:
 - Criar o diretório `LLMIoTStack` com subdiretórios para cada serviço
 - Criar todos os arquivos de configuração (docker-compose.yml, settings.js, .env, etc)
+- Configurar o broker MQTT com autenticação (`allow_anonymous false`) e ACL
 - Fazer build e subir todos os containers em uma única rede Docker
 
-A plataforma IoT cria e inicia: Ollama, MQTT, Node-RED, n8n, PostgreSQL, InfluxDB, Grafana.
+A plataforma IoT cria e inicia: Ollama, MQTT (com autenticação e ACL), Node-RED, n8n, PostgreSQL, InfluxDB, Grafana.
 
 ### 4. Acessos
 
@@ -80,6 +81,38 @@ A plataforma IoT cria e inicia: Ollama, MQTT, Node-RED, n8n, PostgreSQL, InfluxD
 
 **MQTT**:
 - Host: `mqtt-broker`, Port: `1883`
+- Requer autenticação (usuário e senha configurados no broker - ver seção abaixo)
+
+### Configurar Segurança MQTT (Autenticação e ACL)
+
+O broker MQTT está configurado com `allow_anonymous false`. É necessário criar usuários e definir permissões (ACL) antes de publicar/assinar tópicos.
+
+#### Passo 1 - Criar usuários e senhas no broker
+
+Execute:
+```bash
+sudo docker exec -it mqtt-broker \
+  mosquitto_passwd /mosquitto/config/passwd device
+```
+
+#### Passo 2 - Configurar ACL (quem publica/assina onde)
+
+Edite o arquivo `LLMIoTStack/mqtt-broker/acl` e adicione as regras:
+```
+user device1
+topic write FIAPIoT/smartagro/#
+
+user device2
+topic read FIAPIoT/smartagro/cmd/#
+
+user admin
+topic readwrite #
+```
+
+#### Passo 3 - Reiniciar o broker para aplicar as mudanças
+```bash
+cd LLMIoTStack && sudo docker compose restart mosquitto
+```
 
 **PostgreSQL**:
 - Host: `n8n-postgres`, Port: `5432`
