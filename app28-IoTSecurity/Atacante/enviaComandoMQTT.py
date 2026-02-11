@@ -18,7 +18,7 @@ except Exception:
 
 # --- Configurações (edite aqui) -------------------------------------------
 # Broker e porta (copiado dos .ino: MQTT_HOST / MQTT_PORT)
-BROKER = "host.wokwi.internal"
+BROKER = "host.docker.internal"
 PORT = 1883
 
 # Tópico alvo (Device1 publica em "FIAPIoT/smartagro/cmd/local"; Device2 assina coringa)
@@ -34,7 +34,7 @@ MESSAGE = json.dumps({"dispositivo": DISPOSITIVO_ID, "bomba": BOMBA_LIGADA})
 
 
 def main():
-    client = mqtt.Client()
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     try:
         client.connect(BROKER, PORT, 60)
         client.loop_start()
