@@ -36,12 +36,35 @@ echo "✓ Estrutura criada"
 
 # MQTT Broker
 echo ""
-echo "Configurando MQTT Broker..."
+echo "Configurando MQTT Broker com autenticação e ACL..."
 cat > mqtt-broker/mosquitto.conf << 'EOF'
 listener 1883
-allow_anonymous true
+persistence true
+persistence_location /mosquitto/data/
+
+# Autenticação
+allow_anonymous false
+password_file /mosquitto/config/passwd
+
+# Controle de acesso por tópico
+acl_file /mosquitto/config/acl
 EOF
-echo "✓ MQTT configurado"
+
+cat > mqtt-broker/acl << 'EOF'
+# Arquivo de ACL do Mosquitto
+# Adicione regras de acesso abaixo seguindo o formato:
+#   user <nome_do_usuario>
+#   topic read|write|readwrite <topico>
+#
+# Exemplo:
+#   user device1
+#   topic write FIAPIoT/smartagro/sensores/#
+EOF
+
+# Cria arquivo de senhas vazio (será populado pelos alunos)
+touch mqtt-broker/passwd
+
+echo "✓ MQTT configurado (autenticação + ACL vazios - configurar depois)"
 
 # Node-RED
 echo ""
@@ -136,7 +159,7 @@ services:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - ./mqtt-broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mqtt-broker:/mosquitto/config
     restart: unless-stopped
     networks:
       - iot-network
@@ -279,7 +302,6 @@ echo "Plataforma IoT configurada e iniciada!"
 echo "================================================"
 echo ""
 echo "Ollama:      http://localhost:11434 (Servidor LLM local)"
-echo "MQTT Broker: porta 1883 (MQTT) e 9001 (WebSocket)"
 echo "Node-RED:    http://localhost:1880 (usuário: admin / senha: $NODERED_PASSWORD)"
 echo "n8n:         http://localhost:5678 (usuário/senha: gere ao acessar pela primeira vez)"
 echo "PostgreSQL:  localhost:5432 (n8n + vector database com pgvector habilitado)"
@@ -292,6 +314,43 @@ echo "  Org:       fiapiot"
 echo "  Bucket:    sensores"
 echo "  Token:     TOKEN_SUPER_SECRETO_1234567890"
 echo "Grafana:     http://localhost:3000 (usuário/senha: admin/admin)"
+echo ""
+echo "MQTT Broker: porta 1883 - Orientações para criação de users/ACL"
+echo ""
+echo "  ┌─────────────────────────────────────────────────────────────┐"
+echo "  │  PASSO 1 - Criar usuários e senhas no broker               │"
+echo "  ├─────────────────────────────────────────────────────────────┤"
+echo "  │  Primeiro usuário (flag -c cria o arquivo passwd):          │"
+echo "  │    sudo docker exec -it mqtt-broker \\                       │"
+echo "  │      mosquitto_passwd -c /mosquitto/config/passwd device1   │"
+echo "  │                                                             │"
+echo "  │  Demais usuários (SEM -c, senão apaga os anteriores!):      │"
+echo "  │    sudo docker exec -it mqtt-broker \\                       │"
+echo "  │      mosquitto_passwd /mosquitto/config/passwd device2      │"
+echo "  │    sudo docker exec -it mqtt-broker \\                       │"
+echo "  │      mosquitto_passwd /mosquitto/config/passwd admin        │"
+echo "  └─────────────────────────────────────────────────────────────┘"
+echo ""
+echo "  ┌─────────────────────────────────────────────────────────────┐"
+echo "  │  PASSO 2 - Configurar ACL (quem publica/assina onde)       │"
+echo "  ├─────────────────────────────────────────────────────────────┤"
+echo "  │  Edite o arquivo mqtt-broker/acl e adicione as regras:      │"
+echo "  │                                                             │"
+echo "  │    user device1                                             │"
+echo "  │    topic write FIAPIoT/smartagro/#                          │"
+echo "  │                                                             │"
+echo "  │    user device2                                             │"
+echo "  │    topic read FIAPIoT/smartagro/cmd/#                       │"
+echo "  │                                                             │"
+echo "  │    user admin                                               │"
+echo "  │    topic readwrite #                                        │"
+echo "  └─────────────────────────────────────────────────────────────┘"
+echo ""
+echo "  ┌─────────────────────────────────────────────────────────────┐"
+echo "  │  PASSO 3 - Reiniciar o broker para aplicar as mudanças     │"
+echo "  ├─────────────────────────────────────────────────────────────┤"
+echo "  │    sudo docker compose restart mosquitto                    │"
+echo "  └─────────────────────────────────────────────────────────────┘"
 echo ""
 echo "Verificar logs:"
 echo "  sudo docker logs ollama"
