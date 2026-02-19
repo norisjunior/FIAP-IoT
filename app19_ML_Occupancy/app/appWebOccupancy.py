@@ -72,7 +72,6 @@ def inicializar_sistema():
             host=INFLUX_URL,
             token=INFLUX_TOKEN,
             database=INFLUX_BUCKET,
-            timeout=30,
             verify_ssl=False
         )
         

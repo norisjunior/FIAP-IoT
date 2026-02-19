@@ -50,7 +50,6 @@ try:
         host=INFLUX_URL,
         token=INFLUX_TOKEN,
         database=INFLUX_BUCKET,
-        timeout=30,  # Timeout de 30 segundos
         verify_ssl=False  # Desabilita verificação SSL para evitar problemas de certificado (apenas para avaliação, não usar em produção)
     )
     
