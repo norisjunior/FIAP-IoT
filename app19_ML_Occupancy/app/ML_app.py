@@ -20,7 +20,7 @@ TABELA_NOME = "ML_occupancy_sala_FIAP"
 
 # Modelo e dispositivo
 MODELO_ARQUIVO = "modelo_ocupacao_best_xgbclassifier.pkl"
-DISPOSITIVO = "FIAP_IoT_app19_001"
+DISPOSITIVO = "FIAP_IoT_app19_Noris"
 
 # ================================================================
 # Célula 3: Carregar Modelo ML

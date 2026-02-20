@@ -8,22 +8,24 @@
 
 /* ==== Configurações de Hardware =================================================== */
 const uint8_t DHT_PIN   = 26;
-const uint8_t DHT_MODEL = DHT22;
+const uint8_t DHT_MODEL = DHT11;
 const uint8_t LED_PIN   = 21;
 const uint8_t LDR_PIN   = 35;
 const uint8_t CO2_PIN   = 34;
 const uint8_t HR_PIN    = 32;
-
 /* ==== WI-FI =================================================== */
-const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
-const char* WIFI_PASSWORD = "";
+// const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
+// const char* WIFI_PASSWORD = "";
+const char* WIFI_SSID     = "IoTNJ";   // Rede pública do simulador
+const char* WIFI_PASSWORD = "Th1ng$IoT";
 WiFiClient wifiClient;
 
 /* ==== MQTT =================================================== */
-#define MQTT_HOST       "host.wokwi.internal"
+// #define MQTT_HOST       "host.wokwi.internal"
+#define MQTT_HOST       "10.102.169.155"
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/ML_occupancy"
-#define MQTT_DEVICEID   "FIAP_IoT_app19_001"
+#define MQTT_DEVICEID   "FIAP_IoT_app19_Noris"
 #define MQTT_QOS        0
 #define MQTT_RETAIN     false
 PubSubClient mqttClient(wifiClient);
@@ -34,7 +36,7 @@ const unsigned long INTERVALO_RECONEXAO = 5000; // 5 segundos entre tentativas
 
 /* ==== CONSTANTES =================================== */
 static unsigned long lastMs = 0;
-const unsigned long INTERVAL = 30000; // 30s entre envios
+const unsigned long INTERVAL = 15000; // 30s entre envios
 
 /* ==== AUXILIARES =================================================== */
 void conectarWiFi() {

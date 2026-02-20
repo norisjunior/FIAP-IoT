@@ -27,7 +27,7 @@ INFLUX_BUCKET = "IoTSensores"
 
 MODELO_ARQUIVO = "modelo_ocupacao_best_xgbclassifier.pkl"
 MEASUREMENT = "ML_occupancy_sala_FIAP"
-DISPOSITIVO = "FIAP_IoT_app19_001"  # Conforme mostrado na imagem
+DISPOSITIVO = "FIAP_IoT_app19_Noris"  # Conforme mostrado na imagem
 INTERVALO = 10  # segundos
 
 # ===== INICIALIZAÇÃO =====
@@ -50,7 +50,6 @@ try:
         host=INFLUX_URL,
         token=INFLUX_TOKEN,
         database=INFLUX_BUCKET,
-        timeout=30,  # Timeout de 30 segundos
         verify_ssl=False  # Desabilita verificação SSL para evitar problemas de certificado (apenas para avaliação, não usar em produção)
     )
     
