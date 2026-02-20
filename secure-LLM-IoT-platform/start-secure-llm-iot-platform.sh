@@ -304,11 +304,11 @@ sudo docker compose up -d
 
 echo ""
 echo "Criando usuário admin no MQTT Broker..."
-sleep 3
+sleep 10
 sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd admin FIAP1234
+sleep 10
 sudo docker compose restart mqtt-broker
 echo "✓ Usuário MQTT admin criado (admin/FIAP1234)"
-
 echo ""
 echo "================================================"
 echo "Plataforma IoT configurada e iniciada!"
@@ -327,17 +327,20 @@ echo "  Org:       fiapiot"
 echo "  Bucket:    sensores"
 echo "  Token:     TOKEN_SUPER_SECRETO_1234567890"
 echo "Grafana:     http://localhost:3000 (usuário/senha: admin/admin)"
-echo ""
-echo "MQTT Broker: porta 1883 - Orientações para criação de users/ACL"
+echo "MQTT Broker: porta 1883"
+echo "  Subscribe no tópico raiz (#):"
+echo "    Usuário: admin"
+echo "    Senha: FIAP1234"
+echo "Mosquitto MQTT Broker - Orientações para criação de users/ACL:"
 echo ""
 echo "  ┌─────────────────────────────────────────────────────────────┐"
 echo "  │  PASSO 1 - Criar usuários e senhas no broker               │"
 echo "  ├─────────────────────────────────────────────────────────────┤"
 echo "  │                                                             │"
 echo "  │    sudo docker exec -it mqtt-broker \\                       │"
-echo "  │      mosquitto_passwd /mosquitto/config/passwd device2      │"
+echo "  │      mosquitto_passwd /mosquitto/config/passwd device1      │"
 echo "  │    sudo docker exec -it mqtt-broker \\                       │"
-echo "  │      mosquitto_passwd /mosquitto/config/passwd admin        │"
+echo "  │      mosquitto_passwd /mosquitto/config/passwd device2      │"
 echo "  │                                                             │"
 echo "  └─────────────────────────────────────────────────────────────┘"
 echo ""
