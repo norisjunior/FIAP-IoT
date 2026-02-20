@@ -28,7 +28,7 @@ INFLUX_TOKEN = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLn
 INFLUX_ORG = "e044ac59f07be199"
 INFLUX_BUCKET = "IoTSensores"
 MODELO_ARQUIVO = "modelo_ocupacao_best_xgbclassifier.pkl"
-DISPOSITIVO = "FIAP_IoT_app19_001"
+DISPOSITIVO = "FIAP_IoT_app19_Noris"
 INTERVALO = 10  # segundos
 
 # Inicializa Flask

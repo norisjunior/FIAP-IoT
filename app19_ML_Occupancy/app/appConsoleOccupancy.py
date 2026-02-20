@@ -27,7 +27,7 @@ INFLUX_BUCKET = "IoTSensores"
 
 MODELO_ARQUIVO = "modelo_ocupacao_best_xgbclassifier.pkl"
 MEASUREMENT = "ML_occupancy_sala_FIAP"
-DISPOSITIVO = "FIAP_IoT_app19_001"  # Conforme mostrado na imagem
+DISPOSITIVO = "FIAP_IoT_app19_Noris"  # Conforme mostrado na imagem
 INTERVALO = 10  # segundos
 
 # ===== INICIALIZAÇÃO =====
