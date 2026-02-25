@@ -5,7 +5,12 @@
 //WebServer
 #include <WebServer.h>
 //ESP32Sensors
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAudio.hpp"
+#include "ESP32SensorsLED.hpp"
+
+// Pinos
+#define BUZZER_PIN 27
+#define LED_PIN    26
 
 //WebServer
 const char* WIFI_SSID = "Wokwi-GUEST";
@@ -48,7 +53,8 @@ void setup() {
   Serial.begin(115200);
 
   //Inicializa todos os sensores
-  ESP32Sensors::beginAll();
+  ESP32Sensors::Audio::inicializar(BUZZER_PIN);
+  ESP32Sensors::LED::inicializar(LED_PIN);
 
   //Conexão WiFi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);

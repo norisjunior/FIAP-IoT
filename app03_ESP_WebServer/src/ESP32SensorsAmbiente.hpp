@@ -6,17 +6,22 @@ namespace ESP32Sensors {
 		struct AMBIENTE {
 			float temp;
 			float umid;
+			float ic;
 			bool valido;
 		};
 
-		const uint8_t DHT_PIN   = 27;
-		#define DHT_MODEL DHT22
-		DHT dht(DHT_PIN, DHT_MODEL);
-
-		const int TEMPO_DECORRIDO_MIN = 2000;  // 2 segundos
+		// Variáveis privadas do módulo
+		static uint8_t dhtPin = 0;
+		static uint8_t dhtModel = 0;
+		static DHT dht(0, 0);  // Instância inicial (será reinicializada)
+		static const int TEMPO_DECORRIDO_MIN = 2000;  // 2 segundos
 		static int ultimoTempoColeta = 0;
 
-		void inicializar() {
+		// Função de inicialização que recebe os parâmetros de configuração
+		void inicializar(uint8_t pin, uint8_t modelo) {
+			dhtPin = pin;
+			dhtModel = modelo;
+			dht = DHT(pin, modelo);  // Reconstrói a instância com os novos parâmetros
 			dht.begin();
 		}
 
@@ -33,10 +38,10 @@ namespace ESP32Sensors {
 			AMBIENTE dados;
 			dados.temp = NAN;
 			dados.umid = NAN;
+			dados.ic = NAN;
 			dados.valido = false;
 
 			if (!podeColetar()) {
-				Serial.println("ERRO: Tempo mínimo emtre leituras não atingido.");
 				return dados;
 			}
 
@@ -50,6 +55,7 @@ namespace ESP32Sensors {
 
 			dados.temp = t;
 			dados.umid = u;
+			dados.ic = dht.computeHeatIndex(t, u, false);
 			dados.valido = true;
 
 			return dados;
