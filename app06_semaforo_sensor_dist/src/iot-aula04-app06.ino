@@ -2,8 +2,8 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include "ESP32SensorsDistancia.hpp"
-//#include <PubSubClient.h>
-#include <MqttClient.h>
+#include <PubSubClient.h>
+//#include <MqttClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
@@ -19,8 +19,8 @@ WiFiClient wifiClient; // Define client WiFi
 #define MQTT_DEVICEID   "NorisDistSensorSemaforo00001"
 #define MQTT_QOS        1
 #define MQTT_RETAIN     false
-//PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
-MqttClient mqttClient(wifiClient);
+PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
+//MqttClient mqttClient(wifiClient);
 
 /* ---- Config distância ---- */
 #define TRIG_PIN 25
@@ -31,16 +31,16 @@ const int PESSOA_DIST = 50;
 /* ---- Função: Conectar ao MQTT Broker ---- */
 void conectarMQTT() {
   Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
-  while (!mqttClient.connected()) {
-    if (mqttClient.connect(MQTT_HOST, MQTT_PORT)) {
+  while (!client.connected()) {
+    if (client.connect(MQTT_DEVICEID)) {
       Serial.println("--> Conectado ao MQTT!");
     } else {
       Serial.print(" Falha, rc=");
-      Serial.print(mqttClient.connectError());
+      Serial.print(client.state());
       Serial.println(" Tentando novamente em 5 segundos...");
       delay(5000);
     }
-  }  
+  }
 }
 
 void setup() {
@@ -58,16 +58,15 @@ void setup() {
   }
   Serial.println("\nWiFi conectado!");
 
-  /* ---- Conexão ao MQTT: Definição de ID e keep alive ---- */
-  mqttClient.setId(MQTT_DEVICEID);
-  mqttClient.setKeepAliveInterval(60);
+  /* ---- Conexão ao MQTT: Definição de servidor ---- */
+  client.setServer(MQTT_HOST, MQTT_PORT);
 }
 
 void loop() {
-  if (!mqttClient.connected()) {
+  if (!client.connected()) {
     conectarMQTT();
   }
-  mqttClient.poll();
+  client.loop();
 
   //Mede a distância
   float dist = sensorDist.medirDist();
@@ -82,9 +81,7 @@ void loop() {
     serializeJson(doc, buffer);
     Serial.println("Pessoa detectada! Payload: " + String(buffer) + ". Enviando daods (mqtt publish)");
     
-    mqttClient.beginMessage(MQTT_PUB_TOPIC, strlen(buffer), MQTT_RETAIN, MQTT_QOS);
-    mqttClient.print(buffer);
-    mqttClient.endMessage();
+    client.publish(MQTT_PUB_TOPIC, buffer, MQTT_RETAIN);
 
     delay(5000); //intervalo antes de nova detecção
   }
