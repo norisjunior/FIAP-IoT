@@ -1,18 +1,19 @@
 namespace ESP32Sensors {
 	namespace LED {
-		const uint8_t LED_PIN = 14;
+		static uint8_t ledPin = 0;
 
-		void inicializar() {
-			pinMode(LED_PIN, OUTPUT);
-			digitalWrite(LED_PIN, LOW);
+		void inicializar(uint8_t pin) {
+			ledPin = pin;
+			pinMode(ledPin, OUTPUT);
+			digitalWrite(ledPin, LOW);
 		}
 
 		void on() {
-			digitalWrite(LED_PIN, HIGH);
+			digitalWrite(ledPin, HIGH);
 		}
 
 		void off() {
-			digitalWrite(LED_PIN, LOW);
+			digitalWrite(ledPin, LOW);
 		}
 	}
 }

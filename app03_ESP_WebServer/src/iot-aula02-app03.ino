@@ -2,13 +2,22 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsAccel.hpp"
+#include "ESP32SensorsLED.hpp"
+
+// Pinos
+#define DHT_PIN   27
+#define DHT_MODEL DHT22
+#define LED_PIN   14
+#define SDA_PIN   18
+#define SCL_PIN   19
 
 //WebServer
 const char* WIFI_SSID = "Wokwi-GUEST";
 const char* WIFI_PASSWORD = "";
 const char* HTTPCHARSET = "text/plain; charset=utf-8";
-const uint8_t WIFI_CHANNEL = 6;
+//const uint8_t WIFI_CHANNEL = 6;
 WebServer server(80);
 
 //Coleta medições ambientais (temperatura e umidade)
@@ -35,10 +44,13 @@ void setup() {
   Serial.begin(115200);
 
   //Inicializa todos os sensores
-  ESP32Sensors::beginAll();
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::Accel::inicializar(SDA_PIN, SCL_PIN);
+  ESP32Sensors::LED::inicializar(LED_PIN);
 
   //Conexão WiFi
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);
+  //WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Conectando ao Wi-Fi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(250);

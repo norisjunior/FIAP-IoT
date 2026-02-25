@@ -5,14 +5,11 @@
 namespace ESP32Sensors {
 	namespace Accel {
 
-		#define SCLPIN 19
-		#define SDAPIN 18
-
 		Adafruit_MPU6050 mpu;
 
-		void inicializar() {
-			// Inicializa comunicação I2C nos pinos padrão do ESP32 (SDA=18, SCL=19)
-			Wire.begin(SDAPIN, SCLPIN);
+		void inicializar(uint8_t sda, uint8_t scl) {
+			// Inicializa comunicação I2C nos pinos informados
+			Wire.begin(sda, scl);
 			if (!mpu.begin()) {
 				Serial.println("Erro: MPU6050 não encontrado. Verifique as conexões.");
 				while (1) delay(10);

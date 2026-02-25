@@ -1,17 +1,21 @@
 // File: src/iot-aula01-app02.ino
 
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsLED.hpp"
 
-//Botão
-#define BOTAO 18
+// Pinos
+#define BOTAO     18
+#define DHT_PIN   21
+#define DTH_MODEL DHT22
+#define LED_PIN   26
 
-/* *** Struct SensorsAmbiente *** */
+/* *** Controle das leituras do sensor de medições do Ambiente (DHT) *** */
 uint8_t MAX_LEITURAS = 5;
 uint8_t idLeitura = 0;
 
 // Uso didático, para produção não se recomenda usar "using", o ideal é usar o fully qualified name
 using ESP32Sensors::Ambiente::AMBIENTE;
-/* *** Struct fim *** */
+
 
 /* *** Funções início *** */
 bool botaoPressionado() {
@@ -44,7 +48,8 @@ void avaliarAmbiente(AMBIENTE aval[], uint8_t tamanho) {
 void setup() {
   Serial.begin(115200);
   pinMode(BOTAO, INPUT_PULLUP); // Configura o pino do botão como entrada com pull-up interno
-  ESP32Sensors::beginAll();
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DTH_MODEL);
+  ESP32Sensors::LED::inicializar(LED_PIN);
   Serial.println("--------------------------------------");
   Serial.println("- Uso de matrizes, vetores e structs -");
   Serial.println("--------------------------------------");

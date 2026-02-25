@@ -1,29 +1,30 @@
 namespace ESP32Sensors {
 	namespace Audio {
-		//Buzzer
-		const uint8_t BUZZER = 27;
+		static uint8_t buzzerPin = 0;
 
 		//PWM
-		const uint8_t CANAL = 0;
-		const uint16_t FREQ = 1000;
-		const uint8_t RESOLUCAO = 8;
+		static uint8_t CANAL = 0;
+		static uint16_t FREQ = 1000;
+		static uint8_t RESOLUCAO = 8;		
 
-		void inicializar() {
-			pinMode(BUZZER, OUTPUT);
+		void inicializar(uint8_t pin) {
+			buzzerPin = pin;
 			ledcSetup(CANAL, FREQ, RESOLUCAO);
-			ledcAttachPin(BUZZER, CANAL);  
+			ledcAttachPin(buzzerPin, CANAL); 
 		}
 
 		void ativarAlarme() {
-			ledcWriteTone(CANAL, 1000); // Ativa som de 1kHz
+			//ledcWriteTone(buzzerPin, 1000);  // toca indefinidamente em 1kHz
+			tone(buzzerPin, FREQ);
 		}
 
 		void desativarAlarme() {
-			ledcWriteTone(CANAL, 0);
+			//ledcWriteTone(buzzerPin, 0);     // silencia
+			noTone(buzzerPin);
 		}
 
 		void tocar(uint16_t freq = FREQ, uint16_t dur = 500) {
-			tone(BUZZER, freq, dur);
+			tone(buzzerPin, freq, dur);
 		}
 	}
 }
