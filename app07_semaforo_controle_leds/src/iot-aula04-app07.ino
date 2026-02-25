@@ -2,8 +2,8 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include "IoTSemaforo.hpp"
-//#include <PubSubClient.h>
-#include <MqttClient.h>
+#include <PubSubClient.h>
+//#include <MqttClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
@@ -18,8 +18,8 @@ WiFiClient wifiClient; // Define client WiFi
 #define MQTT_SUB_TOPIC  "noris/semaforo1/distancia"
 #define MQTT_DEVICEID   "NorisSemaforo00001"
 #define MQTT_QOS        1
-//PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
-MqttClient mqttClient(wifiClient);
+PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
+//MqttClient mqttClient(wifiClient);
 
 /* ---- Semáforo - definições ---- */
 #define LED_VERMELHO 18
@@ -36,27 +36,27 @@ const int PESSOA_DIST = 50;
 /* ---- Função: Conectar ao MQTT Broker ---- */
 void conectarMQTT() {
   Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
-  while (!mqttClient.connected()) {
-    if (mqttClient.connect(MQTT_HOST, MQTT_PORT)) {
+  while (!client.connected()) {
+    if (client.connect(MQTT_DEVICEID)) {
       Serial.println(" Conectado ao MQTT!");
-      mqttClient.subscribe(MQTT_SUB_TOPIC, MQTT_QOS);
+      client.subscribe(MQTT_SUB_TOPIC, MQTT_QOS);
       Serial.println("Subscribe realizado no tópico: " + String(MQTT_SUB_TOPIC) + ", QoS " + String(MQTT_QOS));
     } else {
       Serial.print(" Falha, rc=");
-      Serial.print(mqttClient.connectError());
+      Serial.print(client.state());
       Serial.println(" Tentando novamente em 5 segundos...");
       delay(5000);
     }
-  }  
+  }
 }
 
 /* ---- Callback MQTT ---- */
-void mensagemRecebida(int messageSize) {
+void mensagemRecebida(char* topico, byte* msg, unsigned int length) {
   /* ---- Obtenção do tópico e payload */
-  String topic = mqttClient.messageTopic();
+  String topic = String(topico);
   String payload;
-  while (mqttClient.available()) {
-    payload += (char)mqttClient.read();
+  for (unsigned int i = 0; i < length; i++) {
+    payload += (char)msg[i];
   }
   Serial.printf("Mensagem MQTT recebida [%s]: %s", topic.c_str(), payload.c_str()); Serial.println("\n");
 
@@ -110,22 +110,20 @@ void setup() {
   }
   Serial.println("\nWiFi conectado!");
 
-  //ClientID
-  mqttClient.setId(MQTT_DEVICEID);
-  //Keep Alive (60 segundos)
-  mqttClient.setKeepAliveInterval(60);
+  /* ---- Conexão ao MQTT: Definição de servidor e callback ---- */
+  client.setServer(MQTT_HOST, MQTT_PORT);
   /* Função mensagemRecebida será chamada sempre que um
      novo publish for enviado pelo Broker */
-  mqttClient.onMessage(mensagemRecebida);
+  client.setCallback(mensagemRecebida);
 
   Serial.println("Semáforo inteligente iniciado.\nAguardando recebimento de mensagem MQTT.\n");
 }
 
 void loop() {
-  if (!mqttClient.connected()) {
+  if (!client.connected()) {
     conectarMQTT();
   }
-  mqttClient.poll();
+  client.loop();
 
   /* ---- Expiração da janela ---- */
   if ((deteccoes > 0) && ((millis() - tempoInicio) > tempoMax)) {
