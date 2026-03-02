@@ -111,7 +111,7 @@ topic readwrite #
 
 #### Passo 3 - Reiniciar o broker para aplicar as mudanças
 ```bash
-cd LLMIoTStack && sudo docker compose restart mosquitto
+cd LLMIoTStack && sudo docker restart mqtt-broker
 ```
 
 **PostgreSQL**:
