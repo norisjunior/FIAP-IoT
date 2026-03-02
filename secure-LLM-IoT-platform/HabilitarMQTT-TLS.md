@@ -181,7 +181,7 @@ sudo docker restart mqtt-broker
 
 ## 1.8 Teste rápido do TLS (no host):
 
-# necessário precisa do pacote mosquitto-clients no host
+### É necessário ter o pacote mosquitto-clients no host (ubuntu)
 ```bash
 sudo apt-get update && sudo apt-get install -y mosquitto-clients
 ```
