@@ -63,7 +63,7 @@ Execute o pipeline de treinamento que:
 
 **Certifique-se de que ambos os arquivos estão em:**
 ```
-app20-AQI/AQI_ML_app/model/
+ML_AQI_Manual/
 ```
 
 ### 2. Iniciar a Plataforma IoT
@@ -96,7 +96,7 @@ Você deve ver containers:
 Navegue até o diretório da aplicação ML:
 
 ```bash
-cd app20-AQI/AQI_ML_app
+cd ML_AQI_Manual
 ```
 
 **Criar ambiente virtual:**
@@ -348,7 +348,7 @@ Para uma solução mais robusta e reproduzível, veja **[README-AQIStack.md](REA
 - Verificar firewall do Windows
 
 **Modelo não carrega:**
-- Verificar se arquivos .keras e .pkl existem em `AQI_ML_app/model/`
+- Verificar se arquivos .keras e .pkl existem em `ML_AQI_Manual/`
 - Verificar compatibilidade de versões TensorFlow
 - Checar logs do Flask para erros de carregamento
 
