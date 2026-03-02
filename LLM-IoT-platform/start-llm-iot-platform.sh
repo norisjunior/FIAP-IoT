@@ -165,6 +165,8 @@ services:
   postgres:
     image: pgvector/pgvector:pg15
     container_name: n8n-postgres
+    ports:
+      - "5432:5432"    
     restart: always
     environment:
       POSTGRES_DB: n8n
