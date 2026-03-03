@@ -112,19 +112,19 @@ services:
     restart: unless-stopped
     networks:
       - iot-network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: 1
+#              capabilities: [gpu]
     entrypoint: ["/bin/bash", "-c"]
     command: >
       "ollama serve & 
       pid=$!;
       sleep 5;
-      ollama pull llama3.2;
+      ollama pull llama3.2:1b;
       ollama pull nomic-embed-text;
       wait $pid"
 
