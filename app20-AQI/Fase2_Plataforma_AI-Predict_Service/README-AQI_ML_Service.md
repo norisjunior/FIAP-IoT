@@ -15,14 +15,14 @@ Antes de executar este experimento, certifique-se de:
    - `preprocess_aqi.pkl`
 4. **Arquivos do modelo copiados para:**
    ```
-   app20-AQI/AQI_stack/ml-service/model/
+   app20-AQI/ML_AQI_stack/ml-service/model
    ```
 
 ## Arquitetura do Modo Stack
 
 ```
 ┌──────────────┐
-│   ESP32-S3   │  ──► Publica dados via MQTT
+│    ESP32     │  ──► Publica dados via MQTT
 └──────┬───────┘
        │
        ▼
@@ -84,7 +84,7 @@ Certifique-se de que os arquivos do modelo treinado estão no diretório correto
 
 ```bash
 # Navegar até o diretório da stack
-cd app20-AQI/AQI_stack/
+cd app20-AQI/ML_AQI_stack/
 
 # Verificar se os arquivos existem
 ls ml-service/model/
@@ -94,141 +94,28 @@ Você deve ver:
 - `modelo_aqi_nn.keras`
 - `preprocess_aqi.pkl`
 
-Se os arquivos não estiverem lá, copie do diretório de treinamento:
-
-```bash
-# Windows
-copy ..\AQI_ML_app\model\*.* ml-service\model\
-
-# Linux/Mac
-cp ../AQI_ML_app/model/* ml-service/model/
-```
+São os arquivos resultantes do nosso treinamento no colab.
 
 ### 2. Revisar o docker-compose.yml
 
-O arquivo `docker-compose.yml` deve conter:
+Veja o arquivo `docker-compose.yml` para conhecer os serviços. Em resumo, são: MQTT Broker (mosquitto), n8n e o nosso serviço "/predict", que foi compilado em um container docker.
 
-```yaml
-version: '3.8'
 
-services:
-  # MQTT Broker (Mosquitto)
-  aqi-mosquitto:
-    image: eclipse-mosquitto:latest
-    container_name: aqi-mosquitto
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
-    networks:
-      - aqi-network
-    restart: unless-stopped
+### 3. Como foi construído o serviço "`/predict`"
 
-  # ML Service (Flask/FastAPI)
-  aqi-ml-service:
-    build:
-      context: ./ml-service
-      dockerfile: Dockerfile
-    container_name: aqi-ml-service
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./ml-service/model:/app/model
-    environment:
-      - MODEL_PATH=/app/model/modelo_aqi_nn.keras
-      - SCALER_PATH=/app/model/preprocess_aqi.pkl
-    networks:
-      - aqi-network
-    restart: unless-stopped
-    depends_on:
-      - aqi-mosquitto
-
-  # n8n (Workflow Automation)
-  aqi-n8n:
-    image: n8nio/n8n:latest
-    container_name: aqi-n8n
-    ports:
-      - "5678:5678"
-    volumes:
-      - aqi-n8n-data:/home/node/.n8n
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=false
-      - WEBHOOK_URL=http://localhost:5678/
-    networks:
-      - aqi-network
-    restart: unless-stopped
-    depends_on:
-      - aqi-mosquitto
-      - aqi-ml-service
-
-networks:
-  aqi-network:
-    driver: bridge
-
-volumes:
-  aqi-n8n-data:
-```
-
-### 3. Revisar o Dockerfile do ML Service
-
-O arquivo `ml-service/Dockerfile` deve conter:
-
-```dockerfile
-FROM python:3.10-slim
-
-WORKDIR /app
-
-# Instalar dependências do sistema (se necessário)
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar requirements
-COPY requirements.txt .
-
-# Instalar dependências Python
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copiar código da aplicação
-COPY service_app.py .
-
-# Criar diretório para o modelo
-RUN mkdir -p /app/model
-
-# Expor porta
-EXPOSE 8000
-
-# Comando para iniciar o serviço
-CMD ["uvicorn", "service_app:app", "--host", "0.0.0.0", "--port", "8000"]
-```
+O arquivo `ML_AQI-stack/ml-service/Dockerfile` foi usado para compilar o container docker com o serviço desenvolvido em python, que ao ser chamado, devolve a predição (usando DL/TensorFlow/Keras).
 
 ### 4. Configurar Mosquitto
 
-O arquivo `mosquitto/mosquitto.conf` deve conter:
-
-```conf
-# Configuração básica do Mosquitto
-listener 1883
-allow_anonymous true
-
-# Log
-log_dest stdout
-log_type all
-
-# Persistence
-persistence true
-persistence_location /mosquitto/data/
-```
+O arquivo `mosquitto/mosquitto.conf` foi usado para configurar o MQTT-Broker.
 
 ### 5. Subir a Stack
 
-Com tudo configurado, execute:
+Com tudo configurado, basta executar:
 
 ```bash
 # Navegar até o diretório da stack
-cd app20-AQI/AQI_stack/
+cd app20-AQI/ML_AQI_stack/
 
 # Subir todos os containers
 docker compose up -d --build
@@ -358,7 +245,7 @@ curl -X POST http://localhost:8000/predict \
 
 **Opção 1: Wokwi (recomendado para desenvolvimento)**
 
-No código `iot-app20.ino`, o ESP32 já está configurado para:
+No código `ESP32_AQI/src/iot-app20.ino`, o ESP32 já está configurado para:
 ```cpp
 #define MQTT_SERVER "host.wokwi.internal"
 ```
@@ -485,29 +372,4 @@ Telegram
 | **Desenvolvimento** | Ágil | Rebuild necessário |
 | **Isolamento** | Baixo | Alto |
 | **Networking** | host.docker.internal | Nomes de container |
-
-## Troubleshooting
-
-**Containers não sobem:**
-- Verificar se portas 1883, 5678, 8000 estão livres
-- Verificar logs: `docker compose logs`
-- Verificar Docker está rodando
-
-**ML Service falha ao iniciar:**
-- Verificar se arquivos do modelo existem em `ml-service/model/`
-- Verificar logs: `docker logs aqi-ml-service`
-- Verificar requirements.txt possui todas dependências
-
-**n8n não conecta ao MQTT:**
-- Usar nome do container: `aqi-mosquitto` (não `localhost`)
-- Verificar se containers estão na mesma network: `docker network inspect aqi-stack_aqi-network`
-
-**n8n não conecta ao ML Service:**
-- Usar URL: `http://aqi-ml-service:8000/predict` (não `localhost`)
-- Testar conectividade: `docker exec -it aqi-n8n ping aqi-ml-service`
-
-**ESP32 não conecta ao Mosquitto:**
-- Verificar se porta 1883 está exposta: `docker ps`
-- Em hardware real, usar IP da máquina (não `localhost`)
-- Verificar firewall
 
