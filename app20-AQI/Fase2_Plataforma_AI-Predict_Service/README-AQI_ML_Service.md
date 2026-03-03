@@ -1,375 +1,111 @@
-# Physical Computing, Embedded AI, Robotics & Cognitive IoT
+# Fase 2 - Stack Docker do Sistema AQI
 
-## App 20 - Modo Stack Docker: Sistema AQI Containerizado
+Nesta fase, toda a infraestrutura (MQTT Broker, ML Service e n8n) roda containerizada via Docker Compose. Um único comando sobe tudo.
 
-Este documento descreve a execução via **Docker Compose Stack**, onde toda a infraestrutura (MQTT Broker, ML Service e n8n) é orquestrada em containers, permitindo deploy rápido e reproduzível.
-
-## Pré-requisitos
-
-Antes de executar este experimento, certifique-se de:
-
-1. **Docker e Docker Compose instalados**
-2. **ESP32 compilado e pronto** (veja README.md principal)
-3. **Modelo treinado** disponível:
-   - `modelo_aqi_nn.keras`
-   - `preprocess_aqi.pkl`
-4. **Arquivos do modelo copiados para:**
-   ```
-   app20-AQI/ML_AQI_stack/ml-service/model
-   ```
-
-## Arquitetura do Modo Stack
+## Arquitetura
 
 ```
-┌──────────────┐
-│    ESP32     │  ──► Publica dados via MQTT
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│  Mosquitto   │  (Container Docker)
-│ MQTT Broker  │  aqi-mosquitto:1883
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│     n8n      │  (Container Docker)
-│              │  ──► http://aqi-ml-service:8000/predict
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│  ML Service  │  (Container Docker)
-│ Flask/FastAPI│  aqi-ml-service:8000
-│              │  • modelo_aqi_nn.keras
-│              │  • preprocess_aqi.pkl
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│   Telegram   │  ──► Alertas críticos
-└──────────────┘
+ESP32 (Wokwi) ──► aqi-mosquitto:1883 ──► aqi-n8n:5678 ──► aqi-ml-service:8000 ──► Telegram
+                   (container)             (container)       (container)
 ```
 
-**Vantagens da Stack:**
-- ✅ Deploy com um único comando
-- ✅ Isolamento completo de ambiente
-- ✅ Portável e reproduzível
-- ✅ Simula ambiente de produção
-- ✅ Networking automático entre containers
+## Passo 1 — Parar a Plataforma da Fase 1
 
-## Estrutura da Stack
-
-```
-app20-AQI/AQI_stack/
-├── docker-compose.yml         # Orquestração dos serviços
-├── mosquitto/
-│   └── mosquitto.conf         # Configuração MQTT Broker
-├── ml-service/
-│   ├── Dockerfile             # Container do modelo ML
-│   ├── requirements.txt       # Dependências Python
-│   ├── service_app.py         # API Flask/FastAPI
-│   └── model/
-│       ├── modelo_aqi_nn.keras   # Modelo treinado (COPIAR AQUI)
-│       └── preprocess_aqi.pkl    # Scaler (COPIAR AQUI)
-└── n8n/
-    └── (dados persistentes)
-```
-
-## Passo a Passo
-
-### 1. Preparar Arquivos do Modelo
-
-Certifique-se de que os arquivos do modelo treinado estão no diretório correto:
+Se a plataforma da Fase 1 ainda estiver rodando, pare-a para liberar as portas:
 
 ```bash
-# Navegar até o diretório da stack
-cd app20-AQI/ML_AQI_stack/
-
-# Verificar se os arquivos existem
-ls ml-service/model/
+wsl -d ubuntu
+cd ~/FIAP-IoT/IoT-platform/
+docker compose down
 ```
 
-Você deve ver:
-- `modelo_aqi_nn.keras`
-- `preprocess_aqi.pkl`
+## Passo 2 — Preparar os Arquivos do Modelo
 
-São os arquivos resultantes do nosso treinamento no colab.
+Copie os arquivos do treinamento (Colab) para o diretório do serviço:
 
-### 2. Revisar o docker-compose.yml
+```
+Fase2_Plataforma_AI-Predict_Service/ML_AQI_service/ml-service/model/
+├── modelo_aqi_nn.keras
+└── preprocess_aqi.pkl
+```
 
-Veja o arquivo `docker-compose.yml` para conhecer os serviços. Em resumo, são: MQTT Broker (mosquitto), n8n e o nosso serviço "/predict", que foi compilado em um container docker.
+Confirme:
+```bash
+ls Fase2_Plataforma_AI-Predict_Service/ML_AQI_service/ml-service/model/
+```
 
-
-### 3. Como foi construído o serviço "`/predict`"
-
-O arquivo `ML_AQI-stack/ml-service/Dockerfile` foi usado para compilar o container docker com o serviço desenvolvido em python, que ao ser chamado, devolve a predição (usando DL/TensorFlow/Keras).
-
-### 4. Configurar Mosquitto
-
-O arquivo `mosquitto/mosquitto.conf` foi usado para configurar o MQTT-Broker.
-
-### 5. Subir a Stack
-
-Com tudo configurado, basta executar:
+## Passo 3 — Subir a Stack
 
 ```bash
-# Navegar até o diretório da stack
-cd app20-AQI/ML_AQI_stack/
-
-# Subir todos os containers
+cd Fase2_Plataforma_AI-Predict_Service/ML_AQI_service/
 docker compose up -d --build
 ```
 
-**Flags explicadas:**
-- `-d`: Detached mode (roda em background)
-- `--build`: Força rebuild das imagens (útil após mudanças)
-
-**Saída esperada:**
-
-```
-[+] Building 45.2s (12/12) FINISHED
-[+] Running 4/4
- ✔ Network aqi-stack_aqi-network     Created
- ✔ Container aqi-mosquitto           Started
- ✔ Container aqi-ml-service          Started
- ✔ Container aqi-n8n                 Started
-```
-
-### 6. Verificar Serviços
-
-Verificar se todos os containers estão rodando:
-
+Confirme que os 3 containers estão rodando:
 ```bash
 docker ps
 ```
 
-Você deve ver 3 containers:
-- `aqi-mosquitto` (porta 1883)
-- `aqi-ml-service` (porta 8000)
-- `aqi-n8n` (porta 5678)
+| Container | Porta | Função |
+|---|---|---|
+| `aqi-mosquitto` | 1883 | MQTT Broker |
+| `aqi-ml-service` | 8000 | Serviço de ML |
+| `aqi-n8n` | 5678 | Orquestrador de fluxo |
 
-Verificar logs dos serviços:
-
+Teste rápido do ML Service:
 ```bash
-# Logs do ML Service
-docker logs aqi-ml-service
-
-# Logs do Mosquitto
-docker logs aqi-mosquitto
-
-# Logs do n8n
-docker logs aqi-n8n
+curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d "{\"PM2_5\":342,\"PM10\":477,\"NO\":10,\"NO2\":51,\"NOx\":40,\"NH3\":42,\"CO\":1.7,\"SO2\":17,\"O3\":91,\"Benzene\":5.2,\"Toluene\":29,\"Xylene\":0.5}"
 ```
 
-### 7. Testar o ML Service
+Resposta esperada: `{"class":"Perigoso","probabilities":{...}}`
 
-Teste se a API está respondendo:
+## Passo 4 — Importar o Fluxo no n8n
 
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "PM2_5": 45,
-    "PM10": 82,
-    "NO": 15,
-    "NO2": 28,
-    "NOx": 40,
-    "NH3": 9,
-    "CO": 0.7,
-    "SO2": 6,
-    "O3": 32,
-    "Benzene": 2.1,
-    "Toluene": 3.5,
-    "Xylene": 1.2
-  }'
-```
+1. Acesse o n8n: http://localhost:5678
+2. Menu → **Import from File**
+3. Selecione: `Fase2_Plataforma_AI-Predict_Service/ML_AQI_service/n8n/AQI.json`
+4. Configure as credenciais:
+   - **MQTT:** Host `aqi-mosquitto`, Porta `1883`
+   - **Telegram:** Bot Token (via @BotFather) e Chat ID (via @userinfobot)
+5. No nó **Predict AQI**, confirme a URL: `http://aqi-ml-service:8000/predict`
+6. Ative o workflow (toggle no canto superior direito)
 
-**Retorno esperado:**
+> **Atenção:** os endpoints mudaram em relação à Fase 1. Agora usamos nomes de container:
+> - MQTT: `aqi-mosquitto` (antes era `mqtt-broker`)
+> - ML Service: `aqi-ml-service` (antes era `host.docker.internal`)
 
-```json
-{
-  "class": "Aceitável",
-  "probabilities": {
-    "Aceitável": 0.971751868724823,
-    "Perigoso": 8.366844122065231e-05,
-    "Ruim": 0.028164511546492577
-  }
-}
-```
+## Passo 5 — Executar o ESP32 no Wokwi
 
-### 8. Configurar o n8n
-
-1. **Acessar n8n:**
+1. Abra o VSCode com a extensão Wokwi
+2. Abra o projeto em `App-Device-ESP32_AQI/`
+3. Compile (PlatformIO) e inicie a simulação Wokwi
+4. Ajuste os potenciômetros para simular diferentes condições de ar
+5. No Serial Monitor, confirme:
    ```
-   http://localhost:5678
-   ```
-
-2. **Criar novo workflow** ou importar workflow existente
-
-3. **Configurar nó MQTT Trigger:**
-   - **Host:** `aqi-mosquitto` (nome do container)
-   - **Port:** `1883`
-   - **Topics:** `FIAPIoT/aqi/dados`
-   - **Client ID:** `n8n-aqi-stack-subscriber`
-
-4. **Configurar nó HTTP Request:**
-   - **Method:** POST
-   - **URL:** `http://aqi-ml-service:8000/predict` (nome do container)
-   - **Body Content Type:** JSON
-   - **Body:**
-     ```json
-     {
-       "PM2_5": {{$json["PM25"]}},
-       "PM10": {{$json["PM10"]}},
-       "NO": {{$json["NO"]}},
-       "NO2": {{$json["NO2"]}},
-       "NOx": {{$json["NOx"]}},
-       "NH3": {{$json["NH3"]}},
-       "CO": {{$json["CO"]}},
-       "SO2": {{$json["SO2"]}},
-       "O3": {{$json["O3"]}},
-       "Benzene": {{$json["Benzene"]}},
-       "Toluene": {{$json["Toluene"]}},
-       "Xylene": {{$json["Xylene"]}}
-     }
-     ```
-
-5. **Configurar lógica de roteamento e Telegram** (igual ao modo manual)
-
-6. **Ativar workflow**
-
-### 9. Configurar ESP32 para a Stack
-
-**Importante:** O ESP32 precisa se conectar ao broker Mosquitto da stack.
-
-**Opção 1: Wokwi (recomendado para desenvolvimento)**
-
-No código `ESP32_AQI/src/iot-app20.ino`, o ESP32 já está configurado para:
-```cpp
-#define MQTT_SERVER "host.wokwi.internal"
-```
-
-Isso funcionará se a stack estiver rodando na mesma máquina.
-
-**Opção 2: Hardware real**
-
-Se estiver usando ESP32 físico, configure:
-```cpp
-#define MQTT_SERVER "192.168.x.x"  // IP da máquina rodando Docker
-```
-
-### 10. Executar o ESP32
-
-1. **Abrir Wokwi:**
-   - Arquivo: `app20-AQI/src/iot-app20.ino`
-
-2. **Compilar e executar:**
-   - O ESP32 conectará ao broker Mosquitto da stack
-   - Publicará dados a cada 10 segundos
-
-3. **Monitorar Serial Monitor:**
-   ```
-   Conectando ao MQTT Broker--> Conectado ao MQTT Broker!
    SUCESSO: Dados AQI enviados para o MQTT Broker
    ```
 
-### 11. Monitorar o Fluxo Completo
+## Validando o Fluxo Completo
 
-**Logs do ML Service:**
-```bash
-docker logs -f aqi-ml-service
-```
-
-Você verá requisições POST sendo processadas.
-
-**Logs do Mosquitto:**
-```bash
-docker logs -f aqi-mosquitto
-```
-
-Você verá mensagens MQTT sendo publicadas.
-
-**n8n Executions:**
-- Acessar: http://localhost:5678
-- Aba "Executions"
-- Ver workflow sendo executado a cada mensagem
-
-**Telegram:**
-- Receber alertas conforme classificação
+| Onde verificar | O que esperar |
+|---|---|
+| Serial Monitor (ESP32) | `SUCESSO: Dados AQI enviados para o MQTT Broker` |
+| `docker logs -f aqi-ml-service` | `POST /predict HTTP/1.1 200 OK` |
+| n8n (aba Executions) | Execuções bem-sucedidas |
+| Telegram | Mensagens de INFO ou ALERTA conforme classificação |
 
 ## Comandos Úteis
 
-**Parar a stack:**
 ```bash
-docker compose down
-```
+# Ver logs de todos os serviços
+docker compose logs -f
 
-**Parar e remover volumes:**
-```bash
+# Parar a stack
+docker compose down
+
+# Rebuild após mudanças no código
+docker compose up -d --build
+
+# Parar e limpar volumes
 docker compose down -v
 ```
-
-**Rebuild completo:**
-```bash
-docker compose down
-docker compose up -d --build
-```
-
-**Ver logs em tempo real:**
-```bash
-docker compose logs -f
-```
-
-**Acessar shell do ML Service:**
-```bash
-docker exec -it aqi-ml-service bash
-```
-
-**Reiniciar apenas um serviço:**
-```bash
-docker compose restart aqi-ml-service
-```
-
-## Fluxo de Dados
-
-```
-ESP32 (Wokwi)
-    ↓ MQTT
-aqi-mosquitto:1883
-    ↓ MQTT Subscribe
-aqi-n8n:5678
-    ↓ HTTP POST
-aqi-ml-service:8000/predict
-    ↓ Classificação
-aqi-n8n:5678
-    ↓ Alerta
-Telegram
-```
-
-## Vantagens do Modo Stack
-
-✅ **Deploy rápido:** Um comando sobe tudo
-✅ **Isolamento:** Ambiente reproduzível e portável
-✅ **Networking automático:** Containers se comunicam por nomes
-✅ **Produção-ready:** Simula ambiente real
-✅ **Escalável:** Fácil adicionar mais serviços
-
-## Desvantagens do Modo Stack
-
-❌ **Debugging mais complexo:** Logs dentro de containers
-❌ **Rebuild necessário:** Mudanças no código requerem rebuild
-❌ **Overhead:** Mais recursos consumidos (CPU/RAM)
-
-## Diferenças entre Modo Manual e Stack
-
-| Aspecto | Manual | Stack Docker |
-|---------|--------|--------------|
-| **Setup** | Múltiplos passos | Um comando |
-| **Debugging** | Fácil (logs diretos) | Médio (docker logs) |
-| **Portabilidade** | Baixa | Alta |
-| **Produção** | Não recomendado | Recomendado |
-| **Desenvolvimento** | Ágil | Rebuild necessário |
-| **Isolamento** | Baixo | Alto |
-| **Networking** | host.docker.internal | Nomes de container |
-
