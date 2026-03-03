@@ -4,6 +4,43 @@
 
 Esta aplicação demonstra um sistema completo de monitoramento de qualidade do ar (Air Quality Index - AQI) utilizando Machine Learning. Um ESP32-S3 com 12 sensores analógicos coleta dados de diferentes poluentes, publica via MQTT, e um modelo de Rede Neural classifica a qualidade do ar em tempo real, enviando alertas via Telegram.
 
+## Estrutura do Projeto
+
+```
+app20-AQI/
+├── App-Device-ESP32_AQI/              # Código do dispositivo ESP32
+│   ├── src/
+│   │   ├── iot-app20.ino             # Código principal ESP32
+│   │   ├── ESP32Sensors.hpp          # Biblioteca de sensores genérica
+│   │   └── ESP32SensorsAQI.hpp       # Biblioteca específica AQI
+│   ├── diagram.json                  # Diagrama Wokwi
+│   └── platformio.ini                # Config PlatformIO
+│
+├── App-Service-AI_Predict/            # Serviço de ML (FastAPI/Uvicorn)
+│   ├── service_app.py                # API de predição
+│   └── requirements.txt              # Dependências Python
+│
+├── App-Fluxo_n8n/                     # Workflow n8n base
+│   └── Fluxo-n8n-predict.json        # Fluxo de predição e alerta
+│
+├── Fase1_Plataforma_AI-Predict_Manual/  # Fase 1: Execução manual
+│   └── README-AQI_ML_Manual.md         # Instruções da Fase 1
+│
+├── Fase2_Plataforma_AI-Predict_Service/ # Fase 2: Stack Docker
+│   ├── ML_AQI_service/                  # Docker Compose + serviços
+│   └── README-AQI_ML_Service.md         # Instruções da Fase 2
+│
+├── Fase3_Plataforma_AI-LLM_Agente/     # Fase 3: Agente LLM
+│   ├── Fluxos-n8n-LLM/                 # Workflows n8n com LLM
+│   └── (README específico da Fase 3)
+│
+├── Fase4_Plataforma_AI-LLM-OpenClaw_MCP/ # Fase 4: MCP Server
+│   ├── MCP_ML_AQI_Predict/               # Servidor MCP
+│   └── README-MCP_ML_AQI_Predict.md      # Instruções da Fase 4
+│
+└── README.md                          # Este arquivo (visão geral)
+```
+
 ## Pré-requisitos
 
 ### Inicializar a Plataforma IoT
@@ -34,9 +71,9 @@ Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
 - n8n: http://localhost:5678 (orquestrador de fluxo)
 - Node-RED: http://localhost:1880 (admin/FIAPIoT)
 
-## Sensores e Atuadores
+## Código do Dispositivo (App-Device-ESP32_AQI)
 
-Esta aplicação utiliza um **ESP32-S3** com 12 potenciômetros simulando sensores de qualidade do ar:
+O código do ESP32-S3 está em `App-Device-ESP32_AQI/`. Utiliza 12 potenciômetros simulando sensores de qualidade do ar:
 
 **Sensores de Material Particulado:**
 - PM2.5 (Particulado fino) - Pino GPIO 4
@@ -63,9 +100,54 @@ Esta aplicação utiliza um **ESP32-S3** com 12 potenciômetros simulando sensor
 - Tópico publicação: `FIAPIoT/aqi/dados`
 - Intervalo de coleta: 10 segundos
 
-## Funcionamento
+### Como Executar o ESP32
 
-### Pipeline de Dados
+1. **Abrir o projeto no Wokwi:**
+   - Arquivo: `App-Device-ESP32_AQI/src/iot-app20.ino`
+   - Diagrama: `App-Device-ESP32_AQI/diagram.json`
+
+2. **Compilar e executar:**
+   - O ESP32 conectará ao broker MQTT
+   - Coletará dados dos 12 sensores a cada 10 segundos
+   - Publicará no tópico `FIAPIoT/aqi/dados`
+
+3. **Ajustar valores dos sensores:**
+   - Use os 12 potenciômetros (sliders) no Wokwi
+   - Cada potenciômetro representa um poluente
+
+4. **Monitorar no Serial Monitor:**
+   ```
+   [PARTICULADOS] - PM2.5: 45.23 μg/m³ | PM10: 82.11 μg/m³
+   [ÓXIDOS NITROGÊNIO] - NO: 15.32 μg/m³ | NO2: 28.71 μg/m³ | NOx: 40.23 μg/m³
+   [GASES] - NH3: 9.12 μg/m³ | CO: 0.71 mg/m³ | SO2: 6.43 μg/m³ | O3: 32.54 μg/m³
+   [COVs] - Benzene: 2.11 μg/m³ | Toluene: 3.52 μg/m³ | Xylene: 1.23 μg/m³
+   ```
+
+## Serviço de ML (App-Service-AI_Predict)
+
+O serviço de predição está em `App-Service-AI_Predict/`. É uma API FastAPI que recebe os dados dos sensores e retorna a classificação da qualidade do ar usando uma Rede Neural treinada com TensorFlow/Keras.
+
+**Arquivos necessários (gerados no treinamento):**
+- `modelo_aqi_nn.keras` - Modelo treinado
+- `preprocess_aqi.pkl` - Scaler para normalização
+
+**Classificação em 3 níveis:**
+- **Aceitável**: Qualidade do ar boa
+- **Ruim**: Qualidade do ar moderada
+- **Perigoso**: Qualidade do ar crítica (alerta enviado ao Telegram)
+
+**Exemplo de requisição:**
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "PM2_5": 342, "PM10": 477, "NO": 10, "NO2": 51, "NOx": 40,
+    "NH3": 42, "CO": 1.7, "SO2": 17, "O3": 91,
+    "Benzene": 5.2, "Toluene": 29, "Xylene": 0.5
+  }'
+```
+
+## Pipeline de Dados
 
 ```
 ┌──────────────┐
@@ -86,7 +168,7 @@ Esta aplicação utiliza um **ESP32-S3** com 12 potenciômetros simulando sensor
        ▼
 ┌──────────────┐
 │  ML Service  │ ──► Rede Neural (Keras)
-│ Flask/FastAPI│     • modelo_aqi_nn.keras
+│   FastAPI    │     • modelo_aqi_nn.keras
 │              │     • preprocess_aqi.pkl
 └──────┬───────┘
        │
@@ -96,152 +178,16 @@ Esta aplicação utiliza um **ESP32-S3** com 12 potenciômetros simulando sensor
 └──────────────┘
 ```
 
-**Modelo de Machine Learning:**
-- Algoritmo: Rede Neural (Keras)
-- Pré-processamento: Normalização via StandardScaler
-- Saída: Classificação em 3 níveis
-  - **Aceitável**: Qualidade do ar boa
-  - **Ruim**: Qualidade do ar moderada
-  - **Perigoso**: Qualidade do ar crítica (alerta enviado ao Telegram)
+## Fases de Execução
 
-**Dados Coletados (JSON):**
-```json
-{
-  "device": "IoTDeviceNorisAQI001",
-  "PM25": 45.2,
-  "PM10": 82.1,
-  "NO": 15.3,
-  "NO2": 28.7,
-  "NOx": 40.2,
-  "NH3": 9.1,
-  "CO": 0.7,
-  "SO2": 6.4,
-  "O3": 32.5,
-  "Benzene": 2.1,
-  "Toluene": 3.5,
-  "Xylene": 1.2
-}
-```
+O projeto está organizado em 4 fases evolutivas. Cada fase possui seu próprio README com instruções detalhadas no respectivo diretório:
 
-## Modos de Execução
-
-Esta aplicação oferece **duas formas de execução**:
-
-### 1. Modo Manual (README-AQIManual.md)
-
-Execução tradicional com serviços rodando localmente:
-- Plataforma IoT via Docker
-- Serviço Flask/Uvicorn rodando em ambiente virtual Python
-- n8n consumindo API local via `http://host.docker.internal:8000`
-
-**Use este modo quando:**
-- Quiser debugar o modelo de ML
-- Precisar modificar o código Python do serviço
-- Quiser visualizar logs detalhados do Flask
-
-**[Consulte o README-AQIManual.md para instruções detalhadas](README-AQIManual.md)**
-
-### 2. Modo Stack Docker (README-AQIStack.md)
-
-Execução completa via Docker Compose:
-- MQTT Broker (Mosquitto)
-- ML Service (containerizado)
-- n8n (orquestrador)
-- Tudo sobe com um único comando
-
-**Use este modo quando:**
-- Quiser deploy rápido e reproduzível
-- Precisar de ambiente isolado e portável
-- Quiser simular ambiente de produção
-
-**[Consulte o README-AQIStack.md para instruções detalhadas](README-AQIStack.md)**
-
-## Como Executar o ESP32
-
-**Independente do modo escolhido (Manual ou Stack)**, o ESP32 deve ser executado da mesma forma:
-
-1. **Abrir o projeto no Wokwi:**
-   - Arquivo: `app20-AQI/src/iot-app20.ino`
-   - Diagrama: `app20-AQI/diagram.json`
-
-2. **Compilar e executar:**
-   - O ESP32 conectará ao broker MQTT
-   - Coletará dados dos 12 sensores a cada 10 segundos
-   - Publicará no tópico `FIAPIoT/aqi/dados`
-
-3. **Ajustar valores dos sensores:**
-   - Use os 12 potenciômetros (sliders) no Wokwi
-   - Cada potenciômetro representa um poluente
-   - Ajuste para simular diferentes condições de qualidade do ar
-
-4. **Monitorar no Serial Monitor:**
-   ```
-   ========================================
-   DADOS AQI COLETADOS (Far Edge/Extreme Edge):
-   ========================================
-   [PARTICULADOS] - PM2.5: 45.23 μg/m³ | PM10: 82.11 μg/m³
-   [ÓXIDOS NITROGÊNIO] - NO: 15.32 μg/m³ | NO2: 28.71 μg/m³ | NOx: 40.23 μg/m³
-   [GASES] - NH3: 9.12 μg/m³ | CO: 0.71 mg/m³ | SO2: 6.43 μg/m³ | O3: 32.54 μg/m³
-   [COVs] - Benzene: 2.11 μg/m³ | Toluene: 3.52 μg/m³ | Xylene: 1.23 μg/m³
-   ```
-
-## Estrutura do Projeto
-
-```
-app20-AQI/
-├── src/
-│   ├── iot-app20.ino              # Código ESP32
-│   ├── ESP32Sensors.hpp           # Biblioteca de sensores genérica
-│   └── ESP32SensorsAQI.hpp        # Biblioteca específica AQI
-├── AQI_ML_app/                    # Modo Manual
-│   ├── service_app.py             # API Flask/FastAPI
-│   ├── requirements.txt           # Dependências Python
-│   └── model/
-│       ├── modelo_aqi_nn.keras    # Modelo treinado
-│       └── preprocess_aqi.pkl     # Scaler de normalização
-├── AQI_stack/                     # Modo Stack Docker
-│   ├── docker-compose.yml         # Orquestração de containers
-│   ├── mosquitto/                 # Config MQTT Broker
-│   ├── ml-service/                # Container do modelo ML
-│   └── n8n/                       # Config n8n
-├── Fluxo-n8n-manual.json          # Workflow n8n (modo manual)
-├── diagram.json                   # Diagrama Wokwi
-├── platformio.ini                 # Config PlatformIO
-├── README.md                      # Este arquivo (visão geral)
-├── README-AQIManual.md            # Instruções modo manual
-└── README-AQIStack.md             # Instruções modo stack
-```
-
-## Casos de Uso
-
-**1. Monitoramento Ambiental Urbano:**
-- Estações de monitoramento de qualidade do ar em cidades
-- Alertas automáticos quando poluição atinge níveis críticos
-- Visualização de tendências e padrões
-
-**2. Controle Industrial:**
-- Monitoramento de emissões em fábricas
-- Conformidade com regulamentações ambientais
-- Prevenção de exposição a poluentes perigosos
-
-**3. Ambientes Internos (Indoor):**
-- Monitoramento de qualidade do ar em escritórios e escolas
-- Controle de ventilação baseado em dados reais
-- Alerta de presença de COVs perigosos
-
-**4. Smart Cities:**
-- Rede de sensores distribuídos pela cidade
-- Dashboard público de qualidade do ar
-- Integração com sistemas de mobilidade urbana
-
-## Próximos Passos
-
-1. **Treinamento do Modelo**: Treinar a rede neural com dataset de AQI real
-2. **Escolher Modo de Execução**: Manual (debugging) ou Stack (produção)
-3. **Configurar ESP32**: Executar código no Wokwi
-4. **Configurar n8n**: Importar workflow e conectar ao Telegram
-5. **Testar Pipeline**: Ajustar sensores e verificar classificações
-6. **Monitorar Alertas**: Validar recebimento de notificações Telegram
+| Fase | Diretório | Descrição |
+|------|-----------|-----------|
+| **Fase 1** | `Fase1_Plataforma_AI-Predict_Manual/` | Execução manual: serviço ML local em ambiente virtual Python, n8n via Docker |
+| **Fase 2** | `Fase2_Plataforma_AI-Predict_Service/` | Stack Docker: MQTT + ML Service + n8n containerizados com Docker Compose |
+| **Fase 3** | `Fase3_Plataforma_AI-LLM_Agente/` | Agente LLM: integração com Ollama e PostgreSQL para consultas em linguagem natural |
+| **Fase 4** | `Fase4_Plataforma_AI-LLM-OpenClaw_MCP/` | MCP Server: servidor de ferramentas HTTP para integração com LLMs via OpenClaw |
 
 ## Troubleshooting
 
