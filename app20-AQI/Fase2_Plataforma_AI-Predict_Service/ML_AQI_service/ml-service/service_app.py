@@ -1,6 +1,7 @@
 # app.py
 import os
 import joblib, numpy as np
+import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
 from tensorflow import keras
