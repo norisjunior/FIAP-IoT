@@ -1,329 +1,91 @@
-# Physical Computing, Embedded AI, Robotics & Cognitive IoT
+# Fase 1 - Execução Manual do Sistema AQI
 
-## App 20 - Modo Manual: Serviço de ML para Índice de Qualidade do Ar (AQI)
+Nesta fase, o serviço de ML roda localmente no seu computador e o n8n (via Docker) consome a API.
 
-Este documento descreve a execução **manual** da aplicação AQI, onde o serviço de Machine Learning roda localmente em ambiente virtual Python, e o n8n (rodando em Docker) consome a API via `http://host.docker.internal:8000`.
-
-## Pré-requisitos
-
-Antes de executar este experimento, certifique-se de:
-
-1. **Plataforma IoT inicializada** (veja README.md principal)
-2. **ESP32 compilado e pronto** (veja README.md principal)
-3. **Python 3.8+** instalado no sistema
-4. **Modelo treinado** disponível:
-   - `modelo_aqi_nn.keras`
-   - `preprocess_aqi.pkl`
-
-## Arquitetura do Modo Manual
+## Arquitetura
 
 ```
-┌──────────────┐
-│    ESP32     │  ──► Publica dados via MQTT
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ MQTT Broker  │  (Docker - Plataforma IoT)
-│ mqtt-broker  │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│     n8n      │  (Docker - Plataforma IoT)
-│              │  ──► http://host.docker.internal:8000/predict
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ Flask/Uvicorn│  (Local - Ambiente Virtual Python)
-│ ML Service   │  localhost:8000
-│              │  • modelo_aqi_nn.keras
-│              │  • preprocess_aqi.pkl
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│   Telegram   │  ──► Alertas críticos
-└──────────────┘
+ESP32 (Wokwi) ──► MQTT Broker (Docker) ──► n8n (Docker) ──► ML Service (Local :8000) ──► Telegram
 ```
 
-## Passo a Passo
-
-### 1. Treinar o Modelo de Machine Learning
-
-> **Importante:** O treinamento pode ser feito no Google Colab apresentado em sala de aula.
-
-- Resultado do treinamento:
-  - `modelo_aqi_nn.keras` - Modelo treinado
-  - `preprocess_aqi.pkl` - Scaler para normalização
-
-**Certifique-se de que ambos os arquivos estão em:**
-```
-ML_AQI_Manual/
-```
-
-### 2. Iniciar a Plataforma IoT
-
-Se ainda não iniciou, execute:
+## Passo 1 — Subir a Plataforma IoT
 
 ```bash
-# Acessar WSL2 Ubuntu
 wsl -d ubuntu
-
-# Navegar para o diretório da plataforma (clonar o repositório se não o fez ainda)
 cd ~/FIAP-IoT/IoT-platform/
-
-# Iniciar todos os serviços
 sudo ./start-linux.sh
 ```
 
-Verifique se os serviços estão rodando:
+Confirme que os serviços estão rodando:
 ```bash
 docker ps
 ```
 
-### 3. Configurar Ambiente Python Local
+Você deve ver: MQTT Broker, n8n, Node-RED, InfluxDB, Grafana.
 
-Navegue até o diretório da aplicação ML:
+## Passo 2 — Iniciar o Serviço de ML
 
 ```bash
-cd Service-AI_Predict
+cd App-Service-AI_Predict/
 ```
 
-**Criar ambiente virtual:**
-
+Criar e ativar o ambiente virtual (apenas na primeira vez):
 ```bash
-# Windows
+# Windows PowerShell
 python -m venv venv
+.\venv\Scripts\Activate.ps1
 
 # Linux/Mac
 python3 -m venv venv
-```
-
-**Ativar ambiente virtual:**
-
-```bash
-# Windows PowerShell
-.\venv\Scripts\Activate.ps1
-
-# Windows CMD
-.\venv\Scripts\activate.bat
-
-# Linux/Mac
 source venv/bin/activate
 ```
 
-**Atualizar pip:**
-
-```bash
-python -m pip install --upgrade pip
-```
-
-**Instalar dependências:**
-
+Instalar dependências (apenas na primeira vez):
 ```bash
 pip install -r requirements.txt
 ```
 
-Dependências típicas:
-- `fastapi` ou `flask`
-- `uvicorn`
-- `tensorflow` ou `keras`
-- `scikit-learn`
-- `numpy`
-- `pydantic`
-
-### 4. Iniciar o Serviço de ML (Flask/Uvicorn)
-
-Com o ambiente virtual ativado:
-
+Subir o serviço:
 ```bash
 uvicorn service_app:app --reload --port 8000
 ```
 
-**Saída esperada:**
-
-```
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [xxxxx] using StatReload
-INFO:     Started server process [xxxxx]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-```
-
-O serviço estará disponível em:
-- **Localhost:** `http://localhost:8000`
-- **Docker (via host.docker.internal):** `http://host.docker.internal:8000`
-
-### 5. Testar a API Manualmente
-
-Antes de configurar o n8n, teste se a API está funcionando:
-
-**Exemplo de requisição (curl):**
-
+Teste rápido para confirmar que está funcionando:
 ```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "PM2_5": 342,
-    "PM10": 477,
-    "NO": 10,
-    "NO2": 51,
-    "NOx": 40,
-    "NH3": 42,
-    "CO": 1.7,
-    "SO2": 17,
-    "O3": 91,
-    "Benzene": 5.2,
-    "Toluene": 29,
-    "Xylene": 0.5
-  }'
+curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d "{\"PM2_5\":342,\"PM10\":477,\"NO\":10,\"NO2\":51,\"NOx\":40,\"NH3\":42,\"CO\":1.7,\"SO2\":17,\"O3\":91,\"Benzene\":5.2,\"Toluene\":29,\"Xylene\":0.5}"
 ```
 
-**Saída esperada:**
+Resposta esperada: `{"class":"Perigoso","probabilities":{...}}`
 
-```json
-{
-  "class": "Perigoso",
-  "probabilities": {
-    "Aceitável": 3.5151686006429372e-06,
-    "Perigoso": 0.8978066444396973,
-    "Ruim": 0.102189801633358
-  }
-}
-```
+> **Importante:** os arquivos `modelo_aqi_nn.keras` e `preprocess_aqi.pkl` (gerados no treinamento via Colab) devem estar neste diretório.
 
-Se receber esta resposta, a API está funcionando corretamente!
+## Passo 3 — Importar o Fluxo no n8n
 
-### 6. Configurar o n8n
+1. Acesse o n8n: http://localhost:5678
+2. Menu → **Import from File**
+3. Selecione: `App-Fluxo_n8n/Fluxo-n8n-predict.json`
+4. Configure as credenciais:
+   - **MQTT:** Host `mqtt-broker`, Porta `1883`
+   - **Telegram:** Bot Token (via @BotFather) e Chat ID (via @userinfobot)
+5. No nó **Predict AQI**, confirme a URL: `http://host.docker.internal:8000/predict`
+6. Ative o workflow (toggle no canto superior direito)
 
-1. **Acessar n8n:**
+## Passo 4 — Executar o ESP32 no Wokwi
+
+1. Abra o VSCode com a extensão Wokwi
+2. Abra o projeto em `App-Device-ESP32_AQI/`
+3. Compile (PlatformIO) e inicie a simulação Wokwi
+4. Ajuste os potenciômetros para simular diferentes condições de ar
+5. No Serial Monitor, confirme:
    ```
-   http://localhost:5678
+   SUCESSO: Dados AQI enviados para o MQTT Broker
    ```
 
-2. **Importar workflow:**
-   - Menu > Import from File
-   - Selecionar: `app20-AQI/Fluxo-n8n-manual.json`
-   - Clicar em "Import"
+## Validando o Fluxo Completo
 
-3. **Configurar nó MQTT Trigger:**
-   - **Host:** `mqtt-broker`
-   - **Port:** `1883`
-   - **Topics:** `FIAPIoT/aqi/dados`
-   - **Client ID:** `n8n-aqi-subscriber`
-
-4. **Configurar nó HTTP Request:**
-   - **Method:** POST
-   - **URL:** `http://host.docker.internal:8000/predict`
-   - **Body Content Type:** JSON
-   - **Body:**
-     ```json
-     {
-       "PM2_5": {{$json["PM25"]}},
-       "PM10": {{$json["PM10"]}},
-       "NO": {{$json["NO"]}},
-       "NO2": {{$json["NO2"]}},
-       "NOx": {{$json["NOx"]}},
-       "NH3": {{$json["NH3"]}},
-       "CO": {{$json["CO"]}},
-       "SO2": {{$json["SO2"]}},
-       "O3": {{$json["O3"]}},
-       "Benzene": {{$json["Benzene"]}},
-       "Toluene": {{$json["Toluene"]}},
-       "Xylene": {{$json["Xylene"]}}
-     }
-     ```
-
-5. **Configurar nó Switch (Classificação):**
-   - **Route 1 (Aceitável):** `{{ $json["class"] === "Aceitável" }}`
-   - **Route 2 (Ruim):** `{{ $json["class"] === "Ruim" }}`
-   - **Route 3 (Perigoso):** `{{ $json["class"] === "Perigoso" }}`
-
-6. **Configurar nó Telegram:**
-   - **Bot Token:** Criar bot via [@BotFather](https://t.me/botfather)
-   - **Chat ID:** Obter via [@userinfobot](https://t.me/userinfobot)
-   - **Mensagem para Aceitável/Ruim:**
-     ```
-     ℹ️ INFO - Qualidade do Ar: {{ $json["class"] }}
-     📊 Probabilidades:
-     • Aceitável: {{ ($json["probabilities"]["Aceitável"] * 100).toFixed(1) }}%
-     • Ruim: {{ ($json["probabilities"]["Ruim"] * 100).toFixed(1) }}%
-     • Perigoso: {{ ($json["probabilities"]["Perigoso"] * 100).toFixed(1) }}%
-     ```
-   - **Mensagem para Perigoso:**
-     ```
-     🚨 CRITICAL - Qualidade do Ar PERIGOSA!
-     ⚠️ Nível: {{ $json["class"] }}
-     📈 Confiança: {{ ($json["probabilities"]["Perigoso"] * 100).toFixed(1) }}%
-
-     Tome medidas imediatas!
-     ```
-
-7. **Ativar workflow:**
-   - Clique no toggle "Active" no canto superior direito
-
-### 7. Executar o ESP32
-
-1. **Abrir Wokwi:**
-   - `app20-AQI/`
-
-2. **Compilar e executar:**
-   - O ESP32 começará a publicar dados a cada 10 segundos
-
-3. **Ajustar sensores:**
-   - Use os sliders dos 12 potenciômetros
-   - Simule condições de "Perigoso" aumentando os valores
-
-### 8. Monitorar o Fluxo Completo
-
-**No Serial Monitor do ESP32:**
-```
-SUCESSO: Dados AQI enviados para o MQTT Broker
-```
-
-**No terminal do Flask/Uvicorn:**
-```
-INFO:     127.0.0.1:xxxxx - "POST /predict HTTP/1.1" 200 OK
-```
-
-**No n8n (aba Executions):**
-- Verifique execuções bem-sucedidas
-- Veja dados fluindo pelo workflow
-- Confirme envio ao Telegram
-
-**No Telegram:**
-- Receba alertas conforme classificação
-- INFO para Aceitável/Ruim
-- CRITICAL para Perigoso
-
-## Entendimento do Ciclo
-
-```
-ESP32 → MQTT Broker (Docker)
-         ↓
-       n8n (Docker)
-         ↓
-   Flask API (Local) ──► Modelo ML classifica
-         ↓
-     Telegram ──► Alerta enviado
-```
-
-## Vantagens do Modo Manual
-
-✅ **Debugging facilitado:** Logs detalhados do Flask no terminal
-✅ **Desenvolvimento ágil:** Modificar código Python sem rebuild de container
-✅ **Teste de modelos:** Trocar modelos .keras rapidamente
-✅ **Visualização de inferências:** Ver cada predição no console
-
-## Desvantagens do Modo Manual
-
-❌ **Dependência de ambiente local:** Requer Python instalado
-❌ **Não portável:** Difícil compartilhar configuração exata
-❌ **Processo manual:** Precisa iniciar Flask manualmente
-
-## Próximo Passo: Modo Stack
-
-Para uma solução mais robusta e reproduzível, veja **[README-AQIStack.md](README-AQIStack.md)**, que empacota tudo em containers Docker.
-
+| Onde verificar | O que esperar |
+|---|---|
+| Serial Monitor (ESP32) | `SUCESSO: Dados AQI enviados para o MQTT Broker` |
+| Terminal do ML Service | `POST /predict HTTP/1.1 200 OK` |
+| n8n (aba Executions) | Execuções bem-sucedidas |
+| Telegram | Mensagens de INFO ou ALERTA conforme classificação |
