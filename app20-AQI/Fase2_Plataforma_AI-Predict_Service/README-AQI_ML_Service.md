@@ -22,7 +22,7 @@ Antes de executar este experimento, certifique-se de:
 
 ```
 ┌──────────────┐
-│   ESP32-S3   │  ──► Publica dados via MQTT
+│    ESP32     │  ──► Publica dados via MQTT
 └──────┬───────┘
        │
        ▼
@@ -372,29 +372,4 @@ Telegram
 | **Desenvolvimento** | Ágil | Rebuild necessário |
 | **Isolamento** | Baixo | Alto |
 | **Networking** | host.docker.internal | Nomes de container |
-
-## Troubleshooting
-
-**Containers não sobem:**
-- Verificar se portas 1883, 5678, 8000 estão livres
-- Verificar logs: `docker compose logs`
-- Verificar Docker está rodando
-
-**ML Service falha ao iniciar:**
-- Verificar se arquivos do modelo existem em `ml-service/model/`
-- Verificar logs: `docker logs aqi-ml-service`
-- Verificar requirements.txt possui todas dependências
-
-**n8n não conecta ao MQTT:**
-- Usar nome do container: `aqi-mosquitto` (não `localhost`)
-- Verificar se containers estão na mesma network: `docker network inspect aqi-stack_aqi-network`
-
-**n8n não conecta ao ML Service:**
-- Usar URL: `http://aqi-ml-service:8000/predict` (não `localhost`)
-- Testar conectividade: `docker exec -it aqi-n8n ping aqi-ml-service`
-
-**ESP32 não conecta ao Mosquitto:**
-- Verificar se porta 1883 está exposta: `docker ps`
-- Em hardware real, usar IP da máquina (não `localhost`)
-- Verificar firewall
 

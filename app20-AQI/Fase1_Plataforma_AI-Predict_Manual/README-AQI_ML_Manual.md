@@ -19,7 +19,7 @@ Antes de executar este experimento, certifique-se de:
 
 ```
 ┌──────────────┐
-│   ESP32-S3   │  ──► Publica dados via MQTT
+│    ESP32     │  ──► Publica dados via MQTT
 └──────┬───────┘
        │
        ▼
@@ -54,10 +54,7 @@ Antes de executar este experimento, certifique-se de:
 
 > **Importante:** O treinamento pode ser feito no Google Colab apresentado em sala de aula.
 
-Execute o pipeline de treinamento que:
-- Normaliza os dados usando StandardScaler
-- Treina uma Rede Neural para classificação de AQI
-- Salva dois arquivos:
+- Resultado do treinamento:
   - `modelo_aqi_nn.keras` - Modelo treinado
   - `preprocess_aqi.pkl` - Scaler para normalização
 
@@ -74,7 +71,7 @@ Se ainda não iniciou, execute:
 # Acessar WSL2 Ubuntu
 wsl -d ubuntu
 
-# Navegar para o diretório da plataforma
+# Navegar para o diretório da plataforma (clonar o repositório se não o fez ainda)
 cd ~/FIAP-IoT/IoT-platform/
 
 # Iniciar todos os serviços
@@ -86,17 +83,12 @@ Verifique se os serviços estão rodando:
 docker ps
 ```
 
-Você deve ver containers:
-- `mqtt-broker` (porta 1883)
-- `n8n` (porta 5678)
-- Outros serviços da plataforma
-
 ### 3. Configurar Ambiente Python Local
 
 Navegue até o diretório da aplicação ML:
 
 ```bash
-cd ML_AQI_Manual
+cd Service-AI_Predict
 ```
 
 **Criar ambiente virtual:**
@@ -335,24 +327,3 @@ ESP32 → MQTT Broker (Docker)
 
 Para uma solução mais robusta e reproduzível, veja **[README-AQIStack.md](README-AQIStack.md)**, que empacota tudo em containers Docker.
 
-## Troubleshooting
-
-**Flask não inicia:**
-- Verificar se porta 8000 está livre: `netstat -an | findstr 8000`
-- Verificar se ambiente virtual está ativado
-- Verificar se dependências foram instaladas
-
-**n8n não conecta à API:**
-- Verificar URL: `http://host.docker.internal:8000/predict`
-- Testar manualmente com curl primeiro
-- Verificar firewall do Windows
-
-**Modelo não carrega:**
-- Verificar se arquivos .keras e .pkl existem em `ML_AQI_Manual/`
-- Verificar compatibilidade de versões TensorFlow
-- Checar logs do Flask para erros de carregamento
-
-**Telegram não envia:**
-- Verificar token do bot no n8n
-- Verificar chat ID correto
-- Testar nó Telegram manualmente no n8n
