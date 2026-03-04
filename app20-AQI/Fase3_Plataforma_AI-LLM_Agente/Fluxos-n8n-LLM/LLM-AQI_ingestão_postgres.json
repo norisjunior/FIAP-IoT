@@ -1,5 +1,5 @@
 {
-  "name": "AQI",
+  "name": "AQI - Ingestão",
   "nodes": [
     {
       "parameters": {
@@ -12,11 +12,11 @@
         -1152,
         192
       ],
-      "id": "dc42714b-1841-4b18-996c-b2cafd259db5",
+      "id": "4e2ea9be-819d-4401-87b2-3bcb3fa09ffa",
       "name": "FIAPIoT/aqi/dados",
       "credentials": {
         "mqtt": {
-          "id": "YSuWzmuXpG8reSQf",
+          "id": "14d2Vpstmk0lw87m",
           "name": "MQTT account"
         }
       }
@@ -32,7 +32,7 @@
         -944,
         192
       ],
-      "id": "ec23cd19-0503-45bc-8c7b-081f984656d2",
+      "id": "8be96006-4dd2-4adf-893e-92902a86c893",
       "name": "Code (gera JSON)"
     },
     {
@@ -66,7 +66,7 @@
         -736,
         192
       ],
-      "id": "89bb7dd0-fefc-471a-a26d-6746fc1181db",
+      "id": "7ddbadc8-fa26-4d30-a071-0180b699de89",
       "name": "Verifica se medições são float"
     },
     {
@@ -84,7 +84,7 @@
         -496,
         96
       ],
-      "id": "3dc13fa4-8dd9-4c8c-9a56-5b667a9fb97c",
+      "id": "a219bef9-4f25-46d3-81af-c26945f03c96",
       "name": "Predict AQI"
     },
     {
@@ -99,12 +99,12 @@
         0,
         192
       ],
-      "id": "401c5099-94b8-4c10-a805-f1f69c7d84c6",
+      "id": "82493746-069f-4db1-90d6-faaa85711db7",
       "name": "Mensagem de Informação",
       "webhookId": "90813c90-f143-4c70-9c27-2b81e3b90666",
       "credentials": {
         "telegramApi": {
-          "id": "htsx3F1FV8YVSOWU",
+          "id": "sze9Jah2Uk6cRpKT",
           "name": "Telegram account"
         }
       }
@@ -140,7 +140,7 @@
         -288,
         96
       ],
-      "id": "9c1f5656-62f2-4e71-b09b-b020001dd9ff",
+      "id": "65004f7a-e1e9-4499-973d-57627489fe85",
       "name": "Se condições são perigosas"
     },
     {
@@ -155,12 +155,12 @@
         0,
         0
       ],
-      "id": "6eb3d711-109c-46cc-851d-643f7b136706",
+      "id": "611b650e-6e7d-4df2-baaf-8f274d32329f",
       "name": "PERIGOSO: Mensagem de ALERTA",
       "webhookId": "def1baa3-50cf-4d9b-9449-66a48bcd352a",
       "credentials": {
         "telegramApi": {
-          "id": "htsx3F1FV8YVSOWU",
+          "id": "sze9Jah2Uk6cRpKT",
           "name": "Telegram account"
         }
       }
@@ -175,7 +175,7 @@
         -320,
         352
       ],
-      "id": "242a1ecd-e5c4-4a50-8195-f4ad730ec881",
+      "id": "f31b9144-cc92-4b81-b103-cc3f89036961",
       "name": "Formata medição mais recente"
     },
     {
@@ -190,11 +190,11 @@
         -128,
         352
       ],
-      "id": "4a61d3cb-879e-43b5-8396-9717a844aecc",
+      "id": "986c2153-ff61-4d00-939f-620a84c07d87",
       "name": "Armazena medições",
       "credentials": {
         "postgres": {
-          "id": "206W8viNhQB2K0QF",
+          "id": "pSi9ueCiSjyuz9OB",
           "name": "Postgres account"
         }
       }
@@ -269,11 +269,6 @@
         ]
       ]
     },
-    "Mensagem de Informação": {
-      "main": [
-        []
-      ]
-    },
     "Formata medição mais recente": {
       "main": [
         [
@@ -288,13 +283,15 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
   },
-  "versionId": "f7cec1fd-8641-40af-b501-7f2c2b61cd2b",
+  "versionId": "5b6a7cfb-2cce-44e4-9e0f-3911111dedd9",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
   },
-  "id": "NxD5kjElG4W620C1",
+  "id": "LJXorMxFpj7seHwe",
   "tags": []
 }

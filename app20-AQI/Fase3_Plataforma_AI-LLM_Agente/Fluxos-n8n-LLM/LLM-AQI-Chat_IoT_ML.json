@@ -1,5 +1,5 @@
 {
-  "name": "LLM IoT",
+  "name": "AQI - LLM Chat",
   "nodes": [
     {
       "parameters": {
@@ -7,18 +7,18 @@
         "initialMessages": "Olá! 👋\nEu sou o FIoT. Como posso ajudá-lo?",
         "options": {
           "subtitle": "IoT + ML + n8n + LLM",
-          "title": "Olá!"
+          "title": "FIoT Agent - Qualidade do ar"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.3,
       "position": [
-        -448,
-        -64
+        64,
+        0
       ],
-      "id": "c3614d83-4c19-42f3-826a-01546e6208b8",
+      "id": "6ae8f082-763e-4278-a629-77f9048f18cb",
       "name": "When chat message received",
-      "webhookId": "cd69ff2d-1f0f-4942-ae59-9fc4e593751e"
+      "webhookId": "b95c00ad-2805-45d1-911e-75e5604e4873"
     },
     {
       "parameters": {
@@ -31,14 +31,14 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [
-        32,
-        160
+        592,
+        256
       ],
-      "id": "a10de43f-6f0f-4c42-b935-3ca56843fe20",
+      "id": "a440fe46-053e-45ce-85eb-e5c6e59c3841",
       "name": "aqi_atual",
       "credentials": {
         "postgres": {
-          "id": "206W8viNhQB2K0QF",
+          "id": "pSi9ueCiSjyuz9OB",
           "name": "Postgres account"
         }
       }
@@ -48,10 +48,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        -96,
-        160
+        352,
+        224
       ],
-      "id": "89ea8f06-67b7-4b3e-94de-364e3f954f47",
+      "id": "0ad19161-4db7-4f2d-b20e-fdbfa3841241",
       "name": "Simple Memory"
     },
     {
@@ -67,14 +67,14 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.6,
       "position": [
-        160,
-        160
+        720,
+        256
       ],
-      "id": "d50f8db4-298f-4a06-a2d8-ad2ddc84477a",
+      "id": "bc5ae9a2-3995-4bf9-bff4-e5f7cdb1f7b8",
       "name": "aqi_historico",
       "credentials": {
         "postgres": {
-          "id": "206W8viNhQB2K0QF",
+          "id": "pSi9ueCiSjyuz9OB",
           "name": "Postgres account"
         }
       }
@@ -82,34 +82,34 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "=Você é um assistente de qualidade do ar. \n\nCONTEXTO TEMPORAL IMPORTANTE:\n- Data atual: {{ $now.format('yyyy-LL-dd') }}\n- Hora atual: {{ $now.format('HH:mm') }}\n- Dia da semana: {{ $now.format('EEEE') }}\n\nPERÍODOS DO DIA:\n- madrugada: 00:00 às 05:59\n- manhã: 06:00 às 11:59\n- tarde: 12:00 às 17:59\n- noite: 18:00 às 23:59\n\nQuando o usuário perguntar sobre qualidade do ar em um período específico (ex: \"nesta madrugada\", \"hoje de manhã\"), use a ferramenta aqi_historico com os parâmetros no formato: \"AAAA-MM-DD, periodo\"\n\nExemplos:\n- \"Como estava nesta madrugada?\" → \"{{ $now.format('yyyy-LL-dd') }}, madrugada\"\n- \"Como estava ontem à noite?\" → \"{{ $now.minus({days: 1}).format('yyyy-LL-dd') }}, noite\"\n\nPara perguntas sobre \"agora\" ou \"atualmente\", use a ferramenta aqi_atual.\n\nLIMITAÇÕES\n- Não invente valores de AQI. Sempre baseie sua resposta somente nos dados retornados pelas ferramentas.\n\nCONTEXTO DO LOCAL\n- A medição de qualidade do ar é em uma fábrica. Portanto, em medições perigosas, informe que não se deve permanecer dentro da fábrica.\n"
+          "systemMessage": "=Você é um assistente de qualidade do ar. \n\nCONTEXTO TEMPORAL IMPORTANTE:\n- Data atual: {{ $now.format('yyyy-LL-dd') }}\n- Hora atual: {{ $now.format('HH:mm') }}\n- Dia da semana: {{ $now.format('EEEE') }}\n\nPERÍODOS DO DIA:\n- madrugada: 00:00 às 05:59\n- manhã: 06:00 às 11:59\n- tarde: 12:00 às 17:59\n- noite: 18:00 às 23:59\n\nQuando o usuário perguntar sobre qualidade do ar em um **período específico** (ex: \"nesta madrugada\", \"hoje de manhã\"), use a ferramenta **aqi_historico** com os parâmetros no formato: \"AAAA-MM-DD, periodo\"\n\nExemplos:\n- \"Como estava nesta madrugada?\" → \"{{ $now.format('yyyy-LL-dd') }}, madrugada\"\n- \"Como estava ontem à noite?\" → \"{{ $now.minus({days: 1}).format('yyyy-LL-dd') }}, noite\"\n\nPara perguntas sobre **\"agora\"** ou **\"atualmente\"**, use a ferramenta **aqi_atual**.\n\nLIMITAÇÕES\n- Não invente valores de AQI. Sempre baseie sua resposta somente nos dados retornados pelas ferramentas.\n\nCONTEXTO DO LOCAL\n- A medição de qualidade do ar é em uma fábrica. Portanto, em medições perigosas, informe que não se deve permanecer dentro da fábrica.\n\nFORMATO DA RESPOSTA\n- Mesmo que você receba a resposta em JSON, responda em texto, sem formato de código na sua resposta.\n- Seja cortês na resposta."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
       "position": [
-        -112,
-        -64
+        352,
+        0
       ],
-      "id": "ff8aa4b7-a0e1-463f-b511-e2ef75b5923b",
+      "id": "eda1e30f-ee01-4372-8376-a3cea6c67cc9",
       "name": "FIoT Agent"
     },
     {
       "parameters": {
-        "model": "llama3.2:latest",
+        "model": "llama3.2:1b",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -256,
-        144
+        192,
+        224
       ],
-      "id": "86bad146-bb07-4908-bbc2-51455be2dd51",
+      "id": "0b5d3144-47ac-4cbd-b050-7e62246f7328",
       "name": "Ollama Chat Model",
       "credentials": {
         "ollamaApi": {
-          "id": "NrojdgDH4WRP2HxM",
+          "id": "pkHJYvheWV0vK657",
           "name": "Ollama account"
         }
       }
@@ -175,13 +175,15 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
   },
-  "versionId": "efe0b72f-b100-4883-9cea-23e274696990",
+  "versionId": "7ea2848e-99d6-46e4-bd8a-5dbd3b3cca68",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
   },
-  "id": "WHs2KVqzUSOLy1N8",
+  "id": "HPcvuPTjKkFZU3Pa",
   "tags": []
 }
