@@ -125,6 +125,7 @@ services:
       pid=$!;
       sleep 5;
       ollama pull llama3.2:1b;
+      ollama pull qwen2.5:3b;
       ollama pull nomic-embed-text;
       wait $pid"
 
