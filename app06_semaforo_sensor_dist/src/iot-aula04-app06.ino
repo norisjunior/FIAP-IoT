@@ -13,12 +13,10 @@ const char* password = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_HOST       "broker.emqx.io"
+#define MQTT_HOST       "54.36.178.49" //IP do Broker test.mosquitto.org
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "noris/semaforo1/distancia"
-#define MQTT_DEVICEID   "NorisDistSensorSemaforo00001"
-#define MQTT_QOS        1
-#define MQTT_RETAIN     false
+String MQTT_DEVICEID = "DistSensor";
 PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
 //MqttClient mqttClient(wifiClient);
 
@@ -28,12 +26,17 @@ PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
 DistanceSensor sensorDist(TRIG_PIN, ECHO_PIN);
 const int PESSOA_DIST = 50;
 
+/* ---- Config intervalo temporal ---- */
+int INTERVALO = 1000; // Intervalo entre detecções de pessoas - detecção uma vez por segundo
+uint64_t tempo_anterior = 0;
+
 /* ---- Função: Conectar ao MQTT Broker ---- */
 void conectarMQTT() {
-  Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
+  Serial.print("Conectando ao MQTT Broker -> " + String(MQTT_HOST));
   while (!client.connected()) {
-    if (client.connect(MQTT_DEVICEID)) {
-      Serial.println("--> Conectado ao MQTT!");
+    MQTT_DEVICEID += WiFi.macAddress();
+    if (client.connect(MQTT_DEVICEID.c_str())) {
+      Serial.println(" --> Conectado ao MQTT! CLIENTID " + String(MQTT_DEVICEID));
     } else {
       Serial.print(" Falha, rc=");
       Serial.print(client.state());
@@ -68,23 +71,23 @@ void loop() {
   }
   client.loop();
 
-  //Mede a distância
-  float dist = sensorDist.medirDist();
-  Serial.println("Distância: " + String(dist) + " cm.");
+  if (millis() - tempo_anterior >= INTERVALO) {
+    //Mede a distância
+    float dist = sensorDist.medirDist();
+    Serial.println("Distância: " + String(dist) + " cm.");
 
-  if (dist <= PESSOA_DIST) {
-    /* Transmissão dos dados em formato JSON */
-    StaticJsonDocument<200> doc;
-    doc["dist"] = dist;
-    
-    char buffer[200];
-    serializeJson(doc, buffer);
-    Serial.println("Pessoa detectada! Payload: " + String(buffer) + ". Enviando daods (mqtt publish)");
-    
-    client.publish(MQTT_PUB_TOPIC, buffer, MQTT_RETAIN);
-
-    delay(5000); //intervalo antes de nova detecção
+    if (dist <= PESSOA_DIST) {
+      /* Transmissão dos dados em formato JSON */
+      StaticJsonDocument<200> doc;
+      doc["dist"] = dist;
+      
+      char buffer[200];
+      serializeJson(doc, buffer);
+      Serial.println("Pessoa detectada! Payload: " + String(buffer) + ". Enviando daods (mqtt publish)");
+      
+      client.publish(MQTT_PUB_TOPIC, buffer);
+    }
   }
-  
-  delay(1000);
+
+  delay(100);
 }
