@@ -13,11 +13,10 @@ const char* password = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_HOST       "broker.emqx.io"
+#define MQTT_HOST       "54.36.178.49" //IP do Broker test.mosquitto.org
 #define MQTT_PORT       1883
 #define MQTT_SUB_TOPIC  "noris/semaforo1/distancia"
-#define MQTT_DEVICEID   "NorisSemaforo00001"
-#define MQTT_QOS        1
+String MQTT_DEVICEID = "DistSemaforo";
 PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
 //MqttClient mqttClient(wifiClient);
 
@@ -35,12 +34,13 @@ const int PESSOA_DIST = 50;
 
 /* ---- Função: Conectar ao MQTT Broker ---- */
 void conectarMQTT() {
-  Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
+  Serial.print("Conectando ao MQTT Broker -> " + String(MQTT_HOST));
   while (!client.connected()) {
-    if (client.connect(MQTT_DEVICEID)) {
-      Serial.println(" Conectado ao MQTT!");
-      client.subscribe(MQTT_SUB_TOPIC, MQTT_QOS);
-      Serial.println("Subscribe realizado no tópico: " + String(MQTT_SUB_TOPIC) + ", QoS " + String(MQTT_QOS));
+    MQTT_DEVICEID += WiFi.macAddress();
+    if (client.connect(MQTT_DEVICEID.c_str())) {
+      Serial.println(" Conectado ao MQTT! CLIENTID " + String(MQTT_DEVICEID));
+      client.subscribe(MQTT_SUB_TOPIC);
+      Serial.println("Subscribe realizado no tópico: " + String(MQTT_SUB_TOPIC));
     } else {
       Serial.print(" Falha, rc=");
       Serial.print(client.state());
