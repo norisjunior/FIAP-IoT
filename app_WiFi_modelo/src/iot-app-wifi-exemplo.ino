@@ -15,7 +15,7 @@ WiFiClient wifiClient; // Define client WiFi
 // TODO Passo 3: criar o objeto PubSubClient usando wifiClient
 
 // SE FOR SUBSCRIBER:
-// TODO Passo 8: criar a função callback
+// TODO Passo 8: criar a função callback (DEVE ser declarada ANTES do setup)
 //   - montar a string da mensagem recebida
 //   - parsear o JSON com deserializeJson
 //   - extrair o valor recebido
