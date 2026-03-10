@@ -44,6 +44,8 @@ No arquivo da aplicação (`src/app.ino`), adicionar o include da PubSubClient j
 
 Definir o endereço do broker, porta, tópico, ID do dispositivo e criar o objeto `PubSubClient`. Esses defines ficam na área de configurações, junto com as configs de WiFi e sensor:
 
+#### Dispositivo que realiza publish:
+
 ```cpp
 /* ---- Config MQTT ---- */
 #define MQTT_HOST       "broker.emqx.io"
@@ -54,7 +56,21 @@ Definir o endereço do broker, porta, tópico, ID do dispositivo e criar o objet
 PubSubClient client(wifiClient);
 ```
 
+#### Dispositivo que realiza subscribe (adicionar também o tópico de subscribe):
+
+```cpp
+/* ---- Config MQTT ---- */
+#define MQTT_HOST       "broker.emqx.io"
+#define MQTT_PORT       1883
+#define MQTT_SUB_TOPIC  "FIAP/sala/distancia"
+#define MQTT_DEVICEID   "DistSensor00002"
+
+PubSubClient client(wifiClient);
+```
+
 > **Importante:** cada ESP32 deve ter um `MQTT_DEVICEID` diferente. O tópico de publish de um dispositivo deve ser o mesmo tópico de subscribe do outro.
+
+> Caso o dispositivo faça PUBLISH **e** SUBSCRIBE, todos os tópicos devem ser declarados, ou devem ser usados os wildcards "#" e "+" conforme a aplicação.
 
 ---
 
@@ -81,10 +97,7 @@ void conectarMQTT() {
 
 #### Quando o dispositivo realiza subscribe, ele deve assinar o tópico desejado logo depois de conectar:
 
-Incluir no cabeçalho:
-```cpp
-#define MQTT_SUB_TOPIC "FIAP/sala/distancia"
-```
+> **Atenção:** antes de implementar esta função, complete o **Passo 8** (declaração do callback), pois ela precisa aparecer no código **antes** do `setup()`.
 
 Função de conectar MQTT:
 ```cpp
@@ -171,7 +184,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 ---
 
-## Passo 9 — Manter a conexão viva no `loop()`
+### Passo 9 — Manter a conexão viva no `loop()`
 
 O `client.loop()` é **obrigatório** no `loop()`. Ele mantém a conexão com o broker e processa as mensagens recebidas:
 
@@ -185,7 +198,7 @@ client.loop();
 ---
 
 ## Código-base:
-Diretório app_WiFi_modelo
+`app_WiFi_modelo/src/iot-app-wifi-exemplo.ino`
 
 
 ---
