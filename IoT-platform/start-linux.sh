@@ -9,11 +9,7 @@ echo "================================================"
 echo "Configurando e iniciando plataforma IoT..."
 echo "================================================"
 
-if [ -d "IoTStack" ]; then
-  rm -rf "IoTStack"
-fi
-
-mkdir IoTStack
+mkdir -p IoTStack
 cd IoTStack
 
 # ============================================
