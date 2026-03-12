@@ -4,7 +4,10 @@
 #include <PubSubClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsDistancia.hpp"
+#include "ESP32SensorsLED.hpp"
+#include "ESP32SensorsPIR.hpp"
 
 
 /* ---- Config Hardware ---- */
@@ -50,7 +53,10 @@ void setup() {
   Serial.begin(115200);
 
   //Inicializa todos os sensores
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, TRIG_PIN, ECHO_PIN, DIST_LIMIAR, LED_PIN, PIR_PIN);
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::Distancia::inicializar(TRIG_PIN, ECHO_PIN, DIST_LIMIAR);
+  ESP32Sensors::Movimento::inicializar(PIR_PIN);
+  ESP32Sensors::LED::inicializar(LED_PIN);
 
   conectarWiFi();
   

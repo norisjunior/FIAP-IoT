@@ -1,4 +1,4 @@
-# partitions.csv – 4 MB flash, OTA + SPIFFS
+# partitions.csv - 4 MB flash, OTA + SPIFFS
 # Name,  Type, SubType, Offset,   Size
 nvs,      data, nvs,     0x9000,   0x4000
 otadata,  data, ota,     0xD000,   0x2000

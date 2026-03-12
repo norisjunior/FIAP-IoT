@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include <SD.h>
 #include <sqlite3.h>
-#include "ESP32Sensors.hpp"   // LED, DHT22, MPU6050
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsAccel.hpp"
+#include "ESP32SensorsLED.hpp"
 
 #define SD_CS 5
 #define DB_PATH "/sd/sensores.db"   //O SD Card é montado em /sd/
@@ -24,7 +26,9 @@ void setup() {
     while (true) {}
   }
 
-  ESP32Sensors::beginAll();
+  ESP32Sensors::Ambiente::inicializar();
+  ESP32Sensors::Accel::inicializar();
+  ESP32Sensors::LED::inicializar();
 
   inicializaBanco();
 

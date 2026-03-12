@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <SD.h>
-#include "ESP32Sensors.hpp"   // LED, Ambiente (DHT22)
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsLED.hpp"
 
 // -------------------- Configurações de Hardware --------------------
 const uint8_t DHT_PIN   = 26;
@@ -41,7 +42,8 @@ void setup() {
   Serial.printf("[SD] Cartão OK - %llu MB\n", mb); Serial.println("");
 
   // Inicializa os sensores com as configurações de hardware definidas acima
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN);
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::LED::inicializar(LED_PIN);
 
   criaArquivoSeNecessario();
 

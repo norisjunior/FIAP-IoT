@@ -1,5 +1,9 @@
 /* ==== INCLUDES ===================================================== */
-#include "ESP32Sensors.hpp"              // Ambiente (DHT22), LED, LDR (Lux) e CO2 (ppm)
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsLED.hpp"
+#include "ESP32SensorsLDR.hpp"
+#include "ESP32SensorsCO2.hpp"
+#include "ESP32SensorsHumidityRatio.hpp"
 #include "AIoTOccupancyRFScaler.hpp"     // StandardScaler para normalização
 #include "AIoTRandomForest_mc2gen.hpp"   // Modelo Random Forest mc2gen
 
@@ -120,7 +124,11 @@ void setup() {
   Serial.println("==========================================");
   
   // Inicializar sensores
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, LDR_PIN, CO2_PIN, HR_PIN);
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::LED::inicializar(LED_PIN);
+  ESP32Sensors::LDR::inicializar(LDR_PIN);
+  ESP32Sensors::CO2::inicializar(CO2_PIN);
+  ESP32Sensors::HR::inicializar(HR_PIN);
   Serial.println("Sensores inicializados!");
   Serial.println("Sistema pronto para inferências locais.\n");
   

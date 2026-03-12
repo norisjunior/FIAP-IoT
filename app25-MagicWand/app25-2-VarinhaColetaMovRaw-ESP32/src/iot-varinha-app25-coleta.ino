@@ -1,6 +1,6 @@
 /* *Includes* */
 #include <Arduino.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAccelGyro.hpp"
 
 #define FREQUENCY_HZ 50
 #define INTERVAL_MS (1000 / (FREQUENCY_HZ + 1))
@@ -35,7 +35,7 @@ void setup() {
     digitalWrite(LED_G_PIN, LOW);
   }
 
-  ESP32Sensors::beginAll(SDA_PIN, SCL_PIN);
+  ESP32Sensors::AccelGyro::inicializar(SDA_PIN, SCL_PIN);
 
   Serial.println("\nPronto para caturar movimentos!");
 }

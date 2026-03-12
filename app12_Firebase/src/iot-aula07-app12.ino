@@ -1,7 +1,9 @@
 /* ==== INCLUDES ===================================================== */
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>      // Biblioteca "Firebase ESP Client" (Mobizt)
-#include "ESP32Sensors.hpp"          // LED, Distância (HC-SR04) e Ambiente (DHT22)
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsDistancia.hpp"
+#include "ESP32SensorsLED.hpp"
 
 
 /* ==== Configurações de Hardware ===================================== */
@@ -56,7 +58,9 @@ uint32_t proximaLeitura     = 0;
 void setup() {
   Serial.begin(115200);
 
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, TRIG_PIN, ECHO_PIN, DIST_LIMIAR, LED_PIN);
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::Distancia::inicializar(TRIG_PIN, ECHO_PIN, DIST_LIMIAR);
+  ESP32Sensors::LED::inicializar(LED_PIN);
 
   // Wi-Fi ---------------------------------------------------------------
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);

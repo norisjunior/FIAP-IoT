@@ -4,7 +4,9 @@
 #include <PubSubClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAudio.hpp"
+#include "ESP32SensorsLED.hpp"
+#include "ESP32SensorsServo.hpp"
 
 /* ==== Configurações de Hardware =========================================== */
 const static uint8_t BUZZER_PIN   = 18;
@@ -58,7 +60,9 @@ void setup() {
 
   //Inicializa todos os sensores
   Serial.println("Inicializando atuadores...");
-  ESP32Sensors::beginAll(BUZZER_PIN, LED_PIN, SERVO_PIN);
+  ESP32Sensors::Audio::inicializar(BUZZER_PIN);
+  ESP32Sensors::LED::inicializar(LED_PIN);
+  ESP32Sensors::MiniServo::inicializar(SERVO_PIN);
 
   // Teste dos atuadores (SEPARADO para evitar pico de corrente)
   ESP32Sensors::LED::off();

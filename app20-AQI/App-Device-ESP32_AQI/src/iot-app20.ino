@@ -4,7 +4,7 @@
 #include <PubSubClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAQI.hpp"
 
 
 /* ---- Config Wi‑Fi ---- */
@@ -41,7 +41,7 @@ void setup() {
 
   //Inicializa todos os sensores
   Serial.println("Inicializando sensores AQI...");
-  ESP32Sensors::beginAll();
+  ESP32Sensors::AQI::inicializar();
 
   Serial.println("Sistema AQI ativo");
 
