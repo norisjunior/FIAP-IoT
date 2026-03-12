@@ -4,7 +4,9 @@
 #include <PubSubClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsAccel.hpp"
+#include "ESP32SensorsLED.hpp"
 
 /* ---- Config Sensores ---- */
 const static uint8_t SCL_PIN   = 19;
@@ -52,7 +54,9 @@ void setup() {
 
   //Inicializa todos os sensores
   Serial.println("Inicializando sensores...");
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, SCL_PIN, SDA_PIN, LED_PIN);
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::Accel::inicializar(SCL_PIN, SDA_PIN);
+  ESP32Sensors::LED::inicializar(LED_PIN);
 
   // Liga LED indicando motor funcionando
   ESP32Sensors::LED::on();

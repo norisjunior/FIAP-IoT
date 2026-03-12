@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
-#include "ESP32Sensors.hpp"   // LED, Ambiente (DHT22)
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsLED.hpp"
 
 // -------------------- Configurações de Hardware --------------------
 const uint8_t DHT_PIN   = 26;
@@ -27,12 +28,13 @@ void setup() {
   delay(1000);
 
   if (!LittleFS.begin(true)) {   // true = formata se não existir
-    Serial.println("[FATAL] Falha ao montar SPIFFS");
+    Serial.println("[FATAL] Falha ao montar LittleFS");
     while (true) {}
   }
 
   // Inicializa os sensores com as configurações de hardware definidas acima
-  ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN);
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::LED::inicializar(LED_PIN);
   pinMode(BTN_PIN, INPUT_PULLUP);
   
   criaArquivoSeNecessario();

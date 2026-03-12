@@ -11,7 +11,10 @@
 #include <ArduinoJson.h>
 #include <cbor.h>
 #include <mbedtls/base64.h>  // Para codificar CBOR em Base64 para MQTT
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsAccel.hpp"
+#include "ESP32SensorsLED.hpp"
+#include "ESP32SensorsSDCard.hpp"
 
 /* ===================== Config Wi‑Fi ===================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";
@@ -65,8 +68,10 @@ void setup() {
     
     // Inicializa todos os sensores
     Serial.println("[INIT] Inicializando sensores...");
-    ESP32Sensors::beginAll();
-    
+    ESP32Sensors::Ambiente::inicializar();
+    ESP32Sensors::Accel::inicializar();
+    ESP32Sensors::LED::inicializar();
+
     // Inicializa SD Card
     if (!ESP32Sensors::SDCard::inicializar()) {
         Serial.println("[ERRO] SD Card falhou - continuando sem persistência");

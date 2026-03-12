@@ -4,7 +4,8 @@
 #include <PubSubClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsLED.hpp"
+#include "ESP32SensorsServo.hpp"
 
 /* ==== Configurações de Hardware =========================================== */
 const static uint8_t LED_PIN   = 27;
@@ -57,7 +58,8 @@ void setup() {
 
   //Inicializa todos os sensores
   Serial.println("Inicializando bomba d'água...");
-  ESP32Sensors::beginAll(LED_PIN, SERVO_PIN);
+  ESP32Sensors::LED::inicializar(LED_PIN);
+  ESP32Sensors::MiniServo::inicializar(SERVO_PIN);
 
   // Liga LED indicando motor funcionando
   ESP32Sensors::LED::off();

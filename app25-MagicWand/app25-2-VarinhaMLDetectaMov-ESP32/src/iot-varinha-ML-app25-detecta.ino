@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAccelGyro.hpp"
 #include <MagicWand_ESP32_inferencing.h>
 
 /* ---- Configurações ---- */
@@ -108,7 +108,7 @@ void setup() {
     }
     
     // Inicializar sensores
-    ESP32Sensors::beginAll(SDA_PIN, SCL_PIN);
+    ESP32Sensors::AccelGyro::inicializar(SDA_PIN, SCL_PIN);
     
     // Verificar configuração do modelo
     if (EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME != 6) {

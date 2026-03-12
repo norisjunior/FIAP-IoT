@@ -13,6 +13,10 @@ Esta aplicação demonstra o uso do sistema de arquivos LittleFS para armazenar 
 **Atuadores:**
 - LED - Pino GPIO 27 (Indica gravação de dados)
 
+### Requisitos
+
+O arquivo `partitions.csv` é necessário para reservar o espaço de armazenamento na flash do ESP32.
+
 ### Funcionamento
 
 O sistema coleta dados de temperatura, umidade e índice de calor a cada 5 segundos, armazenando em arquivo CSV (/dados.csv) na memória flash:

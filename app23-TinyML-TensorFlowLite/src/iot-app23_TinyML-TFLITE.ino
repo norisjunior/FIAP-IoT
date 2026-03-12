@@ -8,7 +8,10 @@
  * ===========================================================================*/
 
 /* ==== INCLUDES ============================================================ */
-#include "ESP32Sensors.hpp"
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsLED.hpp"
+#include "ESP32SensorsDryness.hpp"
+#include "ESP32SensorsServo.hpp"
 #include "modelo_irrig_inteligente.h"
 
 // TensorFlow Lite via ArduTFLite
@@ -39,7 +42,10 @@ void setup() {
     Serial.println("==========================================\n");
 
     // Inicializar sensores (usa suas abstrações .hpp)
-    ESP32Sensors::beginAll(DHT_PIN, DHT_MODEL, LED_PIN, DRYNESS_PIN, SERVO_PIN);
+    ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+    ESP32Sensors::LED::inicializar(LED_PIN);
+    ESP32Sensors::Dryness::inicializar(DRYNESS_PIN);
+    ESP32Sensors::MiniServo::inicializar(SERVO_PIN);
     Serial.println("Sensores OK!");
 
     // --- INICIALIZAR TENSORFLOW LITE ---
