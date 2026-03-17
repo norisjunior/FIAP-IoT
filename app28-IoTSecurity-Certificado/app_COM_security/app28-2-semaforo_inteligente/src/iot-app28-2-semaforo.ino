@@ -8,17 +8,19 @@
 #include <ArduinoJson.h>
 
 /* ---- Config Wi‑Fi ---- */
-const char* ssid     = "Wokwi-GUEST";
-const char* password = "";
+const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
+const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient; // Define client WiFi
 
 /* ---- Config MQTT ---- */
-#define MQTT_HOST       "54.36.178.49" //IP do Broker test.mosquitto.org
+#define MQTT_HOST       "host.wokwi.internal" //IP do Broker test.mosquitto.org
 #define MQTT_PORT       1883
-#define MQTT_SUB_TOPIC  "noris/semaforo1/distancia"
-String MQTT_DEVICEID = "DistSemaforo";
-PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
-//MqttClient mqttClient(wifiClient);
+#define MQTT_SUB_TOPIC  "semaforo/distancia"
+#define MQTT_DEVICEID   "cloud"
+const char* MQTT_PASS = "cloud123";
+PubSubClient mqttClient(wifiClient);
+bool wifiConectado = false;
+bool mqttConectado = false;
 
 /* ---- Semáforo - definições ---- */
 #define LED_VERMELHO 18
@@ -32,23 +34,123 @@ int32_t tempoInicio = 0;
 const int tempoMax = 60000; // 60 s
 const int PESSOA_DIST = 50;
 
-/* ---- Função: Conectar ao MQTT Broker ---- */
-void conectarMQTT() {
-  Serial.print("Conectando ao MQTT Broker -> " + String(MQTT_HOST));
-  while (!client.connected()) {
-    MQTT_DEVICEID += WiFi.macAddress();
-    if (client.connect(MQTT_DEVICEID.c_str())) {
-      Serial.println(" Conectado ao MQTT! CLIENTID " + String(MQTT_DEVICEID));
-      client.subscribe(MQTT_SUB_TOPIC);
-      Serial.println("Subscribe realizado no tópico: " + String(MQTT_SUB_TOPIC));
-    } else {
-      Serial.print(" Falha, rc=");
-      Serial.print(client.state());
-      Serial.println(" Tentando novamente em 5 segundos...");
-      delay(5000);
-    }
+/* ---- Funções (protótipos) ---- */
+
+void conectarWiFi();
+void conectarMQTT();
+void mensagemRecebida(char* topico, byte* msg, unsigned int length);
+
+void setup() {
+  Serial.begin(115200);
+
+  //Inicializa os LEDs do semáforo
+  semaforo.inicializar();
+
+  //Inicializa WiFi
+  //Conecta no WiFi
+  conectarWiFi();
+  
+  //Configura MQTT e conecta no Broker
+  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+  mqttClient.setKeepAlive(60);     // Manter conexão viva por 60s
+  mqttClient.setSocketTimeout(60); // Timeout de 60s  
+  mqttClient.setBufferSize(1024);   // Buffer adequado considerando o payload gerado
+  /* Função mensagemRecebida será chamada sempre que um
+     novo publish for enviado pelo Broker */
+  mqttClient.setCallback(mensagemRecebida);
+
+  Serial.println("Semáforo inteligente iniciado.\nAguardando recebimento de mensagem MQTT.\n");
+
+}
+
+void loop() {
+  if (wifiConectado && !mqttClient.connected()) {
+    conectarMQTT();
+  }
+  
+  if (mqttConectado) {
+    mqttClient.loop();
+  } else {
+    Serial.println("MQTT desconectado. Pulando ciclo de leitura.");
+    delay(1000);
+    return;
+  }
+
+  /* ---- Expiração da janela ---- */
+  if ((deteccoes > 0) && ((millis() - tempoInicio) > tempoMax)) {
+      deteccoes = 0;                     // zera se passou 60 s
+      tempoInicio = 0;
+  }
+
+  semaforo.faseVerde();                  // Volta para o verde (mantém sempre verde depois de fechar)
+
+  delay(500);
+}
+
+
+
+/* ==== WIFI ================================================================ */
+void conectarWiFi() {
+  Serial.print("Conectando ao Wi-Fi: ");
+  Serial.println(WIFI_SSID);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  uint8_t tentativas = 0;
+  while (WiFi.status() != WL_CONNECTED && tentativas < 30) {
+    delay(500);
+    Serial.print(".");
+    tentativas++;
+  }
+  Serial.println();
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("OK! IP: ");
+    Serial.println(WiFi.localIP());
+    wifiConectado = true;
+  } else {
+    Serial.println("Falha ao conectar Wi-Fi.");
+    wifiConectado = false;
   }
 }
+
+/* ==== MQTT ================================================================ */
+void conectarMQTT() {
+  if (!wifiConectado) {
+    Serial.println("[MQTT] Sem Wi-Fi.");
+    return;
+  }
+
+  Serial.print("[MQTT] Conectando ao broker ");
+  Serial.print(MQTT_HOST);
+  Serial.print(" ... ");
+
+  int tentativas = 0;
+  while (!mqttClient.connected() && tentativas < 5) {
+    if (mqttClient.connect(MQTT_DEVICEID, MQTT_DEVICEID, MQTT_PASS)) {
+      Serial.println("OK!");
+      mqttConectado = true;
+
+      // Inscreve no tópico coringa
+      if (mqttClient.subscribe(MQTT_SUB_TOPIC)) {
+        Serial.print("[MQTT] Inscrito em: ");
+        Serial.println(MQTT_SUB_TOPIC);
+      } else {
+        Serial.println("[MQTT] Falha ao se inscrever no tópico de comandos.");
+      }
+
+    } else {
+      Serial.print("Falha, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" tentando de novo...");
+      tentativas++;
+      delay(1000);
+    }
+  }
+
+  if (!mqttClient.connected()) {
+    Serial.println("[MQTT] Não foi possível conectar ao broker.");
+  }
+}
+
 
 /* ---- Callback MQTT ---- */
 void mensagemRecebida(char* topico, byte* msg, unsigned int length) {
@@ -61,7 +163,7 @@ void mensagemRecebida(char* topico, byte* msg, unsigned int length) {
   Serial.printf("Mensagem MQTT recebida [%s]: %s", topic.c_str(), payload.c_str()); Serial.println("\n");
 
   /* ---- Desserializa JSON e valida distância ---- */
-  StaticJsonDocument<200> doc;
+  JsonDocument doc;
   DeserializationError err = deserializeJson(doc, payload);
   if (err) { // JSON inválido
     delay(500);
@@ -92,46 +194,4 @@ void mensagemRecebida(char* topico, byte* msg, unsigned int length) {
     tempoInicio = millis();            // reinicia a janela temporal
     Serial.println("Semáforo pronto. Aguardando novas medições...\n");
   }
-}
-
-
-void setup() {
-  Serial.begin(115200);
-
-  //Inicializa os LEDs do semáforo
-  semaforo.inicializar();
-
-  //Inicializa WiFi
-  WiFi.begin(ssid, password);
-  Serial.print("Conectando ao WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi conectado!");
-
-  /* ---- Conexão ao MQTT: Definição de servidor e callback ---- */
-  client.setServer(MQTT_HOST, MQTT_PORT);
-  /* Função mensagemRecebida será chamada sempre que um
-     novo publish for enviado pelo Broker */
-  client.setCallback(mensagemRecebida);
-
-  Serial.println("Semáforo inteligente iniciado.\nAguardando recebimento de mensagem MQTT.\n");
-}
-
-void loop() {
-  if (!client.connected()) {
-    conectarMQTT();
-  }
-  client.loop();
-
-  /* ---- Expiração da janela ---- */
-  if ((deteccoes > 0) && ((millis() - tempoInicio) > tempoMax)) {
-      deteccoes = 0;                     // zera se passou 60 s
-      tempoInicio = 0;
-  }
-
-  semaforo.faseVerde();                  // Volta para o verde (mantém sempre verde depois de fechar)
-
-  delay(500);
 }
