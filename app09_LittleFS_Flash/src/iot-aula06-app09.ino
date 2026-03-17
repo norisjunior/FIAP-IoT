@@ -53,6 +53,7 @@ void loop() {
     zeraMedicoes();
     delay(500);
   }
+  delay(100);
 }
 
 // -------------------- Funções auxiliares --------------------
