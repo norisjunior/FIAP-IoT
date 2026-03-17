@@ -27,7 +27,7 @@ DistanceSensor sensorDist(TRIG_PIN, ECHO_PIN);
 const int PESSOA_DIST = 50;
 
 /* ---- Config intervalo temporal ---- */
-int INTERVALO = 1000; // Intervalo entre detecções de pessoas - detecção uma vez por segundo
+int INTERVALO = 2000; // Intervalo entre detecções de pessoas - detecção uma vez a cada 2 segundos
 uint64_t tempo_anterior = 0;
 
 /* ---- Função: Conectar ao MQTT Broker ---- */
@@ -72,6 +72,7 @@ void loop() {
   client.loop();
 
   if (millis() - tempo_anterior >= INTERVALO) {
+    tempo_anterior = millis();
     //Mede a distância
     float dist = sensorDist.medirDist();
     Serial.println("Distância: " + String(dist) + " cm.");
