@@ -17,7 +17,7 @@ WiFiClient wifiClient; // Define client WiFi
 #define MQTT_PORT       1883
 #define MQTT_SUB_TOPIC  "semaforo/distancia"
 #define MQTT_DEVICEID   "cloud"
-const char* MQTT_PASS = "cloud123";
+
 PubSubClient mqttClient(wifiClient);
 bool wifiConectado = false;
 bool mqttConectado = false;
@@ -125,7 +125,7 @@ void conectarMQTT() {
 
   int tentativas = 0;
   while (!mqttClient.connected() && tentativas < 5) {
-    if (mqttClient.connect(MQTT_DEVICEID, MQTT_DEVICEID, MQTT_PASS)) {
+    if (mqttClient.connect(MQTT_DEVICEID)) {
       Serial.println("OK!");
       mqttConectado = true;
 
