@@ -46,6 +46,7 @@ void loop() {
     ultimoRegistro = millis();
     gravaMedicoes();
   }
+  delay(100);
 }
 
 void inicializaBanco() {
