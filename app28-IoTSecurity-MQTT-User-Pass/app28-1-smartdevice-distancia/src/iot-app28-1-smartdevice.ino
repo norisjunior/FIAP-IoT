@@ -17,6 +17,7 @@ WiFiClient wifiClient;
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "semaforo/distancia"
 #define MQTT_DEVICEID   "smartdevice"
+const char* MQTT_PASS = "smart456";
 
 PubSubClient mqttClient(wifiClient);
 bool wifiConectado = false;
@@ -128,7 +129,7 @@ void conectarMQTT() {
 
   int tentativas = 0;
   while (!mqttClient.connected() && tentativas < 3) {
-    if (mqttClient.connect(MQTT_DEVICEID)) {
+    if (mqttClient.connect(MQTT_DEVICEID, MQTT_DEVICEID, MQTT_PASS)) {
       Serial.println(" --> Conectado ao MQTT Broker!");
       mqttConectado = true;
     } else {
