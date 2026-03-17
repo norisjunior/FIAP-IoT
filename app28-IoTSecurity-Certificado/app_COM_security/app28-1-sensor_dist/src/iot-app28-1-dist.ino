@@ -1,6 +1,7 @@
 /* *Includes* */
 #include <WiFi.h>
-#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
+#include "mqtt_ca_cert.h"
 #include "ESP32SensorsDistancia.hpp"
 #include <PubSubClient.h>
 //#include <MqttClient.h>
@@ -8,17 +9,22 @@
 #include <ArduinoJson.h>
 
 /* ---- Config Wi‑Fi ---- */
-const char* ssid     = "Wokwi-GUEST";
-const char* password = "";
-WiFiClient wifiClient; // Define client WiFi
+const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
+const char* WIFI_PASSWORD = "";
+//WiFiClient wifiClient;
+WiFiClientSecure wifiClient;
 
 /* ---- Config MQTT ---- */
-#define MQTT_HOST       "54.36.178.49" //IP do Broker test.mosquitto.org
-#define MQTT_PORT       1883
+#define MQTT_HOST       "host.wokwi.internal" //IP do Broker test.mosquitto.org
+#define MQTT_PORT       8883
 #define MQTT_PUB_TOPIC  "semaforo/distancia"
-String MQTT_DEVICEID = "DistSensor";
-PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
-//MqttClient mqttClient(wifiClient);
+#define MQTT_DEVICEID   "smartdevice"
+const char* MQTT_PASS = "smart456";
+
+PubSubClient mqttClient(wifiClient);
+bool wifiConectado = false;
+bool mqttConectado = false;
+
 
 /* ---- Config distância ---- */
 #define TRIG_PIN 25
@@ -27,24 +33,13 @@ DistanceSensor sensorDist(TRIG_PIN, ECHO_PIN);
 const int PESSOA_DIST = 50;
 
 /* ---- Config intervalo temporal ---- */
-int INTERVALO = 1000; // Intervalo entre detecções de pessoas - detecção uma vez por segundo
+int INTERVALO = 2000; // Intervalo entre detecções de pessoas - detecção uma vez a cada 2 segundos
 uint64_t tempo_anterior = 0;
 
-/* ---- Função: Conectar ao MQTT Broker ---- */
-void conectarMQTT() {
-  Serial.print("Conectando ao MQTT Broker -> " + String(MQTT_HOST));
-  while (!client.connected()) {
-    MQTT_DEVICEID += WiFi.macAddress();
-    if (client.connect(MQTT_DEVICEID.c_str())) {
-      Serial.println(" --> Conectado ao MQTT! CLIENTID " + String(MQTT_DEVICEID));
-    } else {
-      Serial.print(" Falha, rc=");
-      Serial.print(client.state());
-      Serial.println(" Tentando novamente em 5 segundos...");
-      delay(5000);
-    }
-  }
-}
+//Protótipos de funções a utilizar
+void conectarWiFi();
+void conectarMQTT();
+
 
 void setup() {
   Serial.begin(115200);
@@ -52,42 +47,105 @@ void setup() {
   //Inicializa todos os sensores
   sensorDist.inicializar();
 
-  //Inicializa WiFi
-  WiFi.begin(ssid, password);
-  Serial.println("Conectando ao WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi conectado!");
+  //Conecta no WiFi
+  conectarWiFi();
+  
+  //Configura MQTT e conecta no Broker
+  wifiClient.setCACert(MQTT_CA_CERT);
+  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+  mqttClient.setKeepAlive(60);     // Manter conexão viva por 60s
+  mqttClient.setSocketTimeout(60); // Timeout de 60s  
+  mqttClient.setBufferSize(1024);   // Buffer adequado considerando o payload gerado
 
-  /* ---- Conexão ao MQTT: Definição de servidor ---- */
-  client.setServer(MQTT_HOST, MQTT_PORT);
+  Serial.println("\nSistema de envio de distância inicializado!");
+  Serial.printf("Envio de dados a cada %d segundos...", (INTERVALO/1000)); Serial.println("");
+
+  Serial.println("\n>> Sistema pronto!\n");
+
+
 }
 
 void loop() {
-  if (!client.connected()) {
+
+  if (wifiConectado && !mqttClient.connected()) {
     conectarMQTT();
   }
-  client.loop();
+  
+  if (mqttConectado) {
+    mqttClient.loop();
+  } else {
+    Serial.println("MQTT desconectado. Pulando ciclo de leitura.");
+    delay(1000);
+    return;
+  }
 
   if (millis() - tempo_anterior >= INTERVALO) {
+    tempo_anterior = millis();
     //Mede a distância
     float dist = sensorDist.medirDist();
     Serial.println("Distância: " + String(dist) + " cm.");
 
     if (dist <= PESSOA_DIST) {
       /* Transmissão dos dados em formato JSON */
-      StaticJsonDocument<200> doc;
+      JsonDocument doc;
       doc["dist"] = dist;
       
-      char buffer[200];
+      char buffer[1024];
       serializeJson(doc, buffer);
       Serial.println("Pessoa detectada! Payload: " + String(buffer) + ". Enviando daods (mqtt publish)");
       
-      client.publish(MQTT_PUB_TOPIC, buffer);
+      mqttClient.publish(MQTT_PUB_TOPIC, buffer);
     }
   }
 
   delay(100);
+}
+
+
+/* ==== AUXILIARES =================================================== */
+void conectarWiFi() {
+  Serial.print("Conectando ao Wi-Fi: ");
+  Serial.println(WIFI_SSID);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  uint8_t tentativas = 0;
+  while (WiFi.status() != WL_CONNECTED && tentativas < 30) {
+    delay(500);
+    Serial.print(".");
+    tentativas++;
+  }
+  Serial.println();
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("OK! IP: ");
+    Serial.println(WiFi.localIP());
+    wifiConectado = true;
+  } else {
+    Serial.println("Falha ao conectar Wi-Fi.");
+    wifiConectado = false;
+  }
+}
+
+void conectarMQTT() {
+  if (!wifiConectado) return;
+  
+  Serial.printf("[MQTT] Conectando ao broker %s", MQTT_HOST);
+  
+  int tentativas = 0;
+  while (!mqttClient.connected() && tentativas < 3) {
+    if (mqttClient.connect(MQTT_DEVICEID, MQTT_DEVICEID, MQTT_PASS)) {
+      Serial.println(" --> Conectado ao MQTT Broker!");
+      mqttConectado = true;
+    } else {
+      Serial.printf(" Falha, rc=%d", mqttClient.state());
+      tentativas++;
+      if (tentativas < 3) {
+        Serial.println(" Tentando novamente em 3s...");
+        delay(3000);
+      }
+    }
+  }
+  
+  if (!mqttConectado) {
+    Serial.println(" --> Falha final na conexão MQTT");
+  }
 }
