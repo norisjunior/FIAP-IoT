@@ -30,7 +30,7 @@ DistanceSensor sensorDist(TRIG_PIN, ECHO_PIN);
 const int PESSOA_DIST = 50;
 
 /* ---- Config intervalo temporal ---- */
-int INTERVALO = 2000; // Intervalo entre detecções de pessoas - detecção uma vez a cada 2 segundos
+int INTERVALO = 7000; // Intervalo entre detecções de pessoas - detecção uma vez a cada 7 segundos
 uint64_t tempo_anterior = 0;
 
 //Protótipos de funções a utilizar
