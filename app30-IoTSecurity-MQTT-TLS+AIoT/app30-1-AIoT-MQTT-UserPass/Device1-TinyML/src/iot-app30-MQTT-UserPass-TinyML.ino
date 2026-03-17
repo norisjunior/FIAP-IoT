@@ -36,7 +36,7 @@ WiFiClient wifiClient;
 #define MQTT_HOST       "host.wokwi.internal"
 #define MQTT_PORT       1883
 #define MQTT_PUB_TOPIC  "FIAPIoT/smartagro/cmd/local"
-#define MQTT_DEVICEID   "FIAPIoTapp28Dev1"
+#define MQTT_DEVICEID   "FIAPIoTapp30Dev1"
 // Credencial MQTT
 const char* MQTT_PASS = "FIAP1234";
 PubSubClient mqttClient(wifiClient);

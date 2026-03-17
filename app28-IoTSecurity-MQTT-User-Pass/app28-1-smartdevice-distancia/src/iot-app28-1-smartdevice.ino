@@ -89,7 +89,7 @@ void loop() {
 
       char buffer[1024];
       serializeJson(doc, buffer);
-      Serial.println("Pessoa detectada! Payload: " + String(buffer) + ". Enviando daods (mqtt publish)");
+      Serial.println("Pessoa detectada! Payload: " + String(buffer) + ". Enviando dados (mqtt publish)");
 
       mqttClient.publish(MQTT_PUB_TOPIC, buffer);
     }
