@@ -125,7 +125,7 @@ void conectarMQTT() {
 
   int tentativas = 0;
   while (!mqttClient.connected() && tentativas < 5) {
-    if (mqttClient.connect(MQTT_DEVICEID, MQTT_DEVICEID, MQTT_PASS)) {
+    if (mqttClient.connect(MQTT_DEVICEID)) {
       Serial.println("OK!");
       mqttConectado = true;
 

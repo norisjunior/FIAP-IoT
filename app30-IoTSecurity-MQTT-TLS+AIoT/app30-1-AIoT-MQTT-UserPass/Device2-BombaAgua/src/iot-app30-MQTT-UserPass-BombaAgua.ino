@@ -22,7 +22,7 @@ WiFiClient wifiClient;
 // assina usando Wildcard, que poderá ser
 // local | cloud | human
 #define MQTT_TOPIC_SUB_CMDS  "FIAPIoT/smartagro/cmd/+"
-#define MQTT_DEVICEID        "FIAPIoTapp28B"
+#define MQTT_DEVICEID        "FIAPIoTapp30B"
 // Credencial MQTT
 const char* MQTT_PASS = "FIAP1234";
 
