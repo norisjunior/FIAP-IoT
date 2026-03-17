@@ -25,8 +25,6 @@ mkdir -p nodered
 mkdir -p n8n/n8n_data n8n/pg_data
 mkdir -p influxdb
 mkdir -p grafana
-mkdir -p ollama
-
 sudo chown -R 1000:1000 ./n8n/n8n_data ./n8n/pg_data
 sudo chmod -R 755 ./n8n/n8n_data ./n8n/pg_data
 
@@ -192,26 +190,6 @@ echo "Criando docker-compose.yml único..."
 
 cat > docker-compose.yml << 'EOF'
 services:
-  # Ollama
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ./ollama:/root/.ollama
-    restart: unless-stopped
-    networks:
-      - iot-network
-    entrypoint: ["/bin/bash", "-c"]
-    command: >
-      "ollama serve &
-      pid=$!;
-      sleep 5;
-      ollama pull llama3.2;
-      ollama pull nomic-embed-text;
-      wait $pid"
-
   # MQTT Broker
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -225,8 +203,6 @@ services:
     restart: unless-stopped
     networks:
       - iot-network
-    depends_on:
-      - ollama
 
   # Node-RED
   node-red:
@@ -297,8 +273,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      ollama:
-        condition: service_started
 
   # InfluxDB
   influxdb:
@@ -374,7 +348,6 @@ echo "================================================"
 echo "Plataforma IoT (TLS) configurada e iniciada!"
 echo "================================================"
 echo ""
-echo "Ollama:      http://localhost:11434 (Servidor LLM local)"
 echo "Node-RED:    http://localhost:1880 (usuário: admin / senha: $NODERED_PASSWORD)"
 echo "n8n:         http://localhost:5678 (usuário/senha: gere ao acessar pela primeira vez)"
 echo "PostgreSQL:  localhost:5432 (n8n + vector database com pgvector habilitado)"
@@ -445,7 +418,6 @@ echo "      -u admin -P FIAP1234 \\"
 echo "      -t FIAPIoT/teste -m 'hello TLS'"
 echo ""
 echo "Verificar logs:"
-echo "  sudo docker logs ollama"
 echo "  sudo docker logs mqtt-broker"
 echo "  sudo docker logs NorisNodeRED"
 echo "  sudo docker logs n8n"
