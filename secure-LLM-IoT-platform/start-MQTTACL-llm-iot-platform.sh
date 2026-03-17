@@ -141,13 +141,6 @@ services:
     restart: unless-stopped
     networks:
       - iot-network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     entrypoint: ["/bin/bash", "-c"]
     command: >
       "ollama serve & 
@@ -305,7 +298,8 @@ sudo docker compose up -d
 echo ""
 echo "Criando usuário admin no MQTT Broker..."
 sleep 10
-sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd admin FIAP1234
+#sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd admin FIAP1234
+sudo docker exec mqtt-broker echo "admin:FIAP1234" | mosquitto_passwd -U
 sleep 10
 sudo docker restart mqtt-broker
 echo "✓ Usuário MQTT admin criado (admin/FIAP1234)"
