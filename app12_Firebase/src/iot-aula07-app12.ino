@@ -20,14 +20,14 @@ const char* WIFI_PASSWORD = "";
 
 //FIAP-IoT-2025: AIzaSyCqSUfVwtK-c6owoEsWqR3q2PZZhP9KLbU
 //FIAPAulaIoT: AIzaSyAD5tEtupy6dxJEbwCw3oAcEM9xZ3akLyg
-const char* API_KEY       = "";
+const char* API_KEY       = "AIzaSyAo9AFdiDYx5LSRUQnH9vuQtRyvS-8kGro";
 //FIAP-IoT-2025: https://fiap-iot-2025-default-rtdb.firebaseio.com
 //FIAPAulaIoT: https://fiapaulaiot-default-rtdb.firebaseio.com
-const char* DB_URL        = ""; // sem barra final
+const char* DB_URL        = "https://fiap-exemplo-2026-default-rtdb.firebaseio.com/"; // sem barra final
 //profnoris.junior@fiap.com.br
-const char* USER_EMAIL    = "";
+const char* USER_EMAIL    = "profnoris.junior@fiap.com.br";
 //FIAPIoT20251234
-const char* USER_PASSWORD = "";
+const char* USER_PASSWORD = "123456789";
 
 /* ==== OBJETOS GLOBAIS (Firebase) =================================== */
 FirebaseData   fbdo;

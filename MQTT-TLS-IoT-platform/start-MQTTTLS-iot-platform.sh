@@ -55,10 +55,21 @@ openssl req -new \
 
 # 3. Assinar certificado do servidor com a CA (inclui SANs para localhost e IPs locais)
 echo "  Assinando certificado do servidor com a CA..."
-cat > mqtt-broker/certs/server_ext.cnf << 'EXTEOF'
-[v3_req]
-subjectAltName = IP:127.0.0.1,DNS:localhost,DNS:mqtt-broker
-EXTEOF
+cat > mqtt-broker/certs/server_ext.cnf << 'EOF'
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = mosquitto
+DNS.2 = localhost
+DNS.3 = host.docker.internal
+DNS.4 = host.wokwi.internal
+IP.1  = 127.0.0.1
+IP.2  = 172.99.1.10
+EOF
 
 openssl x509 -req -days 3650 \
   -in mqtt-broker/certs/server.csr \

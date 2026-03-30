@@ -1,5 +1,2 @@
 .pio
-.vscode/launch.json
-.vscode/c_cpp_properties.json
-.occupancyEnv/
-.app/occupancyEnv/
+.vscode
