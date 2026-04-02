@@ -1,7 +1,7 @@
 Nó: *mqtt in*
-    - Server: EMQx Broker
+    - Server: mqtt-broker
     - Tópico: FIAPIoT/sala1
-    - QoS: 1
+    - QoS: 0
 
 
 Function: *separarDadosSensores*
