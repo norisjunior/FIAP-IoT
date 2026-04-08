@@ -1,231 +1,227 @@
 # Physical Computing, Embedded AI, Robotics & Cognitive IoT
 
-## Aplicação 22 - AIoT: Random Forest Embarcado com micromlgen
+# App22 - AIoT: Random Forest Embarcado com micromlgen
 
-Esta aplicação demonstra **Inteligência Artificial de Coisas (AIoT)** com Machine Learning 100% embarcado no ESP32. Um modelo Random Forest para detecção de ocupação é treinado no Google Colab, exportado usando **micromlgen** (Eloquent Arduino library), e executado localmente no microcontrolador **sem conectividade** (offline).
+Evolução do **app19**: mesma ideia do app21 (inferência local no ESP32), mas usando a biblioteca **micromlgen** em vez de m2cgen. A diferença principal é que micromlgen retorna diretamente a **classe predita**, sem probabilidades.
 
-## Conceito: TinyML e Edge AI
+## O que muda do app19 para o app22
 
-**TinyML** é a técnica de executar modelos de Machine Learning diretamente em dispositivos com recursos limitados (microcontroladores), permitindo:
+| app19 | app22 |
+|-------|-------|
+| ESP32 publica JSON via MQTT | ESP32 classifica localmente, sem rede |
+| Serviço Python externo executa o modelo | Modelo Random Forest embarcado no `.ino` |
+| Requer Wi-Fi, broker MQTT e servidor | Funciona offline, sem dependências externas |
 
-- ✅ **Inferência local**: Decisões em tempo real sem latência de rede
-- ✅ **Privacidade**: Dados não saem do dispositivo
-- ✅ **Autonomia**: Funciona offline, sem dependência de cloud
-- ✅ **Baixo consumo**: Ideal para dispositivos IoT alimentados por bateria
-- ✅ **Custo reduzido**: Sem custos de transmissão de dados ou APIs cloud
+## app21 (m2cgen) vs app22 (micromlgen)
 
-## micromlgen vs m2cgen
+| | app21 | app22 |
+|-|-------|-------|
+| **Biblioteca** | m2cgen | micromlgen |
+| **Retorno da inferência** | `probabilidades[0]`, `probabilidades[1]` | classe direta (`0` ou `1`) |
+| **Chamada** | `RandomForest::score(input, prob)` | `modeloRF.predict(input)` |
+| **Instância** | não precisa | `Eloquent::ML::Port::RandomForest modeloRF` |
 
-Esta aplicação usa **micromlgen** (biblioteca Eloquent para Arduino):
+## Passo a passo
 
-**micromlgen:**
-- Biblioteca Python que converte modelos scikit-learn para C++ Arduino
-- Gera classes C++ com método `predict()` que retorna a **classe predita**
-- Otimizado especificamente para microcontroladores
-- Foco em simplicidade e uso eficiente de memória
-- Repositório: [eloquentarduino/micromlgen](https://github.com/eloquentarduino/micromlgen)
+### 1. Gerar os arquivos do modelo (Google Colab)
 
-**Comparação com m2cgen** (usado no app21):
-- micromlgen retorna apenas a **classe**, m2cgen retorna **probabilidades**
-- micromlgen é específico para Arduino/microcontroladores
-- m2cgen suporta mais linguagens de destino (C, Python, Java, etc.)
-- micromlgen tem sintaxe mais orientada a objetos
+Siga o notebook de aula:
+[https://colab.research.google.com/drive/1fEBFePpqnozpdJ1Gk3MvBMTESLUD02AI?usp=sharing](https://colab.research.google.com/drive/1fEBFePpqnozpdJ1Gk3MvBMTESLUD02AI?usp=sharing)
 
-## Sensores e Atuadores
+O Colab vai gerar dois arquivos — faça o download de ambos:
+- `AIoTRandomForest_micromlgen.hpp` — modelo Random Forest em C++ (Eloquent)
+- `AIoTOccupancyRFScaler.hpp` — parâmetros do StandardScaler
 
-**Sensores:**
-- DHT22 (Temperatura e Umidade) - Pino GPIO 26
-- LDR (Sensor de Luminosidade) - Pino GPIO 35
-- Potenciômetro (Simulador de CO2) - Pino GPIO 34
+### 2. Copiar os arquivos gerados para o projeto
 
-**Atuadores:**
-- LED Vermelho - Pino GPIO 21 (Acende quando sala está ocupada)
+Cole os dois arquivos na pasta `src/`:
 
-**Features do Modelo:**
-- Temperature (°C)
-- Humidity (%)
-- Light (Lux)
-- CO2 (ppm)
-- HumidityRatio (calculado)
-
-## Funcionamento
-
-### Pipeline Completo
-
-```
-┌─────────────────────┐
-│  Google Colab       │
-│  ────────────       │
-│  1. Carregar dataset│
-│  2. Treinar Random  │
-│     Forest (sklearn)│
-│  3. Exportar com    │
-│     micromlgen      │
-│  4. Gerar .hpp      │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  AIoTRandomForest   │
-│  _micromlgen.hpp    │  ◄── Código C++ gerado
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│     ESP32           │
-│  ─────────          │
-│  1. Coletar dados   │
-│     dos sensores    │
-│  2. Normalizar      │
-│     (StandardScaler)│
-│  3. Inferência local│
-│     (Random Forest) │
-│  4. Classificação:  │
-│     • Vazia (0)     │
-│     • Ocupada (1)   │
-│  5. Controlar LED   │
-└─────────────────────┘
-```
-
-### Processo de Inferência
-
-**1. Coleta de Dados:**
-```
-Temperature: 24.5 °C
-Humidity: 45.2 %
-Light: 320.5 lux
-CO2: 680.3 ppm
-HumidityRatio: 0.004521
-```
-
-**2. Normalização (StandardScaler):**
-```
-Dados padronizados para mean=0, std=1
-```
-
-**3. Inferência (Random Forest micromlgen):**
-```cpp
-Eloquent::ML::Port::RandomForest modeloRF;
-int predicao = modeloRF.predict(dadosPadronizados);
-// predicao = 1 (OCUPADA)
-```
-
-**4. Decisão:**
-```
-Classe predita: 1 (OCUPADA)
-LED: LIGADO
-```
-
-**5. Estatísticas Acumuladas:**
-```
-Total: 120 inferências
-Ocupada: 85 vezes (70.8%)
-Vazia: 35 vezes (29.2%)
-```
-
-## Como Usar
-
-### 1. Treinar e Exportar o Modelo (Google Colab)
-
-> **Importante:** O treinamento é feito no Google Colab apresentado em sala de aula.
-
-**Passo a passo no Colab:**
-
-```python
-# 1. Instalar micromlgen
-!pip install micromlgen
-
-# 2. Treinar Random Forest
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
-
-# Carregar dataset de ocupação
-# Features: Temperature, Humidity, Light, CO2, HumidityRatio
-# Target: Occupancy (0=vazia, 1=ocupada)
-
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-rf_model = RandomForestClassifier(
-    n_estimators=20,  # Reduzir para caber na memória do ESP32
-    max_depth=10,
-    random_state=42
-)
-rf_model.fit(X_scaled, y)
-
-# 3. Exportar com micromlgen
-from micromlgen import port
-
-# Gerar código C++ para Arduino
-codigo_cpp = port(rf_model)
-
-# Salvar como .hpp
-with open('AIoTRandomForest_micromlgen.hpp', 'w') as f:
-    f.write('#pragma once\n\n')
-    f.write(codigo_cpp)
-
-# 4. Exportar StandardScaler
-print("Mean:", scaler.mean_)
-print("Scale:", scaler.scale_)
-# Copiar valores para AIoTOccupancyRFScaler.hpp
-```
-
-**Resultado:** Dois arquivos gerados:
-- `AIoTRandomForest_micromlgen.hpp` - Modelo Random Forest em C++
-- `AIoTOccupancyRFScaler.hpp` - Parâmetros do StandardScaler
-
-### 2. Preparar o Código ESP32
-
-Os arquivos gerados no Colab devem substituir:
-- `src/AIoTRandomForest_micromlgen.hpp`
-- `src/AIoTOccupancyRFScaler.hpp`
-
-**Estrutura do projeto:**
 ```
 app22-AIoT-RF-Occupancy_micromlgen/
-├── src/
-│   ├── iot-app22_AIoT_micromlgen.ino   # Código principal
-│   ├── AIoTRandomForest_micromlgen.hpp # Modelo (gerado no Colab)
-│   ├── AIoTOccupancyRFScaler.hpp       # Scaler (gerado no Colab)
-│   ├── ESP32Sensors.hpp                # Biblioteca de sensores
-│   ├── ESP32SensorsAmbiente.hpp        # DHT22
-│   ├── ESP32SensorsLDR.hpp             # LDR
-│   ├── ESP32SensorsCO2.hpp             # Potenciômetro (CO2)
-│   └── ESP32SensorsLED.hpp             # LED
-├── diagram.json                        # Diagrama Wokwi
-└── README.md
+└── src/
+    ├── iot-app22_AIoT_micromlgen.ino
+    ├── AIoTRandomForest_micromlgen.hpp  ← gerado no Colab
+    ├── AIoTOccupancyRFScaler.hpp        ← gerado no Colab
+    ├── ESP32SensorsAmbiente.hpp
+    ├── ESP32SensorsLDR.hpp
+    ├── ESP32SensorsCO2.hpp
+    ├── ESP32SensorsLED.hpp
+    └── ESP32SensorsHumidityRatio.hpp
 ```
 
-### 3. Executar no Wokwi
+### 3. Atualizar o platformio.ini
 
-1. **Abrir projeto no Wokwi:**
-   - Arquivo: `app22-AIoT-RF-Occupancy_micromlgen/src/iot-app22_AIoT_micromlgen.ino`
+Remova a dependência do `PubSubClient` (não há mais MQTT):
 
-2. **Compilar e executar:**
-   - O ESP32 iniciará e executará inferências a cada 5 segundos
+```ini
+[env:esp32]
+platform = espressif32
+framework = arduino
+board = esp32dev
 
-3. **Monitorar Serial Monitor:**
+lib_deps =
+    adafruit/DHT sensor library @ ^1.4.6
+    bblanchon/ArduinoJson @ ^7.4.1
+```
+
+### 4. Atualizar o .ino
+
+Faça as alterações abaixo no arquivo `.ino` do app19, bloco a bloco.
+
+---
+
+**Bloco 1 — INCLUDES:** remova os de Wi-Fi/MQTT e adicione os dois headers gerados.
+
+```cpp
+/* ==== INCLUDES ===================================================== */
+// REMOVIDO: #include <WiFi.h>
+// REMOVIDO: #include <WiFiClient.h>
+// REMOVIDO: #include <PubSubClient.h>
+// REMOVIDO: #include <ArduinoJson.h>
+#include "ESP32SensorsAmbiente.hpp"
+#include "ESP32SensorsLED.hpp"
+#include "ESP32SensorsLDR.hpp"
+#include "ESP32SensorsCO2.hpp"
+#include "ESP32SensorsHumidityRatio.hpp"
+// ADICIONADO: headers gerados pelo Colab
+#include "AIoTOccupancyRFScaler.hpp"          // StandardScaler
+#include "AIoTRandomForest_micromlgen.hpp"    // Modelo Random Forest micromlgen
+```
+
+---
+
+**Bloco 2 — Constantes e variáveis globais:** remova tudo de Wi-Fi/MQTT e adicione a instância do modelo e as estatísticas.
+
+```cpp
+/* ==== Configurações de Hardware =================================================== */
+const uint8_t DHT_PIN   = 26;
+const uint8_t DHT_MODEL = DHT22;  // app19 usava DHT11 — atualizar para DHT22
+const uint8_t LED_PIN   = 21;
+const uint8_t LDR_PIN   = 35;
+const uint8_t CO2_PIN   = 34;
+const uint8_t HR_PIN    = 32;
+
+// REMOVIDO: constantes e variáveis de Wi-Fi e MQTT
+
+/* ==== CONSTANTES =================================== */
+static unsigned long lastMs = 0;
+const unsigned long INTERVAL = 5000; // 5s entre inferências
+
+// ADICIONADO: estatísticas acumuladas
+struct ModelStats {
+  unsigned long totalInferencias = 0;
+  unsigned long salaOcupada = 0;
+  unsigned long salaVazia = 0;
+} stats;
+
+// ADICIONADO: instância do modelo micromlgen (Eloquent)
+Eloquent::ML::Port::RandomForest modeloRF;
+```
+
+---
+
+**Bloco 3 — Função de inferência:** substitua `buildAndPublishJSON()` por esta função. O fluxo é: coletar → normalizar → inferir localmente → acionar LED.
+
+```cpp
+/* ==== FUNÇÃO PRINCIPAL: COLETA + INFERÊNCIA LOCAL =================================== */
+// SUBSTITUIU: buildAndPublishJSON() do app19
+bool coletaDados_e_realizaInferencia() {
+  // 1. Coleta de dados (igual ao app19)
+  ESP32Sensors::Ambiente::AMBIENTE  amb = ESP32Sensors::Ambiente::medirAmbiente();
+  ESP32Sensors::LDR::DADOS_LDR      luz = ESP32Sensors::LDR::ler();
+  ESP32Sensors::CO2::DADOS_CO2      co2 = ESP32Sensors::CO2::ler();
+  ESP32Sensors::HR::DADOS_HR        hr  = ESP32Sensors::HR::ler();
+
+  if (!amb.valido || !luz.valido || !co2.valido) {
+    Serial.println("[ERRO] Leituras inválidas dos sensores!");
+    return false;
+  }
+
+  Serial.println("\n========== INFERÊNCIA LOCAL ML ==========");
+  Serial.printf("  Temperature: %.2f °C\n",  amb.temp);
+  Serial.printf("  Humidity: %.2f %%\n",     amb.umid);
+  Serial.printf("  Light: %.1f lux\n",       luz.lux);
+  Serial.printf("  CO2: %.1f ppm\n",         co2.ppm);
+  Serial.printf("  HumidityRatio: %.6f\n",   hr.valor);
+
+  // 2. ADICIONADO: normalização com StandardScaler gerado no Colab
+  float dadosBrutos[5] = { amb.temp, amb.umid, luz.lux, co2.ppm, hr.valor };
+  float dadosPadronizados[5];
+  Scaler::std(dadosBrutos, dadosPadronizados);
+
+  // 3. ADICIONADO: inferência local com micromlgen
+  //    predict() recebe float* e retorna a classe diretamente (0=vazia, 1=ocupada)
+  int predicao = modeloRF.predict(dadosPadronizados);
+
+  const char* statusSala = (predicao == 1) ? "OCUPADA" : "VAZIA";
+
+  stats.totalInferencias++;
+  if (predicao == 1) { stats.salaOcupada++; ESP32Sensors::LED::on(); }
+  else               { stats.salaVazia++;   ESP32Sensors::LED::off(); }
+
+  Serial.println("\n[RESULTADO ML]");
+  Serial.printf("  --> Sala: %s\n", statusSala);
+  // DIFERENÇA do app21: micromlgen não retorna probabilidades, só a classe
+  Serial.printf("  --> Classe predita: %d\n", predicao);
+  Serial.printf("  --> LED: %s\n\n", (predicao == 1) ? "LIGADO" : "DESLIGADO");
+
+  Serial.printf("[STATS] Total: %lu | Ocupada: %lu (%.1f%%) | Vazia: %lu (%.1f%%)\n",
+                stats.totalInferencias,
+                stats.salaOcupada, (float)stats.salaOcupada/stats.totalInferencias * 100,
+                stats.salaVazia,   (float)stats.salaVazia  /stats.totalInferencias * 100);
+  Serial.println("==========================================\n");
+
+  return true;
+}
+```
+
+---
+
+**Bloco 4 — setup() e loop():** remova as chamadas de Wi-Fi/MQTT.
+
+```cpp
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println("ESP32 - AIoT - ML EMBARCADO (100% LOCAL)");
+  Serial.println("Modelo: Random Forest | Biblioteca: MICROMLGEN");
+
+  // REMOVIDO: conectarWiFi() e conectarMQTT()
+
+  ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
+  ESP32Sensors::LED::inicializar(LED_PIN);
+  ESP32Sensors::LDR::inicializar(LDR_PIN);
+  ESP32Sensors::CO2::inicializar(CO2_PIN);
+  ESP32Sensors::HR::inicializar(HR_PIN);
+  Serial.println("Sensores inicializados. Sistema pronto.\n");
+
+  delay(2000);
+}
+
+void loop() {
+  // REMOVIDO: verificação e manutenção da conexão MQTT
+
+  unsigned long now = millis();
+  if (now - lastMs >= INTERVAL) {
+    coletaDados_e_realizaInferencia();
+    lastMs = now;
+  }
+  delay(100);
+}
+```
+
+### 5. Compilar e executar no Wokwi
+
+Compile e observe o Serial Monitor. A cada 5 segundos:
 
 ```
-==========================================
-ESP32 - AIoT - ML EMBARCADO (100% LOCAL)
-Modelo: Random Forest - Ocupação de Sala
-Modo: SEM CONECTIVIDADE (offline)
-Biblioteca: MICROMLGEN
-==========================================
-Sensores inicializados!
-Sistema pronto para inferências locais.
-
 ========== INFERÊNCIA LOCAL ML ==========
-[SENSORES] Dados coletados:
   Temperature: 24.50 °C
   Humidity: 45.20 %
   Light: 320.5 lux
   CO2: 680.3 ppm
   HumidityRatio: 0.004521
-
-[NORMALIZAÇÃO] Dados processados:
-  Temp: 0.45 | Hum: -0.32 | Light: 1.23 | CO2: -0.87 | HR: 0.12
 
 [RESULTADO ML]
   --> Sala: OCUPADA
@@ -236,115 +232,12 @@ Sistema pronto para inferências locais.
 ==========================================
 ```
 
-**Observação:** Diferente do app21 (m2cgen), o micromlgen **não retorna probabilidades**, apenas a classe predita (0 ou 1).
-
-4. **Ajustar sensores:**
-   - Use o slider do **LDR** para simular luminosidade
-   - Use o slider do **Potenciômetro** para simular CO2
-   - DHT22 (temperatura/umidade) varia automaticamente no Wokwi
-   - Observe o LED acender/apagar conforme a classificação
-
-## Estrutura do Código
-
-### Arquivo Principal (iot-app22_AIoT_micromlgen.ino)
-
-```cpp
-// DECLARAÇÃO: Criar instância do modelo
-Eloquent::ML::Port::RandomForest modeloRF;
-
-// 1. COLETA DE DADOS
-ESP32Sensors::Ambiente::AMBIENTE amb = ESP32Sensors::Ambiente::medirAmbiente();
-ESP32Sensors::LDR::DADOS_LDR luz = ESP32Sensors::LDR::ler();
-ESP32Sensors::CO2::DADOS_CO2 co2 = ESP32Sensors::CO2::ler();
-
-// 2. NORMALIZAÇÃO
-float dadosBrutos[5] = {amb.temp, amb.umid, luz.lux, co2.ppm, hr};
-float dadosPadronizados[5];
-Scaler::std(dadosBrutos, dadosPadronizados);
-
-// 3. INFERÊNCIA (retorna diretamente a classe)
-int predicao = modeloRF.predict(dadosPadronizados);
-
-// 4. ATUAÇÃO
-if (predicao == 1) ESP32Sensors::LED::on();
-else ESP32Sensors::LED::off();
-```
-
-## Vantagens do micromlgen
-
-✅ **Simplicidade**: API orientada a objetos, fácil de usar
-✅ **Otimizado para Arduino**: Desenvolvido especificamente para microcontroladores
-✅ **Memória eficiente**: Código compacto e otimizado
-✅ **Documentação Arduino**: Exemplos focados em makers
-✅ **Ativo**: Comunidade Eloquent Arduino
-
-## Diferenças: App22 (micromlgen) vs App21 (m2cgen)
-
-| Aspecto | App22 (micromlgen) | App21 (m2cgen) |
-|---------|---------------------|----------------|
-| **Biblioteca** | micromlgen | m2cgen |
-| **Método de inferência** | `modeloRF.predict()` | `RandomForest::score()` |
-| **Retorno** | Classe direta (0 ou 1) | Probabilidades [0.15, 0.85] |
-| **Arquivo gerado** | AIoTRandomForest_micromlgen.hpp | AIoTRandomForest_mc2gen.hpp |
-| **Informação disponível** | Apenas decisão final | Confiança da predição |
-| **Sintaxe** | Orientada a objetos | Funções namespace |
-| **Uso de memória** | Semelhante | Semelhante |
-| **Performance** | Semelhante | Semelhante |
-| **Documentação** | Focada em Arduino | Mais genérica |
-
-**Quando usar micromlgen (app22):**
-- Quando precisar apenas da decisão final (classe)
-- Quando preferir sintaxe orientada a objetos
-
-**Quando usar m2cgen (app21):**
-- Quando precisar das probabilidades (confiança)
-- Quando quiser código mais "bare metal" (namespace)
-- Quando precisar portar para outras plataformas além de Arduino
-
-## Casos de Uso
-
-**1. Automação Residencial:**
-- Ligar/desligar luzes e ar-condicionado baseado em ocupação
-- Economia de energia com decisões locais instantâneas
-
-**2. Edifícios Inteligentes:**
-- Gestão de climatização por ambiente
-- Redução de custos operacionais
-
-**3. Segurança:**
-- Detecção de presença não autorizada
-- Alertas em tempo real sem dependência de internet
-
-**4. Indústria 4.0:**
-- Monitoramento de estações de trabalho
-- Otimização de layout fabril
+Ajuste os sliders do **LDR** e do **potenciômetro (CO2)** para ver a classificação mudar.
 
 ## Troubleshooting
 
-**Modelo não compila:**
-- Verificar se arquivo .hpp foi gerado corretamente no Colab
-- Reduzir `n_estimators` do Random Forest (tentar 10-20 árvores)
-- Reduzir `max_depth` (tentar 5-10)
+**Erro `'Eloquent' was not declared`:** o arquivo `AIoTRandomForest_micromlgen.hpp` não foi gerado pelo micromlgen ou está incompleto — deve conter `namespace Eloquent { ... }`.
 
-**Erro: 'Eloquent' não foi declarado:**
-- Verificar se o código gerado pelo micromlgen foi copiado corretamente
-- O arquivo .hpp deve conter `namespace Eloquent { ... }`
+**Erro de compilação no `.hpp` do modelo:** reduza `n_estimators` (tente 10–20) ou `max_depth` (tente 5–10) no Colab e regere os arquivos.
 
-**Inferências inconsistentes:**
-- Verificar se StandardScaler foi exportado corretamente
-- Conferir valores de `mean_` e `scale_` no Scaler.hpp
-- Validar leituras dos sensores (valores devem estar no range esperado)
-
-**LED não acende:**
-- Verificar conexão do LED no GPIO 21
-- Testar manualmente: `ESP32Sensors::LED::on();`
-- Verificar se predição está retornando 1
-
-**Memória insuficiente:**
-- Reduzir número de árvores no Random Forest
-- Reduzir profundidade máxima
-- Simplificar modelo (menos features)
-
-## Próximos Passos
-
-1. **Comparar com App21**: Execute também o app21 (m2cgen) e compare as diferenças
+**Classificação sempre igual:** verifique se os parâmetros `means` e `scales` no `AIoTOccupancyRFScaler.hpp` batem com os gerados pelo Colab — não misture scalers de execuções diferentes.
