@@ -1,73 +1,70 @@
 # Physical Computing, Embedded AI, Robotics & Cognitive IoT
 
-## Aplicação 15 - Arquitetura Cloud Computing com MQTT
+## Aplicação 15 - Cloud Computing com MQTT
 
-Esta aplicação demonstra arquitetura de computação em nuvem (Cloud Computing) para IoT, implementando um sistema de monitoramento de motor industrial. O ESP32 coleta dados de sensores e publica via MQTT, além de receber comandos remotos para controle do motor.
+### app15-Cloud
 
-## Pré-requisitos
+Aplicação IoT embarcada para ESP32 que simula o monitoramento remoto de um motor industrial por meio de comunicação bidirecional via MQTT. O dispositivo coleta dados de temperatura/umidade (DHT22) e aceleração (MPU6050), publica os leituras na nuvem a cada 3 segundos e responde a comandos de ligar/desligar recebidos do broker, com o LED indicando o estado operacional do motor.
 
-### Inicializar a Plataforma IoT
+---
 
-Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+### Sensores e Atuadores (ESP32)
 
-1. **Acessar WSL2 Ubuntu:**
-   ```bash
-   wsl -d ubuntu
-   ```
+| Componente | Descrição | Pino GPIO |
+|---|---|---|
+| DHT22 | Temperatura e Umidade | 26 |
+| MPU6050 (SDA) | Acelerômetro via I2C | 18 |
+| MPU6050 (SCL) | Acelerômetro via I2C | 19 |
+| LED | Indicador de status do motor | 27 |
 
-2. **Clonar o repositório (se ainda não clonou):**
-   ```bash
-   cd ~
-   git clone https://github.com/norisjunior/FIAP-IoT
-   ```
+---
 
-3. **Iniciar todos os serviços:**
-   ```bash
-   cd FIAP-IoT/IoT-platform/
-   sudo ./start-linux.sh
-   ```
+### Tópicos MQTT
 
-Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
+**Broker:** `host.wokwi.internal:1883`  
+**Client ID:** `IoTDeviceNoris001`  
+**Intervalo de envio:** 3 segundos
 
-**Serviços disponíveis:**
-- MQTT Broker: localhost:1883
-- Node-RED: http://localhost:1880 (admin/FIAPIoT)
-- n8n: http://localhost:5678
-- InfluxDB: http://localhost:8086 (admin/FIAP@123)
-- Grafana: http://localhost:3000 (admin/admin)
+| Direção | Tópico | Descrição |
+|---|---|---|
+| Publicação | `FIAPIoT/aula08/noris/motor/dados` | Dados dos sensores em JSON |
+| Subscrição | `FIAPIoT/aula08/noris/motor/cmd` | Comandos `ON` / `OFF` |
 
-### Sensores e Atuadores
+**Payload JSON publicado:**
+```json
+{
+  "device": "IoTDeviceNoris001",
+  "temp": 25.3,
+  "umid": 60.5,
+  "ic": 26.1,
+  "accel_x": 0.12,
+  "accel_y": -0.05,
+  "accel_z": 9.81,
+  "motor_status": true
+}
+```
 
-**Sensores:**
-- DHT22 (Temperatura e Umidade) - Pino GPIO 26
-- MPU6050 (Acelerômetro/Giroscópio) - Pinos I2C:
-  - SDA: GPIO 18
-  - SCL: GPIO 19
+---
 
-**Atuadores:**
-- LED - Pino GPIO 27 (Indicador de status do motor)
+### Dashboards Node-RED
 
-### Funcionamento
+Dois dashboards estão disponíveis em `Plataformas_config/NodeRED`:
 
-O sistema implementa comunicação bidirecional via MQTT, enviando dados de sensores e recebendo comandos de controle:
+**1. Dashboard de Controle (`Fluxo_1_dashboard_graphs_e_cmd.json`)**  
+Visualiza em tempo real os dados dos sensores (temperatura, umidade, aceleração) e disponibiliza botões para enviar comandos `ON`/`OFF` ao dispositivo via MQTT.
 
-**Tópico de Publicação (Dados):**
-- `FIAPIoT/aula08/noris/motor/dados`
-- Envia dados a cada 3 segundos em formato JSON
-- Campos: temperatura, umidade, aceleração (x, y, z), status do motor
+**2. Dashboard com InfluxDB (`Fluxo_2_envio_InfluxDB.json`)**  
+Recebe os dados do tópico MQTT e os persiste no InfluxDB para armazenamento histórico, permitindo consultas e análises temporais dos dados do motor.
 
-**Tópico de Subscrição (Comandos):**
-- `FIAPIoT/aula08/noris/motor/cmd`
-- Recebe comandos para ligar/desligar o motor
-- Comandos: "ligar", "desligar"
+---
 
-**Configuração MQTT:**
-- Broker: host.wokwi.internal (porta 1883)
-- Client ID: IoTDeviceNoris001 (único no broker)
+### Plataforma IoT
 
-**Arquitetura demonstrada:**
-- **Edge:** Sensores e atuadores no ESP32
-- **Fog:** Processamento intermediário (broker MQTT)
-- **Cloud:** Análise e armazenamento de dados históricos
+Os serviços necessários (MQTT Broker, Node-RED, InfluxDB) são provisionados via Docker. Siga as instruções em `IoT-platform/README.md` para inicializar o ambiente.
 
-O LED acende quando o motor está operando e apaga quando recebe comando de desligamento, simulando controle remoto de equipamento industrial.
+| Serviço | Endereço | Credenciais |
+|---|---|---|
+| MQTT Broker | `localhost:1883` | — |
+| Node-RED | `http://localhost:1880` | admin / FIAPIoT |
+| InfluxDB | `http://localhost:8086` | admin / FIAP@123 |
+| Grafana (local) | `http://localhost:3000` | admin / admin |
