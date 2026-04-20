@@ -18,11 +18,11 @@
 #include <ArduTFLite.h>
 
 /* ==== Configurações de Hardware =========================================== */
-const uint8_t DHT_PIN     = 26;
+const uint8_t DHT_PIN     = 23;
 const uint8_t DHT_MODEL   = DHT22;
 const uint8_t LED_PIN     = 21;
 const uint8_t DRYNESS_PIN = 34;
-const uint8_t SERVO_PIN   = 13;
+const uint8_t SERVO_PIN   = 18;
 
 /* ==== TensorFlow Lite - Variáveis Globais ================================= */
 #define ARENA_SIZE (8 * 1024)
