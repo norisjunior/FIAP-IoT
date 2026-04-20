@@ -1,9 +1,9 @@
-# App29 — MQTT com TLS (Transport Layer Security)
+# App30 — MQTT com TLS (Transport Layer Security)
 
 Semáforo inteligente com MQTT protegido por TLS + credenciais.
 
-- **app29-1** — Smart Device: lê sensor de distância e publica no broker via TLS (porta 8883) quando detecta pessoa (≤ 50 cm)
-- **app29-2** — Cloud: assina o tópico e controla o semáforo (LEDs) conforme as detecções
+- **app30-1** — Smart Device: lê sensor de distância e publica no broker via TLS (porta 8883) quando detecta pessoa (≤ 50 cm)
+- **app30-2** — Cloud: assina o tópico e controla o semáforo (LEDs) conforme as detecções
 
 ---
 
@@ -32,10 +32,10 @@ Ao final do script, o **certificado CA** será exibido no terminal. Copie o cont
 Execute no WSL2:
 
 ```bash
-# Usuário do Smart Device (app29-1)
+# Usuário do Smart Device (app30-1)
 sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd smartdevice smart456
 
-# Usuário do Cloud / Semáforo (app29-2)
+# Usuário do Cloud / Semáforo (app30-2)
 sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd cloud cloud123
 ```
 
@@ -61,9 +61,9 @@ sudo docker restart mqtt-broker
 
 ---
 
-## Passo 4 — Configurar o certificado CA no app29-1
+## Passo 4 — Configurar o certificado CA no app30-1
 
-Abra o arquivo [app29-1-smartdevice-distancia/src/mqtt_ca_cert.h](app29-1-smartdevice-distancia/src/mqtt_ca_cert.h).
+Abra o arquivo [app30-1-smartdevice-distancia/src/mqtt_ca_cert.h](app30-1-smartdevice-distancia/src/mqtt_ca_cert.h).
 
 Substitua o conteúdo entre as aspas `R"EOF(` e `)EOF"` pelo certificado CA gerado pela sua plataforma (obtido no Passo 1):
 
@@ -79,13 +79,13 @@ static const char MQTT_CA_CERT[] PROGMEM = R"EOF(
 
 ---
 
-## Passo 5 — Verificar o app29-1 (Smart Device com TLS)
+## Passo 5 — Verificar o app30-1 (Smart Device com TLS)
 
-Abra o projeto `app29-1-smartdevice-distancia` no Wokwi e execute.
+Abra o projeto `app30-1-smartdevice-distancia` no Wokwi e execute.
 
-Observe no código [src/iot-app29-TLS-1-smartdevice-dist.ino](app29-1-smartdevice-distancia/src/iot-app29-TLS-1-smartdevice-dist.ino) as diferenças em relação ao app28-1:
+Observe no código [src/iot-app30-TLS-1-smartdevice-dist.ino](app30-1-smartdevice-distancia/src/iot-app30-TLS-1-smartdevice-dist.ino) as diferenças em relação ao app28-1:
 
-| app28-1 (sem TLS) | app29-1 (com TLS) |
+| app28-1 (sem TLS) | app30-1 (com TLS) |
 |---|---|
 | `#include <WiFiClient.h>` | `#include <WiFiClientSecure.h>` |
 | `WiFiClient wifiClient` | `WiFiClientSecure wifiClient` |
@@ -99,9 +99,9 @@ O dispositivo irá:
 
 ---
 
-## Passo 6 — Configurar o app29-2 (Cloud / Semáforo)
+## Passo 6 — Configurar o app30-2 (Cloud / Semáforo)
 
-Abra o arquivo [app29-2-cloud-semaforo_inteligente/src/iot-app29-TLS-2-cloud-semaforo.ino](app29-2-cloud-semaforo_inteligente/src/iot-app29-TLS-2-cloud-semaforo.ino).
+Abra o arquivo [app30-2-cloud-semaforo_inteligente/src/iot-app30-TLS-2-cloud-semaforo.ino](app30-2-cloud-semaforo_inteligente/src/iot-app30-TLS-2-cloud-semaforo.ino).
 
 Faça as seguintes alterações para adicionar TLS e autenticação:
 
@@ -137,13 +137,13 @@ mqttClient.connect(MQTT_DEVICEID)
 mqttClient.connect(MQTT_DEVICEID, MQTT_DEVICEID, MQTT_PASS)
 ```
 
-**5. Copie o arquivo `mqtt_ca_cert.h`** do app29-1 para a pasta `src/` do app29-2.
+**5. Copie o arquivo `mqtt_ca_cert.h`** do app30-1 para a pasta `src/` do app30-2.
 
 ---
 
-## Passo 7 — Executar o app29-2
+## Passo 7 — Executar o app30-2
 
-Abra o projeto `app29-2-cloud-semaforo_inteligente` no Wokwi e execute.
+Abra o projeto `app30-2-cloud-semaforo_inteligente` no Wokwi e execute.
 
 O semáforo irá:
 - Conectar ao broker com TLS (porta 8883), usuário `cloud` / senha `cloud123`

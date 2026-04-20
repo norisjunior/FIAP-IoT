@@ -1,9 +1,9 @@
-# App28 — MQTT com Autenticação (Usuário e Senha)
+# App29 — MQTT com Autenticação (Usuário e Senha)
 
 Semáforo inteligente com MQTT protegido por credenciais.
 
-- **app28-1** — Smart Device: lê sensor de distância e publica no broker quando detecta pessoa (≤ 50 cm)
-- **app28-2** — Cloud: assina o tópico e controla o semáforo (LEDs) conforme as detecções
+- **app29-1** — Smart Device: lê sensor de distância e publica no broker quando detecta pessoa (≤ 50 cm)
+- **app29-2** — Cloud: assina o tópico e controla o semáforo (LEDs) conforme as detecções
 
 ---
 
@@ -25,10 +25,10 @@ Aguarde a mensagem `Plataforma IoT configurada e iniciada!`.
 Execute no WSL2:
 
 ```bash
-# Usuário do Smart Device (app28-1)
+# Usuário do Smart Device (app29-1)
 sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd smartdevice smart456
 
-# Usuário do Cloud / Semáforo (app28-2)
+# Usuário do Cloud / Semáforo (app29-2)
 sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd cloud cloud123
 ```
 
@@ -52,9 +52,9 @@ sudo docker restart mqtt-broker
 
 ---
 
-## Passo 3 — Executar o app28-1 (Smart Device)
+## Passo 3 — Executar o app29-1 (Smart Device)
 
-Abra o projeto `app28-1-smartdevice-distancia` no Wokwi e execute.
+Abra o projeto `app29-1-smartdevice-distancia` no Wokwi e execute.
 
 O dispositivo irá:
 - Conectar ao broker com usuário `smartdevice` / senha `smart456`
@@ -62,9 +62,9 @@ O dispositivo irá:
 
 ---
 
-## Passo 4 — Configurar o app28-2 (Cloud / Semáforo)
+## Passo 4 — Configurar o app29-2 (Cloud / Semáforo)
 
-Abra o arquivo [app28-2-cloud-semaforo_inteligente/src/iot-app28-2-cloud.ino](app28-2-cloud-semaforo_inteligente/src/iot-app28-2-cloud.ino).
+Abra o arquivo [app29-2-cloud-semaforo_inteligente/src/iot-app29-2-cloud.ino](app29-2-cloud-semaforo_inteligente/src/iot-app29-2-cloud.ino).
 
 Localize o bloco de configuração MQTT e **adicione a senha**:
 
@@ -81,9 +81,9 @@ const char* MQTT_PASS = "cloud123";   // <-- adicione esta linha
 
 ---
 
-## Passo 5 — Executar o app28-2
+## Passo 5 — Executar o app29-2
 
-Abra o projeto `app28-2-cloud-semaforo_inteligente` no Wokwi e execute.
+Abra o projeto `app29-2-cloud-semaforo_inteligente` no Wokwi e execute.
 
 O semáforo irá:
 - Conectar ao broker com usuário `cloud` / senha `cloud123`

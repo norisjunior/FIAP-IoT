@@ -1,4 +1,4 @@
-# App30-2 — AIoT + MQTT com TLS
+# App31-2 — AIoT + MQTT com TLS
 
 Sistema de irrigação inteligente com TinyML e MQTT protegido por TLS + credenciais (porta 8883).
 
@@ -32,8 +32,8 @@ Ao final, o script exibe o **certificado CA** gerado. Você vai precisar dele no
 ## Passo 2 — Cadastrar os usuários no broker MQTT
 
 ```bash
-sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd FIAPIoTapp30Dev1 FIAP1234
-sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd FIAPIoTapp30B FIAP1234
+sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd FIAPIoTapp31Dev1 FIAP1234
+sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd FIAPIoTapp31B FIAP1234
 ```
 
 ---
@@ -43,10 +43,10 @@ sudo docker exec mqtt-broker mosquitto_passwd -b /mosquitto/config/passwd FIAPIo
 Edite `LLMIoTStack/mqtt-broker/acl` e adicione ao final:
 
 ```
-user FIAPIoTapp30Dev1
+user FIAPIoTapp31Dev1
 topic write FIAPIoT/smartagro/cmd/local
 
-user FIAPIoTapp30B
+user FIAPIoTapp31B
 topic read FIAPIoT/smartagro/cmd/+
 ```
 

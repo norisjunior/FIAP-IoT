@@ -9,10 +9,12 @@
 
 /* ==== INCLUDES ============================================================ */
 #include <WiFi.h>
-#include <WiFiClient.h>
+//#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include "mqtt_ca_cert.h"
 
 // Aplicação TensorFlow Lite e Sensores
 #include <ArduTFLite.h>
@@ -30,13 +32,15 @@ const uint8_t DRYNESS_PIN = 34;
 /* ==== WI-FI ======================+++++==================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
-WiFiClient wifiClient;
+//WiFiClient wifiClient;
+WiFiClientSecure wifiClient;
 
 /* ==== MQTT ============================+++++++++++++======================= */
 #define MQTT_HOST       "host.wokwi.internal"
-#define MQTT_PORT       1883
+//#define MQTT_PORT       1883
+#define MQTT_PORT       8883
 #define MQTT_PUB_TOPIC  "FIAPIoT/smartagro/cmd/local"
-#define MQTT_DEVICEID   "FIAPIoTapp30Dev1"
+#define MQTT_DEVICEID   "FIAPIoTapp31Dev1"
 // Credencial MQTT
 const char* MQTT_PASS = "FIAP1234";
 PubSubClient mqttClient(wifiClient);
@@ -91,6 +95,7 @@ void setup() {
     conectarWiFi();
     
     //Configura MQTT e conecta no Broker
+    wifiClient.setCACert(MQTT_CA_CERT);
     mqttClient.setServer(MQTT_HOST, MQTT_PORT);
     mqttClient.setKeepAlive(60);     // Manter conexão viva por 60s
     mqttClient.setSocketTimeout(60); // Timeout de 60s  
