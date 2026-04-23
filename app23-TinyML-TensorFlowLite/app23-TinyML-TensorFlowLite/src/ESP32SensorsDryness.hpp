@@ -26,11 +26,13 @@ namespace ESP32Sensors {
             r.valor = 0;
             r.valido = false;
 
-            int valorLido = analogRead(drynessPin); // 0..4095
+            int valorLido = analogRead(drynessPin);
             if (valorLido < 0) return r;
 
             // Mapeia para 0-1023 (range do dataset de treinamento)
             r.valor = mapf(static_cast<float>(valorLido), 0.0f, 4095.0f, DRY_MIN, DRY_MAX);
+            // Para o sensor físico (sensor de umidade do solo capacitivo)
+            //r.valor = mapf(static_cast<float>(valorLido), 557.0f, 2283.0f, DRY_MIN, DRY_MAX);
             r.valido = true;
             return r;
         }
