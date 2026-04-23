@@ -14,8 +14,8 @@
 #include "ESP32SensorsServo.hpp"
 #include "modelo_irrig_inteligente.h"
 
-// TensorFlow Lite via ArduTFLite
-#include <ArduTFLite.h>
+// TensorFlow Lite via MicroTFLite
+#include <MicroTFLite.h>
 
 /* ==== Configurações de Hardware =========================================== */
 const uint8_t DHT_PIN     = 23;
@@ -51,7 +51,7 @@ void setup() {
     // --- INICIALIZAR TENSORFLOW LITE ---
     Serial.println("Carregando modelo TFLite...");
 
-    if (!modelInit(modelo_irrig_inteligente_tflite, tensorArena, ARENA_SIZE)) {
+    if (!ModelInit(modelo_irrig_inteligente_tflite, tensorArena, ARENA_SIZE)) {
         Serial.println("ERRO: Falha ao carregar modelo!");
         while(1);
     }
@@ -81,17 +81,17 @@ void loop() {
     // 2. PREPARAR ENTRADA PARA O MODELO
     // Atenção: aqui vão os valores CRUS (raw), na mesma ordem do treino:
     // [ dryness_raw, temp_raw ]
-    modelSetInput(dry.valor, 0);  // 0..1023 (já mapeado no .hpp)
-    modelSetInput(amb.temp, 1);   // °C
+    ModelSetInput(dry.valor, 0);  // 0..1023 (já mapeado no .hpp)
+    ModelSetInput(amb.temp, 1);   // °C
 
     // 3. EXECUTAR INFERÊNCIA
-    if (!modelRunInference()) {
+    if (!ModelRunInference()) {
         Serial.println("[ERRO] Falha na inferência!");
         return;
     }
 
     // 4. LER RESULTADO (saída única: probabilidade de pump=1)
-    float probabilidade = modelGetOutput(0);
+    float probabilidade = ModelGetOutput(0);
     bool deveIrrigar    = (probabilidade >= 0.5f);
 
     // 5. LIGAR OU NÃO LIGAR A BOMBA D'ÁGUA
