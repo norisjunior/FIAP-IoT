@@ -38,6 +38,8 @@ echo ""
 echo "Configurando MQTT Broker..."
 cat > mqtt-broker/mosquitto.conf << 'EOF'
 listener 1883
+listener 9001
+protocol websockets
 allow_anonymous true
 EOF
 echo "✓ MQTT configurado"

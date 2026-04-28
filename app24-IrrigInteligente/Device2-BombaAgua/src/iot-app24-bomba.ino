@@ -9,7 +9,7 @@
 
 /* ==== Configurações de Hardware =========================================== */
 const static uint8_t LED_PIN   = 27;
-const static uint8_t SERVO_PIN = 13;
+const static uint8_t SERVO_PIN = 25;
 
 /* ==== WI-FI ======================+++++==================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador

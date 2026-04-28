@@ -27,7 +27,7 @@
     [ "led1:C", "esp:GND.1", "black", [ "v0" ] ],
     [ "servo1:GND", "esp:GND.3", "black", [ "h-28.8", "v86.4", "h355.2" ] ],
     [ "servo1:V+", "esp:5V", "red", [ "h-38.4", "v86.5", "h268.65" ] ],
-    [ "servo1:PWM", "esp:13", "green", [ "h-19.2", "v57.8", "h230.4", "v-57.6" ] ]
+    [ "servo1:PWM", "esp:25", "green", [ "h-19.2", "v57.8", "h230.4", "v-57.6" ] ]
   ],
   "dependencies": {}
 }

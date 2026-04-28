@@ -32,7 +32,7 @@ namespace ESP32Sensors {
             // Mapeia para 0-1023 (range do dataset de treinamento)
             r.valor = mapf(static_cast<float>(valorLido), 0.0f, 4095.0f, DRY_MIN, DRY_MAX);
             // Para o sensor físico (sensor de umidade do solo capacitivo)
-            //r.valor = mapf(static_cast<float>(valorLido), 557.0f, 2283.0f, DRY_MIN, DRY_MAX);
+            //r.valor = mapf(static_cast<float>(valorLido), 300.0f, 2200.0f, DRY_MIN, DRY_MAX);
             r.valido = true;
             return r;
         }

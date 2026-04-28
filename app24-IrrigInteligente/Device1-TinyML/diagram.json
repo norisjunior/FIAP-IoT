@@ -39,7 +39,7 @@
     [ "esp:RX", "$serialMonitor:TX", "", [] ],
     [ "dht1:VCC", "esp:3V3", "red", [ "v19.2", "h-38.4" ] ],
     [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h28.8" ] ],
-    [ "dht1:SDA", "esp:26", "green", [ "v28.8", "h-67.1", "v144" ] ],
+    [ "dht1:SDA", "esp:23", "green", [ "v28.8", "h-67.1", "v144" ] ],
     [ "led1:A", "esp:21", "green", [ "v0" ] ],
     [ "led1:C", "esp:GND.3", "black", [ "v105.6", "h-67.2" ] ],
     [ "pot2:VCC", "esp:3V3", "red", [ "v-28.8", "h239.85" ] ],
