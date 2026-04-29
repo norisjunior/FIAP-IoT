@@ -1,48 +1,65 @@
 #include <FlixPeriph.h>
-//Remova o comentário abaixo se for utilizar
-//o sensor MPU6500 (vendido como MPU6050 genérico)
-//#include <MPU6500.h>
+// Descomente se estiver usando MPU6500 vendido como MPU6050 generico.
+#include <MPU6500.h>
 #include <Wire.h>
 
-#define SCLPIN 27
-#define SDAPIN 26
-#define LEDPIN 25
+#define SDAPIN 22
+#define SCLPIN 23
 
-// Caso use o MPU6500, descomente a linha a seguir e comente
-//a linha do MPU6050
-//MPU6500 mpu(Wire);
-MPU6050 mpu(Wire);
+// Wiring:
+// VCC -> 3V3
+// GND -> GND
+// SDA -> GPIO22
+// SCL -> GPIO23
 
-int contador = 0;
+// Troque para MPU6500 se estiver usando o sensor generico.
+MPU6500 mpu(Wire);
+//MPU6050 mpu(Wire);
 
 void setup() {
-    Serial.begin(115200);
-    pinMode(LEDPIN, OUTPUT);
+  Serial.begin(115200);
 
-    Wire.begin(SDAPIN, SCLPIN);
+  Wire.begin(SDAPIN, SCLPIN);
 
-    if(mpu.begin() < 0) {
-        Serial.println("Erro: MPU não encontrado");
-        while (1) {
-            // Bloqueia o ESP32
-        };
+  if (!mpu.begin()) {
+    Serial.println("Erro: MPU nao encontrado");
+    while (1) {
+      delay(10);
     }
+  }
 
-    Serial.println("Sensor MPU inciado com sucesso");
-    delay(1000);
-    Serial.println("Dispositivo IoT ESP32 detector de vibração");
-    Serial.println("id,x,y,z,status");
+  // Sensibilidade do acelerometro:
+  // ACCEL_RANGE_2G  = mais sensivel
+  // ACCEL_RANGE_4G
+  // ACCEL_RANGE_8G
+  // ACCEL_RANGE_16G = mede aceleracoes maiores
+  mpu.setAccelRange(IMUInterface::ACCEL_RANGE_16G);
+
+  Serial.println("MPU iniciado");
+  Serial.println("ax,ay,az");
 }
 
+// Taxa de amostragem: 1000 / AMOSTRA_MS = Hz
+// | Aplicacao           | Sinal (Hz) | Taxa minima | AMOSTRA_MS |
+// |---------------------|------------|-------------|------------|
+// | Orientacao / tilt   | < 5 Hz     | 10 Hz       | 100 ms     |
+// | Deteccao de passo   | < 10 Hz    | 20 Hz       | 50 ms      |
+// | Gesture recognition | < 25 Hz    | 50 Hz       | 20 ms      |
+// | Vibracao / impacto  | < 500 Hz   | 1 kHz       | 1 ms       |
+const int AMOSTRA_MS = 20;
+
+uint64_t tempoAnterior = 0;
+
 void loop() {
-    contador++;
+  if (millis() - tempoAnterior >= AMOSTRA_MS){
+    tempoAnterior = millis();
 
     float ax, ay, az;
-
     mpu.read();
     mpu.getAccel(ax, ay, az);
 
-    Serial.printf("%d,%.2f,%.2f,%.2f,%s",contador,ax,ay,az);
-    Serial.println("");
-    delay(1);
+    //Serial.printf("%.2f,%.2f,%.2f\n", ax, ay, az);
+    Serial.printf(">acc_x: %.2f\n>acc_y: %.2f\n>acc_z: %.2f\n", ax, ay, az);
+  };
 }
+

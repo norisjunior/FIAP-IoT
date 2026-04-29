@@ -2,10 +2,10 @@
 #include <MPU6500.h>
 #include <Wire.h>
 
-#define SDAPIN 26
-#define SCLPIN 27
+#define SDAPIN 22
+#define SCLPIN 23
 
-#define LEDPIN 25
+#define LEDPIN 21
 
 void setup() {
   Serial.begin(115200);
