@@ -90,7 +90,7 @@ void setup() {
     Serial.begin(115200);
     while (!Serial) {;}
     
-    Serial.println("\n=== ESP32 + MPU6050 + Edge Impulse ===");
+    Serial.println("\n=== ESP32 + MPU + Edge Impulse ===");
     
     // Configurar LEDs
     pinMode(LED_R_PIN, OUTPUT);
@@ -127,16 +127,16 @@ void loop() {
         last_interval_ms = millis();
 
         // Ler sensor
-        ESP32Sensors::AccelGyro::DADOS dados = ESP32Sensors::AccelGyro::medirAccelGyro();
+        ESP32Sensors::AccelGyro::DADOS dadosMov = ESP32Sensors::AccelGyro::medirAccelGyro();
 
         // Preencher buffer (ax, ay, az, gx, gy, gz)
         if (feature_ix + 6 <= EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE) {
-            features[feature_ix++] = dados.accel.acceleration.x;
-            features[feature_ix++] = dados.accel.acceleration.y;
-            features[feature_ix++] = dados.accel.acceleration.z;
-            features[feature_ix++] = dados.gyro.gyro.x;
-            features[feature_ix++] = dados.gyro.gyro.y;
-            features[feature_ix++] = dados.gyro.gyro.z;
+        features[feature_ix++] = dadosMov.ax;
+        features[feature_ix++] = dadosMov.ay;
+        features[feature_ix++] = dadosMov.az;
+        features[feature_ix++] = dadosMov.gx;
+        features[feature_ix++] = dadosMov.gy;
+        features[feature_ix++] = dadosMov.gz;
         }
 
         // Quando o buffer estiver cheio, fazer inferência

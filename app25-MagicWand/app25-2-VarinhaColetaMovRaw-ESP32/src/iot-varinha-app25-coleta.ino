@@ -47,17 +47,17 @@ void loop() {
     ESP32Sensors::AccelGyro::DADOS dadosMov = ESP32Sensors::AccelGyro::medirAccelGyro();
     
     // Acelerômetro em m/s²
-    Serial.print(dadosMov.accel.acceleration.x, 6); Serial.print(',');
-    Serial.print(dadosMov.accel.acceleration.y, 6); Serial.print(',');
-    Serial.print(dadosMov.accel.acceleration.z, 6); Serial.print(',');
-    
-    // Giroscópio em graus por segundo (dps)
-    Serial.print(dadosMov.gyro.gyro.x, 6); Serial.print(',');
-    Serial.print(dadosMov.gyro.gyro.y, 6); Serial.print(',');
-    Serial.println(dadosMov.gyro.gyro.z, 6);
+    Serial.print(dadosMov.ax, 6); Serial.print(',');
+    Serial.print(dadosMov.ay, 6); Serial.print(',');
+    Serial.print(dadosMov.az, 6); Serial.print(',');
+
+    // Giroscópio em rad/s
+    Serial.print(dadosMov.gx, 6); Serial.print(',');
+    Serial.print(dadosMov.gy, 6); Serial.print(',');
+    Serial.println(dadosMov.gz, 6);
   }
 
-  delay(1);
+  //delay(1);
 }
 
 
