@@ -14,5 +14,5 @@ void loop() {
   Serial.printf(">som_ky: %d\n",mic_ky); Serial.println("");
   Serial.printf(">som_max: %d\n",mic_max); Serial.println("");
 
-  delay(2); // amostragem mais rápida
+  delay(500); // amostragem mais rápida
 }
