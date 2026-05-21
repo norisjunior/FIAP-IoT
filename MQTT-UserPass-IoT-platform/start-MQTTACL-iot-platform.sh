@@ -181,7 +181,7 @@ services:
 
   # n8n
   n8n:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:2.18.4
     container_name: n8n
     restart: always
     user: "1000:1000"
