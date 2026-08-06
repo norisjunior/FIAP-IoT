@@ -26,7 +26,9 @@
  *   Forma 1 / Sprint 4 - item 1 (base analitica): features por janela,
  *   geradas no edge. Visualizacao e modelo ficam nos notebooks 1.3 / 1.5.
  *
- * PINAGEM: SDA=19 SCL=18 | BTN_COLETA=26 | BTN_ANOMALIA=25 | LED=27.
+ * PINAGEM: SDA=19 SCL=18 | BTN_COLETA=26 | BTN_ANOMALIA=25 | LED=27 (externo)
+ *   + LED onboard (GPIO 2, azul na maioria dos DevKit).
+ *   LED aceso fixo = condicao NORMAL | LED piscando = condicao ANOMALIA.
  *   Aceleracao em m/s².
  * ===================================================================== */
 
@@ -85,7 +87,9 @@ bool     relogioSincronizado = false;
 /* ---- Pinos (montagem minima, sem motor) ---- */
 #define BTN_COLETA   26   // inicia/para a coleta (era o botao do motor no app17-8)
 #define BTN_ANOMALIA 25   // seleciona NORMAL/ANOMALIA (so com a coleta parada)
-#define LED_PIN      27   // aceso = coletando ANOMALIA
+#define LED_PIN      27   // LED externo (protoboard/Wokwi)
+#define LED_ONBOARD   2   // LED da placa (experimento fisico); os dois acendem juntos
+// LED aceso fixo = NORMAL | LED piscando = ANOMALIA (vale parado ou coletando)
 #define SDA_PIN      19
 #define SCL_PIN      18
 
@@ -103,6 +107,11 @@ int ultimoBotaoAnomalia = HIGH;
 unsigned long ultimoDebounceColeta   = 0;
 unsigned long ultimoDebounceAnomalia = 0;
 const unsigned long debounceMs = 300;
+
+/* ---- Pisca do LED (condicao ANOMALIA) ---- */
+uint32_t ultimoPiscaLed = 0;
+bool ledAceso = false;
+const int PISCA_MS = 250;   // troca de estado a cada 250 ms
 
 const int TAMANHO_JANELA = 100;   // 100 amostras @ 100 Hz = 1 s
 float ax_buf[TAMANHO_JANELA];
@@ -164,7 +173,9 @@ void setup() {
   pinMode(BTN_COLETA,   INPUT_PULLUP);
   pinMode(BTN_ANOMALIA, INPUT_PULLUP);
   pinMode(LED_PIN,      OUTPUT);
-  digitalWrite(LED_PIN, LOW);
+  pinMode(LED_ONBOARD,  OUTPUT);
+  digitalWrite(LED_PIN,     HIGH);   // condicao inicial = NORMAL -> aceso fixo
+  digitalWrite(LED_ONBOARD, HIGH);
 
   conectarWiFi();
   sincronizarRelogio();   // hora da Internet (NTP) -> base do ts_epoch_ms
@@ -178,6 +189,7 @@ void setup() {
   Serial.println("  Montagem: ESP32 + MPU6050 sobre a mesa (sem motor).");
   Serial.println("  Botao 26: inicia/para a coleta");
   Serial.println("  Botao 25: seleciona NORMAL/ANOMALIA (so com a coleta parada)");
+  Serial.println("  LED aceso fixo = NORMAL | LED piscando = ANOMALIA");
   Serial.println("  NORMAL = MPU parado | ANOMALIA = tapas na mesa durante a coleta");
   Serial.printf("  Topico MQTT: %s\n\n", MQTT_PUB_TOPIC);
   Serial.println("ts_epoch_ms,label,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,rms_ax,rms_ay,rms_az,rms_mag");
@@ -198,11 +210,9 @@ void loop() {
       if (coletando) {
         indice = 0;                 // comeca uma janela limpa
         tempoAnterior = millis();   // reinicia o timing de amostragem
-        digitalWrite(LED_PIN, anomaliaAtiva ? HIGH : LOW);
         Serial.printf("Coleta INICIADA (condicao: %s)\n",
                       anomaliaAtiva ? "ANOMALIA - de tapas na mesa" : "NORMAL - deixe o MPU parado");
       } else {
-        digitalWrite(LED_PIN, LOW);
         Serial.println("Coleta PARADA");
       }
       ultimoDebounceColeta = millis();
@@ -225,6 +235,21 @@ void loop() {
     }
   }
   ultimoBotaoAnomalia = leituraAnomalia;
+
+  // --- LED indica a condicao selecionada (externo 27 + onboard 2) ---
+  // NORMAL = aceso fixo | ANOMALIA = piscando
+  if (anomaliaAtiva) {
+    if (millis() - ultimoPiscaLed >= PISCA_MS) {
+      ultimoPiscaLed = millis();
+      ledAceso = !ledAceso;
+      digitalWrite(LED_PIN,     ledAceso ? HIGH : LOW);
+      digitalWrite(LED_ONBOARD, ledAceso ? HIGH : LOW);
+    }
+  } else {
+    digitalWrite(LED_PIN,     HIGH);
+    digitalWrite(LED_ONBOARD, HIGH);
+    ledAceso = true;
+  }
 
   // Sem coleta = estado "parado": nao amostra nem envia janelas.
   if (!coletando) return;
