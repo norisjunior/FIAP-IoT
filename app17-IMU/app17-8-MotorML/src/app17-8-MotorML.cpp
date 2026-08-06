@@ -9,12 +9,12 @@
 #include <ArduinoJson.h>
 
 /* ---- Config Wi-Fi ---- */
-const char* WIFI_SSID     = "IoTNJ";
-const char* WIFI_PASSWORD = "Th1ng$IoT";
+const char* WIFI_SSID     = "Wokwi-GUEST";
+const char* WIFI_PASSWORD = "";
 WiFiClient wifiClient;
 
 /* ---- Config MQTT ---- */
-#define MQTT_SERVER    "10.58.131.155"
+#define MQTT_SERVER    "host.wokwi.internal"
 #define MQTT_PORT      1883
 #define MQTT_PUB_TOPIC "FIAPIoT/motor/features"
 #define MQTT_CLIENT_ID "IoTDeviceNorisMotorML001"
@@ -106,7 +106,7 @@ void setup() {
 
   Wire.begin(SDA_PIN, SCL_PIN);
   if (!mpu.begin()) {
-    Serial.println("Erro: MPU nao encontrado");
+    Serial.println("Erro: MPU não encontrado");
     while (1);
   }
   mpu.setAccelRange(IMUInterface::ACCEL_RANGE_8G);
@@ -129,9 +129,9 @@ void setup() {
   mqttClient.setBufferSize(512);
 
   Serial.println("Sistema pronto.");
-  Serial.println("  Botao 26: liga/desliga motor");
-  Serial.println("  Botao 25: ativa/desativa anomalia (so com motor desligado)");
-  Serial.printf("  Topico MQTT: %s\n\n", MQTT_PUB_TOPIC);
+  Serial.println("  Botão 26: liga/desliga motor");
+  Serial.println("  Botão 25: ativa/desativa anomalia (só com motor desligado)");
+  Serial.printf("  Tópico MQTT: %s\n\n", MQTT_PUB_TOPIC);
   Serial.println("label,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,rms_ax,rms_ay,rms_az,rms_mag");
 }
 
@@ -156,6 +156,9 @@ void loop() {
         digitalWrite(LED_PIN, LOW);
         Serial.println("Motor DESLIGADO");
       }
+      // Descarta a janela em andamento: ela tem amostras de antes e de depois
+      // da troca, e seria rotulada com a condicao errada.
+      indice = 0;
       ultimoDebounceMotor = millis();
     }
   }
@@ -177,7 +180,14 @@ void loop() {
 
   // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
-    tempoAnterior = millis();
+    // Avança em passos fixos de AMOSTRA_MS (e nao "= millis()"): assim o atraso
+    // de um ciclo não empurra o próximo e a taxa não escorrega abaixo de 100 Hz.
+    tempoAnterior += AMOSTRA_MS;
+    // Se ainda estamos mais de uma amostra atrasados (reconexão MQTT, publish
+    // lento, delay do motor), não adianta amostrar em rajada para recuperar o
+    // atraso: as amostras sairiam sem espacamento real. Recomeça do agora.
+    if (millis() - tempoAnterior >= AMOSTRA_MS) tempoAnterior = millis();
+
     mpu.read();
     mpu.getAccel(ax_buf[indice], ay_buf[indice], az_buf[indice]);
     indice++;

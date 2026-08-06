@@ -1,20 +1,33 @@
-# app17-2 - Leitura simples do MPU
+# app17-8 - Motor + features + MQTT (base do ML)
 
-App base para montar o MPU no ESP32 e ler os tres eixos do acelerometro usando
-a biblioteca FlixPeriph.
+Junta tudo: motor, janela de 100 amostras (100 Hz), features do app17-5,
+label escolhida por botao e publicacao de 1 JSON por janela no MQTT.
+E a **base canonica** de onde derivam os app17-9 e app17-10.
 
-## Wiring
+## Pinos
 
-| MPU6050/GY-521 | ESP32 |
+| Funcao | GPIO |
 | --- | --- |
-| VCC | 3V3 |
-| GND | GND |
-| SDA | GPIO26 |
-| SCL | GPIO27 |
+| MPU SDA / SCL | 19 / 18 |
+| Botao motor (liga/desliga) | 26 |
+| Botao anomalia (so com motor desligado) | 25 |
+| LED (aceso = anomalia) | 27 |
+| Motor IN1 / IN2 | 22 / 23 |
+
+## Configurar antes de rodar
+
+No topo do `.cpp`: `WIFI_SSID`, `WIFI_PASSWORD` e `MQTT_SERVER` (IP do broker).
+Topico: `FIAPIoT/motor/features`.
+
+## Labels
+
+| Label | Quando |
+| --- | --- |
+| `parado` | motor desligado |
+| `ligado_normal` | motor ligado, helice equilibrada |
+| `ligado_anomalia` | motor ligado, com fita na helice (desbalanceio) |
 
 ## Aula
 
-- O codigo configura apenas a sensibilidade do acelerometro.
-- A saida serial mostra `ax,ay,az`.
-- A FlixPeriph retorna aceleracao em `m/s2`. Com o sensor parado, um eixo deve
-  ficar proximo de `9.81 m/s2`, por causa da gravidade.
+- Serial imprime CSV (`label,mean_*,std_*,rms_*,rms_mag`) e o payload MQTT enviado.
+- Colete rodadas separadas por label: e esse dataset que treina o modelo.

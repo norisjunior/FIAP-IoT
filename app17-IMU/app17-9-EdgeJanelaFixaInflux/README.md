@@ -22,7 +22,8 @@ Só **ESP32 + MPU6050 sobre a mesa**, 2 botões e 1 LED. **Não há motor.** O "
 | MPU SCL | 18 |
 | Botão **COLETA** (inicia/para o envio) | 26 |
 | Botão **ANOMALIA** (seleciona NORMAL/ANOMALIA, só com a coleta parada) | 25 |
-| LED (aceso = coletando ANOMALIA) | 27 |
+| LED externo (aceso fixo = NORMAL, piscando = ANOMALIA) | 27 |
+| LED onboard da placa (mesmo padrão do LED externo, útil no ESP32 físico) | 2 |
 
 > O `diagram.json` traz os **2 botões** e o **LED** com os pinos corretos (o diagram antigo do
 > repo estava sem botões e com pinos trocados; o motor saiu de vez).
