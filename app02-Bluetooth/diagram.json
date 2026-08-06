@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 86.4, "left": -273.56, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 265.4,
+      "left": -115.2,
+      "attrs": { "color": "green", "label": "AVANÇAR", "xray": "1" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": 188.6,
+      "left": -115.2,
+      "attrs": { "color": "yellow", "label": "RETROCEDER", "xray": "1" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 73.2,
+      "left": -43.8,
+      "attrs": { "color": "red", "flip": "1" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 119.15,
+      "left": -105.6,
+      "attrs": { "value": "220" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "r1:1", "esp:23", "green", [ "h-28.8", "v19.2" ] ],
+    [ "led1:A", "r1:2", "green", [ "v0" ] ],
+    [ "led1:C", "esp:GND.3", "black", [ "v0" ] ],
+    [ "btn2:1.l", "esp:19", "yellow", [ "h-28.8", "v-19.2" ] ],
+    [ "btn1:1.l", "esp:18", "green", [ "h-38.4", "v-86.4" ] ],
+    [ "btn2:2.r", "esp:GND.3", "black", [ "h29", "v-47.8" ] ],
+    [ "btn1:2.r", "esp:GND.3", "black", [ "h29", "v-124.6" ] ]
+  ],
+  "dependencies": {}
+}
