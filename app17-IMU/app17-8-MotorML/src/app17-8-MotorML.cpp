@@ -156,6 +156,9 @@ void loop() {
         digitalWrite(LED_PIN, LOW);
         Serial.println("Motor DESLIGADO");
       }
+      // Descarta a janela em andamento: ela tem amostras de antes e de depois
+      // da troca, e seria rotulada com a condicao errada.
+      indice = 0;
       ultimoDebounceMotor = millis();
     }
   }

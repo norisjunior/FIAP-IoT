@@ -1,20 +1,18 @@
-# app17-2 - Leitura simples do MPU
+# app17-4 - Janela de dados do acelerometro
 
-App base para montar o MPU no ESP32 e ler os tres eixos do acelerometro usando
-a biblioteca FlixPeriph.
+Coleta 100 amostras de `ax,ay,az` a 100 Hz e imprime a janela inteira na Serial.
 
 ## Wiring
 
-| MPU6050/GY-521 | ESP32 |
+| MPU | ESP32 |
 | --- | --- |
 | VCC | 3V3 |
 | GND | GND |
-| SDA | GPIO26 |
-| SCL | GPIO27 |
+| SDA | GPIO22 |
+| SCL | GPIO23 |
 
 ## Aula
 
-- O codigo configura apenas a sensibilidade do acelerometro.
-- A saida serial mostra `ax,ay,az`.
-- A FlixPeriph retorna aceleracao em `m/s2`. Com o sensor parado, um eixo deve
-  ficar proximo de `9.81 m/s2`, por causa da gravidade.
+- `TAMANHO_JANELA = 100` amostras, `AMOSTRA_MS = 10` (100 Hz) via `millis()`, sem `delay()`.
+- Cheia a janela, imprime as 100 linhas e reinicia o indice.
+- Janela = bloco de sinal sobre o qual, no proximo app, se calculam as features.

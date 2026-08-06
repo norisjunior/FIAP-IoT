@@ -1,20 +1,27 @@
-# app17-2 - Leitura simples do MPU
+# app17-5 - Features da janela
 
-App base para montar o MPU no ESP32 e ler os tres eixos do acelerometro usando
-a biblioteca FlixPeriph.
+Mesma janela do app17-4 (100 amostras a 100 Hz), mas em vez de imprimir o sinal bruto
+calcula e imprime as **features** da janela.
 
 ## Wiring
 
-| MPU6050/GY-521 | ESP32 |
+| MPU | ESP32 |
 | --- | --- |
 | VCC | 3V3 |
 | GND | GND |
-| SDA | GPIO26 |
-| SCL | GPIO27 |
+| SDA | GPIO22 |
+| SCL | GPIO23 |
+
+## Features
+
+| Funcao | O que mede |
+| --- | --- |
+| `calcMean` | media de cada eixo (postura/orientacao) |
+| `calcStd` | desvio padrao (quanto o eixo oscila = vibracao) |
+| `calcRMS` | energia do eixo |
+| `calcRMSMagnitude` | energia dos 3 eixos juntos |
 
 ## Aula
 
-- O codigo configura apenas a sensibilidade do acelerometro.
-- A saida serial mostra `ax,ay,az`.
-- A FlixPeriph retorna aceleracao em `m/s2`. Com o sensor parado, um eixo deve
-  ficar proximo de `9.81 m/s2`, por causa da gravidade.
+- 100 amostras viram 10 numeros: e isso que vai para o MQTT/banco e para o ML.
+- Parado: `std` proximo de zero. Chacoalhando: `std` e `rms_mag` sobem.
