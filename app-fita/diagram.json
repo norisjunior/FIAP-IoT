@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 48, "left": -33.56, "attrs": {} },
+    {
+      "type": "wokwi-led-ring",
+      "id": "fita",
+      "top": -80,
+      "left": 200,
+      "attrs": { "pixels": "30" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 120,
+      "left": 130,
+      "attrs": { "value": "220" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+
+    [ "esp:25", "r1:1", "green", [ "h20", "v0" ] ],
+    [ "r1:2", "fita:DIN", "green", [ "h20", "v-40" ] ],
+
+    [ "esp:5V", "fita:VCC", "red", [ "h30", "v-100" ] ],
+    [ "esp:GND.1", "fita:GND", "black", [ "h40", "v-60" ] ]
+  ],
+  "dependencies": {}
+}
