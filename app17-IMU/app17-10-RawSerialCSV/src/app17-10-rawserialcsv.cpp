@@ -5,7 +5,7 @@
  *   Le aceleracao (MPU6050/MPU6500) a 100 Hz e imprime SOMENTE "ax,ay,az"
  *   na Serial, continuamente. NAO calcula features e NAO usa MQTT/WiFi.
  *   Quem poe o timestamp e a label e o script Python (coletor_raw.py),
- *   que grava o CSV "timestamp,ax,ay,az,label" pedido na Sprint 3.
+ *   que grava o CSV "timestamp,ax,ay,az,label"
  *
  *   Pipeline (Aula 14): sinal raw -> Serial -> Python (timestamp+label) -> CSV
  *   -> (no Colab) janela -> features -> modelo.
@@ -33,9 +33,6 @@
  *     via RFC2217 no wokwi.toml ("rfc2217ServerPort = 4000") e o Python
  *     conecta em "rfc2217://localhost:4000".
  *
- * ITEM DA SPRINT
- *   Sprint 3 - item 1 (coleta 100 Hz, ax,ay,az no Monitor Serial).
- *
  * PINAGEM: SDA=19  SCL=18.  Aceleracao em m/s² (Z em repouso ~ 9,81).
  * ===================================================================== */
 
@@ -51,7 +48,8 @@
 /* Sensor: o codigo de aula usa MPU6500 (FlixPeriph). Se o seu sensor for o
  * MPU6050 original (GY-521), troque a linha abaixo por:  MPU6050 mpu(Wire);
  * A interface do FlixPeriph e a mesma. Aceleracao retornada em m/s². */
-MPU6500 mpu(Wire);
+//MPU6500 mpu(Wire);
+MPU6050 mpu(Wire);
 
 uint32_t tempoAnterior = 0;
 const int AMOSTRA_MS = 10;   // 100 Hz
@@ -64,7 +62,8 @@ void setup() {
     Serial.println("Erro: MPU nao encontrado");
     while (1);
   }
-  mpu.setAccelRange(IMUInterface::ACCEL_RANGE_8G);
+//  mpu.setAccelRange(MPU6500::ACCEL_RANGE_8G);
+  mpu.setAccelRange(MPU6050::ACCEL_RANGE_8G);
 
   // Cabecalho da coluna. O coletor_raw.py ignora linhas nao numericas,
   // entao esta linha nao atrapalha o CSV.
@@ -80,7 +79,7 @@ void loop() {
     mpu.read();
     mpu.getAccel(ax, ay, az);   // m/s²
 
-    // Apenas os tres eixos, separados por virgula (formato da Sprint 3).
-    Serial.printf("%.3f,%.3f,%.3f\n", ax, ay, az);
+    // Apenas os três eixos, separados por virgula
+    Serial.printf("%.3f,%.3f,%.3f\r\n", ax, ay, az);
   }
 }
