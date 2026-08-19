@@ -20,9 +20,9 @@ Só **ESP32 + MPU6050 sobre a mesa**. A condição é escolhida no script Python
 | MPU SDA | 19 |
 | MPU SCL | 18 |
 
-## O que ele faz (item da Sprint)
+## O que ele faz
 
-- **Sprint 3 – item 1:** coleta de aceleração X/Y/Z a 100 Hz, exibida no Monitor Serial no
+- Coleta de aceleração X/Y/Z a 100 Hz, exibida no Monitor Serial no
   formato `ax,ay,az` (ex.: `0.12,-0.04,9.81`).
 
 A captura com timestamp (item 2), a base por condição (item 3) e a visualização (item 4)

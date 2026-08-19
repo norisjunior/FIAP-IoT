@@ -1,9 +1,6 @@
 # Forma 2 — Coletor Serial → CSV
 
-Script Python que lê o stream `ax,ay,az` do `app17-10-RawSerialCSV` e grava o CSV bruto
-rotulado pedido na **Sprint 3**: `timestamp,ax,ay,az,label`.
-
-Estilo linear (igual ao `app17-0-Plot`): sem classes, configuração no topo do arquivo.
+Script Python que lê o stream `ax,ay,az` do `app17-10-RawSerialCSV` e grava o CSV bruto: `timestamp,ax,ay,az,label`.
 
 ## Instalar
 

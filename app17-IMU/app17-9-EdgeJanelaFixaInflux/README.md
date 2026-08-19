@@ -28,11 +28,9 @@ Só **ESP32 + MPU6050 sobre a mesa**, 2 botões e 1 LED. **Não há motor.** O "
 > O `diagram.json` traz os **2 botões** e o **LED** com os pinos corretos (o diagram antigo do
 > repo estava sem botões e com pinos trocados; o motor saiu de vez).
 
-## O que ele faz (item da Sprint)
+## O que ele faz
 
-- Atende a **Forma 1 / Sprint 4 – item 1 (base analítica)**: features extraídas **por janela**.
-- A **visualização** e o **modelo + feature importance** ficam nos notebooks `1.3` e `1.5`,
-  que leem do InfluxDB.
+- Features extraídas **por janela**.
 
 ## Como rodar
 
@@ -51,7 +49,7 @@ Só **ESP32 + MPU6050 sobre a mesa**, 2 botões e 1 LED. **Não há motor.** O "
 2. **Botão 26** inicia a coleta. Mantenha a condição **estável** o tempo todo:
    - NORMAL → não encoste no MPU/mesa.
    - ANOMALIA → **dê tapas na mesa** continuamente enquanto coleta.
-3. Colete bastante (alvo da Sprint: ~1 min/condição) e pare no **botão 26**.
+3. Colete bastante (~1 min/condição) e pare no **botão 26**.
 4. Faça **rodadas separadas** e nomeie a tag `coleta` de forma incremental:
    `normal_01`, `normal_02`, `anomalia_01`, `anomalia_02`… — é isso que permite o split
    treino/teste por coleta (sem vazamento).

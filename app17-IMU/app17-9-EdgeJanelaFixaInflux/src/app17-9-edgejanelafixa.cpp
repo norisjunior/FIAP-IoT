@@ -10,7 +10,7 @@
  *
  * MONTAGEM (minima): apenas ESP32 + MPU6050 sobre a mesa. SEM motor.
  *   - NORMAL   = MPU6050 parado sobre a mesa.
- *   - ANOMALIA = tapas na mesa durante a coleta (a mesa e o "ativo").
+ *   - ANOMALIA = movimentar o MPU durante a coleta (a mesa e o "ativo").
  *
  * DERIVADO DE app17-8-MotorML. O que muda em relacao a ele:
  *   - Timestamp REAL: sincroniza a hora pela Internet (NTP, UTC) no boot e
@@ -21,10 +21,6 @@
  *   - Broker e sempre o Mosquitto da IoT-platform local (nada de mosquitto publico).
  *   - A tag "coleta" (normal_01, anomalia_02...) NAO entra aqui: quem
  *     adiciona e a ponte Python, que pergunta no inicio da execucao.
- *
- * ITEM DA SPRINT
- *   Forma 1 / Sprint 4 - item 1 (base analitica): features por janela,
- *   geradas no edge. Visualizacao e modelo ficam nos notebooks 1.3 / 1.5.
  *
  * PINAGEM: SDA=19 SCL=18 | BTN_COLETA=26 | BTN_ANOMALIA=25 | LED=27 (externo)
  *   + LED onboard (GPIO 2, azul na maioria dos DevKit).
@@ -85,9 +81,9 @@ uint32_t millisNaSync      = 0;     // millis() no instante da sincronizacao
 bool     relogioSincronizado = false;
 
 /* ---- Pinos (montagem minima, sem motor) ---- */
-#define BTN_COLETA   26   // inicia/para a coleta (era o botao do motor no app17-8)
-#define BTN_ANOMALIA 25   // seleciona NORMAL/ANOMALIA (so com a coleta parada)
-#define LED_PIN      27   // LED externo (protoboard/Wokwi)
+#define BTN_COLETA   23   // inicia/para a coleta (era o botao do motor no app17-8)
+#define BTN_ANOMALIA 22   // seleciona NORMAL/ANOMALIA (so com a coleta parada)
+#define LED_PIN      21   // LED externo (protoboard/Wokwi)
 #define LED_ONBOARD   2   // LED da placa (experimento fisico); os dois acendem juntos
 // LED aceso fixo = NORMAL | LED piscando = ANOMALIA (vale parado ou coletando)
 #define SDA_PIN      19
@@ -96,7 +92,8 @@ bool     relogioSincronizado = false;
 /* Sensor: o codigo de aula usa MPU6500 (FlixPeriph). Se o seu sensor for
  * o MPU6050 original (GY-521), troque a linha abaixo por:  MPU6050 mpu(Wire);
  * A interface do FlixPeriph e a mesma. Aceleracao retornada em m/s². */
-MPU6500 mpu(Wire);
+//MPU6500 mpu(Wire);
+MPU6050 mpu(Wire);
 
 bool coletando     = false;   // true = enviando janelas (era "motorLigado")
 bool anomaliaAtiva = false;   // false = NORMAL, true = ANOMALIA
@@ -167,7 +164,8 @@ void setup() {
     Serial.println("Erro: MPU nao encontrado");
     while (1);
   }
-  mpu.setAccelRange(IMUInterface::ACCEL_RANGE_8G);
+//  mpu.setAccelRange(MPU6500::ACCEL_RANGE_8G);
+  mpu.setAccelRange(MPU6050::ACCEL_RANGE_8G);
   Serial.println("MPU iniciado");
 
   pinMode(BTN_COLETA,   INPUT_PULLUP);
@@ -184,14 +182,15 @@ void setup() {
   mqttClient.setKeepAlive(60);
   mqttClient.setSocketTimeout(30);
   mqttClient.setBufferSize(512);
+  delay(2000);
 
   Serial.println("Sistema pronto. (Forma 1 - janela fixa, features no edge)");
   Serial.println("  Montagem: ESP32 + MPU6050 sobre a mesa (sem motor).");
-  Serial.println("  Botao 26: inicia/para a coleta");
-  Serial.println("  Botao 25: seleciona NORMAL/ANOMALIA (so com a coleta parada)");
+  Serial.println("  Botao 23: inicia/para a coleta");
+  Serial.println("  Botao 22: seleciona NORMAL/ANOMALIA (so com a coleta parada)");
   Serial.println("  LED aceso fixo = NORMAL | LED piscando = ANOMALIA");
-  Serial.println("  NORMAL = MPU parado | ANOMALIA = tapas na mesa durante a coleta");
-  Serial.printf("  Topico MQTT: %s\n\n", MQTT_PUB_TOPIC);
+  Serial.println("  NORMAL = MPU parado | ANOMALIA = movimente o MPU durante a coleta");
+  Serial.printf("  Topico MQTT: %s\r\n\n", MQTT_PUB_TOPIC);
   Serial.println("ts_epoch_ms,label,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,rms_ax,rms_ay,rms_az,rms_mag");
 }
 
@@ -210,8 +209,8 @@ void loop() {
       if (coletando) {
         indice = 0;                 // comeca uma janela limpa
         tempoAnterior = millis();   // reinicia o timing de amostragem
-        Serial.printf("Coleta INICIADA (condicao: %s)\n",
-                      anomaliaAtiva ? "ANOMALIA - de tapas na mesa" : "NORMAL - deixe o MPU parado");
+        Serial.printf("Coleta INICIADA (condicao: %s)\r\n",
+                      anomaliaAtiva ? "ANOMALIA - movimente o MPU constantemente" : "NORMAL - deixe o MPU parado");
       } else {
         Serial.println("Coleta PARADA");
       }
@@ -226,10 +225,10 @@ void loop() {
     if (millis() - ultimoDebounceAnomalia > debounceMs) {
       if (!coletando) {
         anomaliaAtiva = !anomaliaAtiva;
-        Serial.printf("Condicao selecionada: %s\n",
-                      anomaliaAtiva ? "ANOMALIA (tapas na mesa)" : "NORMAL (MPU parado)");
+        Serial.printf("Condicao selecionada: %s\r\n",
+                      anomaliaAtiva ? "ANOMALIA (MPU em movimento)" : "NORMAL (MPU parado)");
       } else {
-        Serial.println("Pare a coleta (botao 26) antes de trocar a condicao.");
+        Serial.println("Pare a coleta (botao 23) antes de trocar a condicao.");
       }
       ultimoDebounceAnomalia = millis();
     }
@@ -278,7 +277,7 @@ void loop() {
       float rz   = calcRMS(az_buf,  TAMANHO_JANELA);
       float rmag = calcRMSMagnitude(ax_buf, ay_buf, az_buf, TAMANHO_JANELA);
 
-      Serial.printf("%llu,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+      Serial.printf("%llu,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
                     (unsigned long long)ts_epoch_ms, label,
                     mx, my, mz, sx, sy, sz, rx, ry, rz, rmag);
 
@@ -330,11 +329,11 @@ uint64_t agoraEpochMs() {
 
 void conectarMQTT() {
   while (!mqttClient.connected()) {
-    Serial.printf("Conectando ao MQTT Broker %s...", MQTT_SERVER);
+    Serial.printf("Conectando ao MQTT Broker %s...\r\n", MQTT_SERVER);
     if (mqttClient.connect(MQTT_CLIENT_ID)) {
       Serial.println(" Conectado!");
     } else {
-      Serial.printf(" Falha rc=%d. Tentando em 5s...\n", mqttClient.state());
+      Serial.printf(" Falha rc=%d. Tentando em 5s...\r\n", mqttClient.state());
       delay(5000);
     }
   }
@@ -362,9 +361,12 @@ void publicarFeatures(const char* label, uint64_t ts_epoch_ms,
   String buffer;
   serializeJson(doc, buffer);
 
-  Serial.print("PAYLOAD MQTT: ");
+  //Serial.print("PAYLOAD MQTT: ");
   Serial.println(buffer.c_str());
 
   bool ok = mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str());
-  Serial.println(ok ? "MQTT: enviado com sucesso" : "MQTT: falha no envio");
+  if (!ok) {
+    Serial.println("MQTT: falha no envio");
+  }
+  
 }
