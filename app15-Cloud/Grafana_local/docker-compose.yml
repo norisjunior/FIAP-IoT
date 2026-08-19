@@ -1,0 +1,14 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    volumes:
+      # Garante que seus dashboards e configs persistam!
+      - grafana-storage:/var/lib/grafana
+
+volumes:
+  grafana-storage:
+    # Cria o volume para o armazenamento persistente

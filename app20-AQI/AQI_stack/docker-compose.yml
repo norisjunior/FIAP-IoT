@@ -1,0 +1,50 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: aqi-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosq_data:/mosquitto/data
+      - mosq_log:/mosquitto/log
+    restart: unless-stopped
+
+  ml-service:
+    build:
+      context: ./ml-service
+    container_name: aqi-ml-service
+    environment:
+      MODEL_PATH: /app/model/modelo_aqi_nn.keras
+      PREP_PATH:  /app/model/preprocess_aqi.pkl
+    volumes:
+      - ./ml-service/model:/app/model:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: aqi-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - mosquitto
+      - ml-service
+    restart: unless-stopped
+
+volumes:
+  n8n_data:
+  mosq_data:
+  mosq_log:

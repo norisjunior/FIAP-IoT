@@ -1,0 +1,136 @@
+/* *Includes* */
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include "IoTSemaforo.hpp"
+#include <PubSubClient.h>
+#include <Arduino.h>
+#include <ArduinoJson.h>
+
+/* ---- Config Wi‑Fi ---- */
+const char* ssid     = "Wokwi-GUEST";
+const char* password = "";
+WiFiClient wifiClient; // Define client WiFi
+
+/* ---- Config MQTT ---- */
+#define MQTT_HOST       "broker.emqx.io"
+#define MQTT_PORT       1883
+#define MQTT_SUB_TOPIC  "semaforo1/distancia"
+#define MQTT_DEVICEID   "Semaforo00001"
+PubSubClient client(wifiClient); // Define client PubSub (MQTT client)
+
+/* ---- Semáforo - definições ---- */
+#define LED_VERMELHO 18
+#define LED_AMARELO  17
+#define LED_VERDE    16
+SemaforoLeds semaforo(LED_VERMELHO, LED_AMARELO, LED_VERDE);
+
+/* ---- Lógica de contagem ---- */
+uint8_t deteccoes = 0;
+int tempoInicio = 0;
+const int tempoMax = 60000; // 60 s
+const int PESSOA_DIST = 50;
+
+/* ---- Função: Conectar ao MQTT Broker ---- */
+void conectarMQTT() {
+  Serial.print("Conectando ao MQTT Broker" + String(MQTT_HOST));
+  while (!client.connected()) {
+    if (client.connect(MQTT_DEVICEID)) {
+      Serial.println(" Conectado ao MQTT!");
+      client.subscribe(MQTT_SUB_TOPIC);
+      Serial.println("Subscribe realizado no tópico: " + String(MQTT_SUB_TOPIC));
+    } else {
+      Serial.print(" Falha, rc=");
+      Serial.print(client.state());
+      Serial.println(" Tentando novamente em 5 segundos...");
+      delay(5000);
+    }
+  }  
+}
+
+
+/* ---- Callback MQTT ---- */
+void mensagemRecebida(char* topic, byte* payload, int len) {
+    Serial.println("Mensagem MQTT recebida no tópico: " + String(topic));
+
+    /* ---- Copia payload para string terminada em NUL ---- */
+    String jsonStr;
+    jsonStr.reserve(len + 1);
+    for (unsigned int i = 0; i < len; i++) { // preenche string com o payload recebido
+      jsonStr += (char)payload[i];
+    }
+    Serial.printf("Payload recebido (jsonStr): %s.", jsonStr.c_str()); Serial.println("\n");
+
+    /* ---- Desserializa JSON e valida distância ---- */
+    StaticJsonDocument<200> doc;
+    DeserializationError err = deserializeJson(doc, jsonStr);
+    if (err) { // JSON inválido
+      delay(500);
+      return;
+    }
+    //Serial.printf("Payload recebido (doc): %s.", doc.c_str()); Serial.println("");
+    float dist = doc["dist"].as<float>();
+    if (dist >= PESSOA_DIST) {  // não conta caso a distância enviada seja maior que 50cm
+      delay(500);
+      return;
+    }
+
+    /* ---- Conta detecções ---- */
+    deteccoes++;
+    if (deteccoes == 1) {
+      tempoInicio = millis();              //inicia a janela temporal de 60 segundos quando a primeira pessoa chega
+    }
+
+    /* ---- Se >= 2 detecções em 60s: fase vermelha ---- */
+    if (deteccoes >= 2 && ((millis() - tempoInicio) <= tempoMax)) {
+      Serial.println("Gatilho atingido! Preparando fase vermelha do semáforo...");
+      delay(500);
+      semaforo.faseAmarela();
+      delay(2000);
+      semaforo.faseVermelha();
+      delay(5000);
+      deteccoes = 0;                     // reinicia a contagem de detecções
+      tempoInicio = millis();            // reinicia a janela temporal
+      Serial.println("Semáforo pronto. Aguardando novas medições...\n");
+    }
+}
+
+
+void setup() {
+  Serial.begin(115200);
+
+  //Inicializa os LEDs do semáforo
+  semaforo.inicializar();
+
+  //Inicializa WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando ao WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi conectado!");
+
+  Serial.println("Semáforo inteligente iniciado.\nAguardando recebimento de mensagem MQTT.\n");
+  //Define cliente publish-subscribe (MQTT client)
+  client.setServer(MQTT_HOST, MQTT_PORT);
+  /* Função mensagemRecebida será chamada sempre que um
+     novo publish for enviado pelo Broker */
+  client.setCallback(mensagemRecebida);
+}
+
+void loop() {
+  if (!client.connected()) {
+    conectarMQTT();
+  }
+  client.loop();
+
+  /* ---- Expiração da janela ---- */
+  if ((deteccoes > 0) && ((millis() - tempoInicio) > tempoMax)) {
+      deteccoes = 0;                     // zera se passou 60 s
+      tempoInicio = 0;
+  }
+
+  semaforo.faseVerde();                  // Volta para o verde (mantém sempre verde depois de fechar)
+
+  delay(500);
+}

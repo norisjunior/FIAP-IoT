@@ -1,0 +1,13 @@
+// InfluxDB Cloud - Configurações
+
+Organization
+e044ac59f07be199
+
+DB
+IoTSensores
+
+T.o.k.e.n.
+KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ==
+
+Measurement
+sensores_iot
