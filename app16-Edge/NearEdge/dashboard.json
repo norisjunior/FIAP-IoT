@@ -1,0 +1,253 @@
+[
+    {
+        "id": "196390ff6edf144a",
+        "type": "tab",
+        "label": "Flow FIAPIoT",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "1497e253c9efdc1d",
+        "type": "mqtt in",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "topic": "FIAPIoT/aula09/noris/motor/dados",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "b932bf4a9773c95f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 100,
+        "wires": [
+            [
+                "6dbb3da2f42ae786",
+                "658d3969306e9604",
+                "cdf080c453285a99",
+                "8fed314a633f63de"
+            ]
+        ]
+    },
+    {
+        "id": "6dbb3da2f42ae786",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Desliga Motor Limiar",
+        "func": "\n// Definindo os limiares (adapte conforme necessário)\nconst LIMIAR_TEMP = 30.0;       // Datasheet do motor: limite de 30 °C de temperatura\nconst LIMIAR_VIBRA_MAG  = 15.0; // Datasheet do motor: limite de 15 m/s² como magnitude de aceleração\n\n// Como vem o msg.payload = {\n// device: \"FIAPIoTDevice001\"\n// temp: 36.3\n// umid: 23\n// ic: 35.0605\n// accel_x: 4.903325\n// accel_y: 4.41012\n// accel_z: 2.451663\n// motor_status: true\n// }\n\nconst p = msg.payload || {};\nconst temp = p.temp;\nconst umid = p.umid;\nconst ic = p.ic;\nconst accel_x = p.accel_x;\nconst accel_y = p.accel_y;\nconst accel_z = p.accel_z;\nconst motor_ligado = p.motor_status;\n\n// Calcula a magnitude da aceleração (teorema de Pitágoras em 3 dimensões)\nconst accelMagnitude = Math.sqrt(accel_x*accel_x + accel_y*accel_y + accel_z*accel_z);\n\n// --- Condição de operação segura do motor ---\nconst condicoesBoas = (temp <= LIMIAR_TEMP) && (accelMagnitude <= LIMIAR_VIBRA_MAG);\n\nlet comando = null;\n\n/*\n  Regra:\n  - Se condições ruins e motor LIGADO -> enviar OFF\n  - Se condições boas e motor DESLIGADO -> enviar ON\n  - Caso contrário -> não enviar nada\n*/\nif (!condicoesBoas && motor_ligado) {\n  comando = \"OFF\";\n} else if (condicoesBoas && !motor_ligado) {\n  comando = \"ON\";\n}\n\n// --- Se não há mudança necessária, NÃO envie mensagem ---\nif (comando === null) {\n  node.status({ fill: \"grey\", shape: \"ring\",\n    text: `sem envio | T:${temp?.toFixed?.(1)}°C | g:${accelMagnitude?.toFixed?.(2)}` });\n  return null; // <- ESSENCIAL: descarta a mensagem e não publica no MQTT\n}\n\n// --- Publica apenas quando precisa mudar o estado ---\nnode.status({ fill: comando === \"ON\" ? \"green\" : \"red\", shape: \"dot\",\n  text: `${comando} | T:${temp?.toFixed?.(1)}°C | g:${accelMagnitude?.toFixed?.(2)}` });\n\nreturn {\n  payload: comando\n};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 100,
+        "wires": [
+            [
+                "f540c5e085e9bea3"
+            ]
+        ]
+    },
+    {
+        "id": "f540c5e085e9bea3",
+        "type": "mqtt out",
+        "z": "196390ff6edf144a",
+        "name": "",
+        "topic": "FIAPIoT/aula09/noris/motor/cmd",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b932bf4a9773c95f",
+        "x": 890,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "6d653c4edd305152",
+        "type": "influxdb out",
+        "z": "196390ff6edf144a",
+        "influxdb": "a31a76b7973e6983",
+        "name": "Enviar InfluxDB",
+        "measurement": "fiapiot_aula09_nearedge",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "fiapiot",
+        "bucket": "sensores",
+        "x": 900,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "658d3969306e9604",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Enviar Dados Brutos InfluxDB",
+        "func": "// --- Leitura do payload ---\nconst p = msg.payload || {};\nconst temp = p.temp;\nconst umid = p.umid;\nconst ic = p.ic;\nconst accel_x = p.accel_x;\nconst accel_y = p.accel_y;\nconst accel_z = p.accel_z;\nconst motor_ligado = p.motor_status;\n\n// --- Calcula magnitude da aceleração ---\nconst accelMagnitude = Math.sqrt(\n    accel_x*accel_x + accel_y*accel_y + accel_z*accel_z\n);\n\n// --- Formato SIMPLES para o nó influxdb out ---\nmsg.payload = {\n    // Dados dos sensores\n    temperatura: temp,\n    umidade: umid,\n    indice_calor: ic,\n    accel_x: accel_x,\n    accel_y: accel_y,\n    accel_z: accel_z,\n    accel_magnitude: accelMagnitude,\n    \n    // Status do motor\n    motor_status: motor_ligado ? 1 : 0,\n    motor_text: motor_ligado ? \"ligado\" : \"desligado\",\n    \n    // Identificação do dispositivo\n    device: p.device || \"unknown\",\n    \n    // Timestamp (opcional - InfluxDB pode usar o próprio)\n    timestamp: new Date().toISOString()\n};\n\n// Debug (opcional)\nnode.status(\"Enviando para InfluxDB Cloud: \" + JSON.stringify(msg.payload, null, 2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 380,
+        "wires": [
+            [
+                "6d653c4edd305152"
+            ]
+        ]
+    },
+    {
+        "id": "cdf080c453285a99",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Enviar resumo (1 minuto) InfluxDB Cloud",
+        "func": "// RESUMO 1 MINUTO - Versão Simplificada\nconst p = msg.payload || {};\nconst device = p.device || \"unknown\";\nconst now = Date.now();\n\n// Pega ou inicializa buffer por dispositivo\nlet buffers = flow.get('buffer1m') || {};\nlet buffer = buffers[device] || { data: [], lastMinute: -1 };\n\n// Adiciona dados atuais ao buffer\nbuffer.data.push({\n    ts: now,\n    temp: Number(p.temp) || 0,\n    umid: Number(p.umid) || 0,\n    ic: Number(p.ic) || 0,\n    accel_x: Number(p.accel_x) || 0,\n    accel_y: Number(p.accel_y) || 0,\n    accel_z: Number(p.accel_z) || 0,\n});\n\n// Remove dados mais antigos que 60 segundos\nconst cutoff = now - 60000;\nbuffer.data = buffer.data.filter(d => d.ts >= cutoff);\n\n// Verifica se mudou o minuto\nconst currentMinute = Math.floor(now / 60000);\nif (currentMinute === buffer.lastMinute || buffer.data.length === 0) {\n    buffers[device] = buffer;\n    flow.set('buffer1m', buffers);\n    return null; // Não envia ainda\n}\n\n// Calcula médias\nconst n = buffer.data.length;\nconst avg = (field) => buffer.data.reduce((sum, d) => sum + d[field], 0) / n;\n\n// Calcula magnitude média da aceleração\nconst accel_mag_avg = buffer.data.reduce((sum, d) => {\n    return sum + Math.sqrt(d.accel_x*d.accel_x + d.accel_y*d.accel_y + d.accel_z*d.accel_z);\n}, 0) / n;\n\n// Monta payload do resumo\nmsg.payload = {\n    temperatura_media: avg('temp'),\n    umidade_media: avg('umid'),\n    indice_calor_media: avg('ic'),\n    accel_x_media: avg('accel_x'),\n    accel_y_media: avg('accel_y'),\n    accel_z_media: avg('accel_z'),\n    accel_magnitude_media: accel_mag_avg,\n    device: device,\n    timestamp: new Date().toISOString()\n};\n\n// Atualiza estado\nbuffer.lastMinute = currentMinute;\nbuffers[device] = buffer;\nflow.set('buffer1m', buffers);\n\n// Debug (opcional)\nnode.status(\"Enviando para InfluxDB Cloud: \" + JSON.stringify(msg.payload, null, 2));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 460,
+        "wires": [
+            [
+                "d19b3ac1e7fe6c45"
+            ]
+        ]
+    },
+    {
+        "id": "d19b3ac1e7fe6c45",
+        "type": "influxdb out",
+        "z": "196390ff6edf144a",
+        "influxdb": "580121464150a2fc",
+        "name": "Enviar InfluxDB Cloud",
+        "measurement": "fiapiot_aula09_resumo_1minuto",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "e044ac59f07be199",
+        "bucket": "IoTSensores",
+        "x": 920,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "8fed314a633f63de",
+        "type": "function",
+        "z": "196390ff6edf144a",
+        "name": "Desliga Motor Tendência",
+        "func": "// DETECÇÃO DE TENDÊNCIA - Desligamento Preventivo\n// Limiares de tendência (adapte conforme necessário)\nconst TENDENCIA_TEMP = 3.0;     // Se temp subir 3°C em 30s -> alerta\nconst TENDENCIA_VIBRA = 4.0;    // Se vibração subir 4 m/s² em 30s -> alerta\n\nconst p = msg.payload || {};\nconst device = p.device || \"unknown\";\nconst now = Date.now();\n\n// Calcula magnitude da aceleração\nconst accelMagnitude = Math.sqrt(\n    (p.accel_x||0)*(p.accel_x||0) + \n    (p.accel_y||0)*(p.accel_y||0) + \n    (p.accel_z||0)*(p.accel_z||0)\n);\n\n// Pega buffer de histórico por dispositivo\nlet historicos = flow.get('historico_tendencia') || {};\nlet hist = historicos[device] || [];\n\n// Adiciona leitura atual\nhist.push({\n    ts: now,\n    temp: Number(p.temp) || 0,\n    vibra: accelMagnitude,\n    motor_on: p.motor_status\n});\n\n// Remove dados mais antigos que 60 segundos\nconst cutoff = now - 60000;\nhist = hist.filter(h => h.ts >= cutoff);\n\n// Precisa de pelo menos 6 leituras (30s se dados a cada 5s)\nif (hist.length < 6) {\n    historicos[device] = hist;\n    flow.set('historico_tendencia', historicos);\n    node.status({fill: \"blue\", shape: \"ring\", text: \"coletando dados...\"});\n    return null;\n}\n\n// Separa dados em duas metades: primeira e segunda metade do minuto\nconst meio = Math.floor(hist.length / 2);\nconst primeira_metade = hist.slice(0, meio);\nconst segunda_metade = hist.slice(meio);\n\n// Calcula médias de cada metade\nconst media_temp_inicial = primeira_metade.reduce((s, h) => s + h.temp, 0) / primeira_metade.length;\nconst media_temp_final = segunda_metade.reduce((s, h) => s + h.temp, 0) / segunda_metade.length;\n\nconst media_vibra_inicial = primeira_metade.reduce((s, h) => s + h.vibra, 0) / primeira_metade.length;\nconst media_vibra_final = segunda_metade.reduce((s, h) => s + h.vibra, 0) / segunda_metade.length;\n\n// Calcula tendências (diferença entre final e inicial)\nconst tendencia_temp = media_temp_final - media_temp_inicial;\nconst tendencia_vibra = media_vibra_final - media_vibra_inicial;\n\n// Verifica se motor está ligado\nconst motor_ligado = p.motor_status;\n\n// Detecta tendências perigosas\nconst temp_subindo_rapido = tendencia_temp > TENDENCIA_TEMP;\nconst vibra_subindo_rapido = tendencia_vibra > TENDENCIA_VIBRA;\nconst tendencia_perigosa = temp_subindo_rapido || vibra_subindo_rapido;\n\n// Salva histórico atualizado\nhistoricos[device] = hist;\nflow.set('historico_tendencia', historicos);\n\n// Status para debug\nconst status_texto = `Variação: Temp:${tendencia_temp.toFixed(1)}°C | Vibra:${tendencia_vibra.toFixed(1)}`;\n\n// Se detectou tendência perigosa E motor está ligado -> DESLIGAR\nif (tendencia_perigosa && motor_ligado) {\n    node.status({\n        fill: \"red\", \n        shape: \"dot\", \n        text: `PREVENTIVO OFF | ${status_texto}`\n    });\n    \n    return {\n        payload: \"OFF\",\n        reason: temp_subindo_rapido ? \"temperatura_subindo\" : \"vibracao_subindo\",\n        tendencia_temp: tendencia_temp,\n        tendencia_vibra: tendencia_vibra\n    };\n}\n\n// Caso contrário, não faz nada\nnode.status({\n    fill: tendencia_perigosa ? \"yellow\" : \"green\", \n    shape: \"ring\", \n    text: `OK | ${status_texto}`\n});\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 200,
+        "wires": [
+            [
+                "ff4b1b222096aa30",
+                "f540c5e085e9bea3"
+            ]
+        ]
+    },
+    {
+        "id": "ff4b1b222096aa30",
+        "type": "debug",
+        "z": "196390ff6edf144a",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 820,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "b932bf4a9773c95f",
+        "type": "mqtt-broker",
+        "name": "NearEdge Local Mosquitto MQTT Broker",
+        "broker": "192.168.15.46",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a31a76b7973e6983",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB Bucket IoTSensores",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://influxdb:8086",
+        "timeout": 10,
+        "rejectUnauthorized": false
+    },
+    {
+        "id": "580121464150a2fc",
+        "type": "influxdb",
+        "hostname": "",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB na Cloud",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "1370813b7d508d1a",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]

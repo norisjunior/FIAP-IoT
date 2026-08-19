@@ -1,0 +1,297 @@
+{
+  "name": "AQI - Ingestão",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/aqi/dados",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1152,
+        192
+      ],
+      "id": "4e2ea9be-819d-4401-87b2-3bcb3fa09ffa",
+      "name": "FIAPIoT/aqi/dados",
+      "credentials": {
+        "mqtt": {
+          "id": "14d2Vpstmk0lw87m",
+          "name": "MQTT account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1) Usa o campo message (pode vir string JSON ou objeto)\nconst msg = $json.message;\n\n// 2) Armazena na variável data e o timestamp correto\nconst data = JSON.parse(msg);\n\n// 3) Monta um objeto “limpo” só com as variáveis que queremos\\n\nreturn {\n    json: {\n        PM2_5: data.PM25,\n        PM10: data.PM10,\n        NO: data.NO,\n        NO2: data.NO2,\n        NOx: data.NOx,\n        NH3: data.NH3,\n        CO: data.CO,\n        SO2: data.SO2,\n        O3: data.O3,\n        Benzene: data.Benzene,\n        Toluene: data.Toluene,\n        Xylene: data.Xylene,\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        192
+      ],
+      "id": "8be96006-4dd2-4adf-893e-92902a86c893",
+      "name": "Code (gera JSON)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d8b01edb-3669-4c32-bd64-2ef41ed4ae87",
+              "leftValue": "={{ [\"PM2_5\",\"PM10\",\"NO\",\"NO2\",\"NOx\",\"NH3\",\"CO\",\"SO2\",\"O3\",\"Benzene\",\"Toluene\",\"Xylene\"]\n    .every(k => typeof $json[k] === \"number\" && !isNaN($json[k])) \n    .toBoolean() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -736,
+        192
+      ],
+      "id": "7ddbadc8-fa26-4d30-a071-0180b699de89",
+      "name": "Verifica se medições são float"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -496,
+        96
+      ],
+      "id": "a219bef9-4f25-46d3-81af-c26945f03c96",
+      "name": "Predict AQI"
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=ℹ️ [INFO]:\n\nQualidade do Ar: *{{ $json.class }}*.\n\nPrevisão realizada usando rede neural a partir dos dados coletados por um ESP32.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        192
+      ],
+      "id": "82493746-069f-4db1-90d6-faaa85711db7",
+      "name": "Mensagem de Informação",
+      "webhookId": "90813c90-f143-4c70-9c27-2b81e3b90666",
+      "credentials": {
+        "telegramApi": {
+          "id": "sze9Jah2Uk6cRpKT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a17a00fc-99c3-4fe5-90e4-80e5e49a173a",
+              "leftValue": "={{ $json.class }}",
+              "rightValue": "Perigoso",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -288,
+        96
+      ],
+      "id": "65004f7a-e1e9-4499-973d-57627489fe85",
+      "name": "Se condições são perigosas"
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=🚨 *[CRÍTICO]* 🚨:\n\nQualidade do Ar: *{{ $json.class }}*.\n🛑Evacuar o local imediatamente.🛑\n\nPrevisão realizada usando rede neural a partir dos dados coletados por um ESP32.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "611b650e-6e7d-4df2-baaf-8f274d32329f",
+      "name": "PERIGOSO: Mensagem de ALERTA",
+      "webhookId": "def1baa3-50cf-4d9b-9449-66a48bcd352a",
+      "credentials": {
+        "telegramApi": {
+          "id": "sze9Jah2Uk6cRpKT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Timestamp internacional + timezone correto\nconst now = new Date().toLocaleString(\"sv-SE\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour12: false\n});\n\n// Converte hour para número\nconst hour = Number(\n  new Date().toLocaleString(\"en-US\", { \n    timeZone: \"America/Sao_Paulo\", \n    hour: \"numeric\", \n    hour12: false \n  })\n);\n\n// Período\nlet periodo = \"madrugada\";\nif (hour >= 6 && hour < 12) periodo = \"manhã\";\nelse if (hour >= 12 && hour < 18) periodo = \"tarde\";\nelse if (hour >= 18) periodo = \"noite\";\n\nreturn [{\n  key: \"aqi_mais_recente\",\n  value: {\n    class: data.class,\n    timestamp: now,\n    periodo\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        352
+      ],
+      "id": "f31b9144-cc92-4b81-b103-cc3f89036961",
+      "name": "Formata medição mais recente"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS aqi_medicoes (\n  id SERIAL PRIMARY KEY,\n  class TEXT,\n  timestamp_medicao TEXT,\n  periodo TEXT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO aqi_medicoes (class, timestamp_medicao, periodo)\nVALUES ('{{$json.value.class}}', '{{$json.value.timestamp}}', '{{$json.value.periodo}}');\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -128,
+        352
+      ],
+      "id": "986c2153-ff61-4d00-939f-620a84c07d87",
+      "name": "Armazena medições",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIAPIoT/aqi/dados": {
+      "main": [
+        [
+          {
+            "node": "Code (gera JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (gera JSON)": {
+      "main": [
+        [
+          {
+            "node": "Verifica se medições são float",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica se medições são float": {
+      "main": [
+        [
+          {
+            "node": "Predict AQI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict AQI": {
+      "main": [
+        [
+          {
+            "node": "Se condições são perigosas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Formata medição mais recente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se condições são perigosas": {
+      "main": [
+        [
+          {
+            "node": "PERIGOSO: Mensagem de ALERTA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensagem de Informação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata medição mais recente": {
+      "main": [
+        [
+          {
+            "node": "Armazena medições",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5b6a7cfb-2cce-44e4-9e0f-3911111dedd9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "LJXorMxFpj7seHwe",
+  "tags": []
+}

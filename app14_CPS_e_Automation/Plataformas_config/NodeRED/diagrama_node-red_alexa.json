@@ -1,0 +1,150 @@
+[
+    {
+        "id": "013c12a460ad6651",
+        "type": "tab",
+        "label": "Fluxo - n8n-Node-RED-Alexa",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "6faf6c1dd04cd1d6",
+        "type": "mqtt in",
+        "z": "013c12a460ad6651",
+        "name": "",
+        "topic": "FIAPIoT/alexa",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "f57bcdae81064000",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 290,
+        "y": 180,
+        "wires": [
+            [
+                "4c3def41a1e35781"
+            ]
+        ]
+    },
+    {
+        "id": "e3db98b817e66c34",
+        "type": "alexa-remote-routine",
+        "z": "013c12a460ad6651",
+        "name": "",
+        "account": "5274f35b88fe19ae",
+        "routineNode": {
+            "type": "speak",
+            "payload": {
+                "type": "regular",
+                "text": {
+                    "type": "msg",
+                    "value": "payload.alexa"
+                },
+                "devices": [
+                    "G0922H07301304JT"
+                ]
+            }
+        },
+        "x": 720,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4c3def41a1e35781",
+        "type": "template",
+        "z": "013c12a460ad6651",
+        "name": "",
+        "field": "payload.alexa",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "Saia agora! Índice de Calor Alto: {{payload.ic}} !",
+        "output": "str",
+        "x": 480,
+        "y": 180,
+        "wires": [
+            [
+                "f325c78f60b1f0c4",
+                "e3db98b817e66c34"
+            ]
+        ]
+    },
+    {
+        "id": "f325c78f60b1f0c4",
+        "type": "debug",
+        "z": "013c12a460ad6651",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "f57bcdae81064000",
+        "type": "mqtt-broker",
+        "name": "MQTTBroker local",
+        "broker": "host.docker.internal",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "5274f35b88fe19ae",
+        "type": "alexa-remote-account",
+        "name": "",
+        "authMethod": "proxy",
+        "proxyOwnIp": "192.168.15.182",
+        "proxyPort": 3456,
+        "cookieFile": "authFile",
+        "refreshInterval": "3",
+        "alexaServiceHost": "alexa.amazon.com.br",
+        "pushDispatchHost": "",
+        "amazonPage": "amazon.com.br",
+        "acceptLanguage": "pt-BR",
+        "onKeywordInLanguage": "on",
+        "userAgent": "",
+        "usePushConnection": "on",
+        "autoInit": "on",
+        "autoQueryActivityOnTrigger": "off"
+    },
+    {
+        "id": "7e4e137188e56b7f",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-alexa-remote2-applestrudel": "5.0.52"
+        }
+    }
+]

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "author": "Resposta-modelo FIAP",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": -120, "left": 250, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "top": 120, "left": 270, "attrs": { "color": "red" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": 130, "left": 190, "attrs": { "value": "220" } },
+    { "type": "wokwi-pushbutton", "id": "btn1", "top": -40, "left": -200, "attrs": { "color": "green", "label": "MOTOR 26" } },
+    { "type": "wokwi-pushbutton", "id": "btn2", "top": 100, "left": -200, "attrs": { "color": "red", "label": "ANOMALIA 25" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+
+    [ "imu1:VCC", "esp:3V3",   "red",   [] ],
+    [ "imu1:GND", "esp:GND.2", "black", [] ],
+    [ "imu1:SDA", "esp:19",    "green", [] ],
+    [ "imu1:SCL", "esp:18",    "blue",  [] ],
+
+    [ "esp:27",  "r1:1",      "orange", [] ],
+    [ "r1:2",    "led1:A",    "orange", [] ],
+    [ "led1:C",  "esp:GND.3", "black",  [] ],
+
+    [ "btn1:1.l", "esp:26",    "purple", [] ],
+    [ "btn1:2.l", "esp:GND.2", "black",  [] ],
+
+    [ "btn2:1.l", "esp:25",    "gold",   [] ],
+    [ "btn2:2.l", "esp:GND.3", "black",  [] ]
+  ],
+  "dependencies": {}
+}

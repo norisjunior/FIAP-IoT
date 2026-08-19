@@ -1,0 +1,245 @@
+{
+  "name": "AQI",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/aqi/dados",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f6c68b84-2f58-4dfd-ae17-fae5aa2e25e7",
+      "name": "FIAPIoT/aqi/dados",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1) Usa o campo message (pode vir string JSON ou objeto)\nconst msg = $json.message;\n\n// 2) Armazena na variável data e o timestamp correto\nconst data = JSON.parse(msg);\n\n// 3) Monta um objeto “limpo” só com as variáveis que queremos\\n\nreturn {\n    json: {\n        PM2_5: data.PM25,\n        PM10: data.PM10,\n        NO: data.NO,\n        NO2: data.NO2,\n        NOx: data.NOx,\n        NH3: data.NH3,\n        CO: data.CO,\n        SO2: data.SO2,\n        O3: data.O3,\n        Benzene: data.Benzene,\n        Toluene: data.Toluene,\n        Xylene: data.Xylene,\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c23dad22-7322-43a1-9ac2-36a628771823",
+      "name": "Code (gera JSON)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d8b01edb-3669-4c32-bd64-2ef41ed4ae87",
+              "leftValue": "={{ [\"PM2_5\",\"PM10\",\"NO\",\"NO2\",\"NOx\",\"NH3\",\"CO\",\"SO2\",\"O3\",\"Benzene\",\"Toluene\",\"Xylene\"]\n    .every(k => typeof $json[k] === \"number\" && !isNaN($json[k])) \n    .toBoolean() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "01e17212-c859-4081-b1e1-94ef3aa03044",
+      "name": "Verifica se medições são float"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        656,
+        -96
+      ],
+      "id": "3bd9bd1c-7729-47a3-812f-bd11ab0269da",
+      "name": "Predict AQI"
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=ℹ️ [INFO]:\n\nQualidade do Ar: *{{ $json.class }}*.\n\nPrevisão realizada usando rede neural a partir dos dados coletados por um ESP32.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1152,
+        0
+      ],
+      "id": "6b2af636-c2aa-4122-bcac-a11b6b72fe4d",
+      "name": "Mensagem de Informação",
+      "webhookId": "90813c90-f143-4c70-9c27-2b81e3b90666",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a17a00fc-99c3-4fe5-90e4-80e5e49a173a",
+              "leftValue": "={{ $json.class }}",
+              "rightValue": "Perigoso",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        -96
+      ],
+      "id": "1c6bf59e-96cb-4285-af89-0a86e88fc258",
+      "name": "Se condições são perigosas"
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=🚨 *[CRÍTICO]* 🚨:\n\nQualidade do Ar: *{{ $json.class }}*.\n🛑Evacuar o local imediatamente.🛑\n\nPrevisão realizada usando rede neural a partir dos dados coletados por um ESP32.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1152,
+        -192
+      ],
+      "id": "130dbc58-37f7-42d8-bee4-7a1cbe246b43",
+      "name": "PERIGOSO: Mensagem de ALERTA",
+      "webhookId": "def1baa3-50cf-4d9b-9449-66a48bcd352a",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIAPIoT/aqi/dados": {
+      "main": [
+        [
+          {
+            "node": "Code (gera JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (gera JSON)": {
+      "main": [
+        [
+          {
+            "node": "Verifica se medições são float",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica se medições são float": {
+      "main": [
+        [
+          {
+            "node": "Predict AQI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict AQI": {
+      "main": [
+        [
+          {
+            "node": "Se condições são perigosas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se condições são perigosas": {
+      "main": [
+        [
+          {
+            "node": "PERIGOSO: Mensagem de ALERTA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensagem de Informação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dc106c64-328d-4b6d-9fe6-b827122dab6a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "ODigHLltBmQ2jjWu",
+  "tags": []
+}
