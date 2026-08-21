@@ -1,49 +1,32 @@
-# Aplicação 07 - Dispositivo do Grupo
+# Aplicação 07 — assinante MQTT
 
-Assina o tópico do professor e aciona LED/buzzer; publica no tópico do grupo quando o
-botão é apertado. Os dois sentidos do MQTT em um único sketch.
+Este é o ESP32 dos alunos. Todos assinam o mesmo tópico e acendem o LED quando
+a distância publicada pelo professor é menor ou igual ao limite.
 
-O dispositivo do professor está na [Aplicação 06](../app06_mqtt_publisher_distancia/).
+```text
+broker MQTT → subscribe → ESP32 → LED
+```
 
-## Montagem
+## Ligação
 
-| Componente | GPIO | Ligação |
-|---|---|---|
-| LED + resistor 220 Ω | 2 | GPIO → resistor → ânodo; catodo → GND |
-| Buzzer **ativo** | 4 | (+) → GPIO; (−) → GND |
-| Botão | 19 | uma perna → GPIO; a outra → GND |
+Ligue o GPIO 21 ao resistor de 220 Ω, o resistor ao ânodo do LED e o cátodo ao
+GND.
 
-## O que editar
+## Antes de gravar
 
-Só o bloco `EDITE AQUI` em [src/app07-subscriber-atuador.ino](src/app07-subscriber-atuador.ino):
-`MEU_GRUPO`, `MEU_LIMIAR`, `BROKER_IP`, SSID e senha.
+No início do arquivo `src/app07-subscriber-atuador.ino`, ajuste:
 
-| Grupo | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| `MEU_LIMIAR` (cm) | 120 | 100 | 85 | 70 | 60 | 50 | 40 | 30 | 20 | 12 |
+- `WIFI_SSID`
+- `WIFI_SENHA`
+- `BROKER_IP`
+- `LIMITE`, se quiser mudar a distância que acende o LED
 
-No 2º round da demonstração, descomente o `digitalWrite(BUZZER, ligado)` e regrave.
-
-## Tópicos
-
-| Tópico | Papel |
-|---|---|
-| `fiap/iot/2026b/prof/#` | assina — tudo do professor (coringa `#`) |
-| `fiap/iot/2026b/grupo/<NN>/cmd` | assina — endereçado só a este grupo |
-| `fiap/iot/2026b/grupo/<NN>/botao` | publica — o botão do grupo |
-
-## Gravar
+Não é necessário informar número de grupo. O código usa o endereço MAC para
+dar automaticamente um nome MQTT diferente a cada ESP32.
 
 ```bash
 pio run -t upload
 pio device monitor
 ```
 
-O monitor mostra cada mensagem recebida (`[RX]`) e publicada (`[TX]`).
-
-| Sintoma | Causa provável |
-|---|---|
-| Trava em `Conectando ao WiFi...` | rede em 5 GHz, WPA3, ou SSID/senha errados |
-| `falhou. Tentando de novo` | `BROKER_IP` errado, firewall do notebook, ou isolamento de AP no roteador |
-| Conecta e cai em loop | dois grupos com o mesmo `MEU_GRUPO` |
-| LED acende sozinho ao ligar | é o **retained**: o professor já está perto do sensor |
+O publicador está na [Aplicação 06](../app06_mqtt_publisher_distancia/).

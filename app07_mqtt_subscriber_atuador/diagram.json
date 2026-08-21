@@ -17,20 +17,6 @@
       "top": 42.35,
       "left": 76.8,
       "attrs": { "value": "220" }
-    },
-    {
-      "type": "wokwi-buzzer",
-      "id": "bz1",
-      "top": -16.8,
-      "left": 184.2,
-      "attrs": { "volume": "0.1" }
-    },
-    {
-      "type": "wokwi-pushbutton",
-      "id": "btn1",
-      "top": 188.6,
-      "left": 172.8,
-      "attrs": { "color": "green" }
     }
   ],
   "connections": [
@@ -38,11 +24,7 @@
     [ "esp:RX", "$serialMonitor:TX", "", [] ],
     [ "r1:2", "led1:A", "green", [ "v0" ] ],
     [ "led1:C", "esp:GND.2", "black", [ "h9.2", "v-48", "h-115.2" ] ],
-    [ "r1:1", "esp:21", "green", [ "h-9.6", "v28.8" ] ],
-    [ "btn1:2.l", "esp:GND.1", "black", [ "h-230.4", "v-95.4" ] ],
-    [ "btn1:1.l", "esp:18", "orange", [ "h-67.2", "v-96", "h-28.8" ] ],
-    [ "bz1:2", "esp:19", "blue", [ "v0" ] ],
-    [ "bz1:1", "esp:GND.2", "black", [ "v0", "h-38.4", "v-76.8", "h-124.8" ] ]
+    [ "r1:1", "esp:21", "green", [ "h-9.6", "v28.8" ] ]
   ],
   "dependencies": {}
 }

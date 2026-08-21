@@ -1,110 +1,75 @@
-/* ==========================================================================
-   Physical Computing, Embedded AI, Robotics & Cognitive IoT
+/* Aplicacao 07 - ASSINANTE MQTT
 
-   Aplicação 07 - Dispositivo do GRUPO
-
-   1) ASSINA  o tópico do professor -> acende o LED/buzzer quando ele chegar
-      perto do sensor, de acordo com o limiar escolhido pelo grupo.
-   2) PUBLICA no tópico do grupo    -> avisa o servidor quando o botão é
-      apertado.
-
-   Ligações:  LED + resistor 220R -> GPIO 21  (catodo no GND)
-              Buzzer ativo        -> GPIO 19  ((-) no GND)
-              Botão               -> GPIO 18 e GND
-   ========================================================================== */
+   O ESP32 recebe a distancia e acende o LED quando alguem esta perto.
+   Fluxo da aula: BROKER -> SUBSCRIBE -> LED
+*/
 
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-/* ===================== EDITE AQUI ===================== */
-#define MEU_GRUPO   "01"              // "01" até "10"
-#define MEU_LIMIAR  120               // cm - a regra é do SEU grupo
-#define BROKER_IP   "172.16.10.101"        // IP do notebook do professor (Ethernet)
-#define CLIENT_ID   "grupo" MEU_GRUPO      // ID unico deste dispositivo no broker
+// Altere somente estes dados para a rede da sala.
+const char* WIFI_SSID = "NorisIoT";
+const char* WIFI_SENHA = "Secure10T";
+const char* BROKER_IP = "172.16.10.101";
 
-const char* WIFI_SSID = "NorisIoT";        // roteador da sala, 2,4 GHz
-const char* WIFI_PASS = "Secure10T";
-/* ====================================================== */
+const char* TOPICO = "fiap/iot/distancia";
 
-#define LED     21
-#define BUZZER  19
-#define BOTAO   18
-
-#define TOPICO_PROF   "fiap/iot/2026/prof/#"                     // tudo do professor
-#define TOPICO_DIST   "fiap/iot/2026/prof/dist"
-#define TOPICO_MEU    "fiap/iot/2026/grupo/" MEU_GRUPO "/cmd"    // só do meu grupo
-#define TOPICO_BOTAO  "fiap/iot/2026/grupo/" MEU_GRUPO "/botao"
+const int PINO_LED = 21;
+const int LIMITE = 100;  // LED acende a 100 cm ou menos
 
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
 
-void acionar(bool ligado) {
-  digitalWrite(LED, ligado);
-  //digitalWrite(BUZZER, ligado);   // 2o round da demo: descomente e regrave
-}
+void conectarWiFi() {
+  Serial.print("Conectando ao Wi-Fi");
+  WiFi.begin(WIFI_SSID, WIFI_SENHA);
 
-/* ---- Aqui tratamos a mensagem: tópico e texto, já prontos ---- */
-void aoReceberMensagem(String topico, String msg) {
-  Serial.println("[RX] " + topico + " -> " + msg);
-
-  if (topico == TOPICO_DIST) {
-    float dist = msg.toFloat();
-    acionar(dist > 0 && dist <= MEU_LIMIAR);
-  } else {
-    acionar(true);      // ping do professor, ou comando só para este grupo
-    delay(300);
-    acionar(false);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
   }
+
+  Serial.println(" conectado!");
 }
 
-/* ---- Ponte: o PubSubClient entrega bytes, aqui eles viram texto ---- */
-void callbackMQTT(char* topico, byte* payload, int tamanho) {
-  aoReceberMensagem(String(topico), String(payload, tamanho));
+void receberMensagem(char* topico, byte* conteudo, unsigned int tamanho) {
+  String mensagem(conteudo, tamanho);
+  float distancia = mensagem.toFloat();
+
+  Serial.println("Distancia recebida: " + mensagem + " cm");
+  digitalWrite(PINO_LED, distancia <= LIMITE);
 }
 
 void conectarMQTT() {
+  // O endereco MAC deixa o nome de cada ESP32 unico na sala.
+  String nomeDoESP32 = "aluno-" + WiFi.macAddress();
+
   while (!mqtt.connected()) {
-    Serial.print("Conectando ao broker...");
-    if (mqtt.connect(CLIENT_ID)) {           // cada grupo com um ID diferente
+    Serial.print("Conectando ao broker MQTT...");
+
+    if (mqtt.connect(nomeDoESP32.c_str())) {
       Serial.println(" conectado!");
-      mqtt.subscribe(TOPICO_PROF);
-      mqtt.subscribe(TOPICO_MEU);
+      mqtt.subscribe(TOPICO);
     } else {
-      /* rc negativo = a conexao TCP nem chegou ao broker (IP/porta/firewall).
-         rc positivo = o broker respondeu e recusou (protocolo, id, credencial). */
-      Serial.printf("Falha na conexão");
-      delay(3000);
+      Serial.println(" falhou. Nova tentativa em 2 segundos.");
+      delay(2000);
     }
   }
 }
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED, OUTPUT);
-  pinMode(BUZZER, OUTPUT);
-  pinMode(BOTAO, INPUT_PULLUP);   // botão ligado ao GND: solto = HIGH
+  pinMode(PINO_LED, OUTPUT);
 
-  Serial.print("Grupo " MEU_GRUPO " - conectando ao WiFi");
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(300);
-    Serial.print(".");
-  }
-  Serial.println(" conectado!");
-  Serial.print("WiFi IP: ");
-  Serial.println(WiFi.localIP());
-
+  conectarWiFi();
   mqtt.setServer(BROKER_IP, 1883);
-  mqtt.setCallback(callbackMQTT);
+  mqtt.setCallback(receberMensagem);
 }
 
 void loop() {
-  if (!mqtt.connected()) conectarMQTT();
-  mqtt.loop();                    // sem esta linha nada é recebido
-
-  if (digitalRead(BOTAO) == LOW) {
-    mqtt.publish(TOPICO_BOTAO, "1");
-    Serial.println("[TX] " TOPICO_BOTAO);
-    delay(300);                   // não repete enquanto o botão está apertado
+  if (!mqtt.connected()) {
+    conectarMQTT();
   }
+
+  mqtt.loop();  // recebe as mensagens do broker
 }
