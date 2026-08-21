@@ -8,7 +8,7 @@ BAUD = 115200
 
 app = QtWidgets.QApplication([])
 
-janela = 200
+janela = 100
 
 dados_x = deque([0]*janela, maxlen=janela)
 dados_y = deque([0]*janela, maxlen=janela)

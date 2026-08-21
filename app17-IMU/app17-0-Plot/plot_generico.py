@@ -5,7 +5,7 @@ from collections import deque
 
 PORTA = "COM7"
 BAUD = 115200
-JANELA = 200
+JANELA = 100
 
 app = QtWidgets.QApplication([])
 

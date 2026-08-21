@@ -13,11 +13,11 @@
 #include "ESP32SensorsDistancia.hpp"
 
 /* ---- Wi-Fi (roteador da sala, 2,4 GHz) ---- */
-const char* WIFI_SSID = "Wokwi-GUEST";
-const char* WIFI_PASS = "";
+const char* WIFI_SSID = "NorisIoT";
+const char* WIFI_PASS = "Secure10T";
 
 /* ---- MQTT ---- */
-#define BROKER_IP    "host.wokwi.internal"             // IP do notebook do professor
+#define BROKER_IP    "172.16.10.101"             // IP do notebook do professor (Ethernet)
 #define TOPICO_DIST  "fiap/iot/2026/prof/dist"
 
 WiFiClient wifiClient;
@@ -33,7 +33,9 @@ void conectarMQTT() {
     if (mqtt.connect("professor")) {
       Serial.println(" conectado!");
     } else {
-      Serial.println(" falhou. Tentando de novo em 3 s.");
+      /* rc negativo = a conexao TCP nem chegou ao broker (IP/porta/firewall).
+         rc positivo = o broker respondeu e recusou (protocolo, id, credencial). */
+      Serial.printf(" falhou, rc=%d. Tentando de novo em 3 s.\n", mqtt.state());
       delay(3000);
     }
   }
@@ -44,12 +46,15 @@ void setup() {
   ESP32Sensors::Distancia::inicializar(TRIG_PIN, ECHO_PIN);
 
   Serial.print("Conectando ao WiFi");
+  WiFi.mode(WIFI_STA);                            // so cliente: nada de AP
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     delay(300);
     Serial.print(".");
   }
   Serial.println(" conectado!");
+  Serial.print("WiFi IP: ");
+  Serial.println(WiFi.localIP());
 
   mqtt.setServer(BROKER_IP, 1883);
 }
@@ -63,8 +68,9 @@ void loop() {
 
   /* true = retained: o broker guarda esta mensagem. Quem assinar depois
      recebe o último valor na hora, sem esperar a próxima publicação. */
-  mqtt.publish(TOPICO_DIST, msg.c_str(), true);
-  Serial.println("[TX] " TOPICO_DIST " -> " + msg + " cm");
+  bool ok = mqtt.publish(TOPICO_DIST, msg.c_str(), true);
+  Serial.println(ok ? "[TX] " TOPICO_DIST " -> " + msg + " cm"
+                    : String("[TX] falhou ao publicar"));
 
   delay(200);
 }

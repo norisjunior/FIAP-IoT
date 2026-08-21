@@ -8,9 +8,9 @@
    2) PUBLICA no tópico do grupo    -> avisa o servidor quando o botão é
       apertado.
 
-   Ligações:  LED + resistor 220R -> GPIO 2   (catodo no GND)
-              Buzzer ativo        -> GPIO 4   ((-) no GND)
-              Botão               -> GPIO 19 e GND
+   Ligações:  LED + resistor 220R -> GPIO 21  (catodo no GND)
+              Buzzer ativo        -> GPIO 19  ((-) no GND)
+              Botão               -> GPIO 18 e GND
    ========================================================================== */
 
 #include <WiFi.h>
@@ -19,10 +19,11 @@
 /* ===================== EDITE AQUI ===================== */
 #define MEU_GRUPO   "01"              // "01" até "10"
 #define MEU_LIMIAR  120               // cm - a regra é do SEU grupo
-#define BROKER_IP   "host.wokwi.internal"   // IP do notebook do professor
+#define BROKER_IP   "172.16.10.101"        // IP do notebook do professor (Ethernet)
+#define CLIENT_ID   "grupo" MEU_GRUPO      // ID unico deste dispositivo no broker
 
-const char* WIFI_SSID = "Wokwi-GUEST";
-const char* WIFI_PASS = "";
+const char* WIFI_SSID = "NorisIoT";        // roteador da sala, 2,4 GHz
+const char* WIFI_PASS = "Secure10T";
 /* ====================================================== */
 
 #define LED     21
@@ -64,12 +65,14 @@ void callbackMQTT(char* topico, byte* payload, int tamanho) {
 void conectarMQTT() {
   while (!mqtt.connected()) {
     Serial.print("Conectando ao broker...");
-    if (mqtt.connect("grupo" MEU_GRUPO)) {   // cada grupo com um ID diferente
+    if (mqtt.connect(CLIENT_ID)) {           // cada grupo com um ID diferente
       Serial.println(" conectado!");
       mqtt.subscribe(TOPICO_PROF);
       mqtt.subscribe(TOPICO_MEU);
     } else {
-      Serial.println(" falhou. Tentando de novo em 3 s.");
+      /* rc negativo = a conexao TCP nem chegou ao broker (IP/porta/firewall).
+         rc positivo = o broker respondeu e recusou (protocolo, id, credencial). */
+      Serial.printf("Falha na conexão");
       delay(3000);
     }
   }
@@ -88,6 +91,8 @@ void setup() {
     Serial.print(".");
   }
   Serial.println(" conectado!");
+  Serial.print("WiFi IP: ");
+  Serial.println(WiFi.localIP());
 
   mqtt.setServer(BROKER_IP, 1883);
   mqtt.setCallback(callbackMQTT);

@@ -22,10 +22,10 @@ from datetime import datetime
 import serial  # pyserial
 
 # ---- (A) Wokwi (padrao) ----
-PORTA = "rfc2217://localhost:4000"
+# PORTA = "rfc2217://localhost:4000"
 
 # ---- (B) ESP32 fisico (comente A e descomente B) ----
-# PORTA = "COM6"
+PORTA = "COM7"
 
 BAUD = 115200
 
