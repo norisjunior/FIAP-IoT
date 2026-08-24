@@ -1,0 +1,153 @@
+[
+  {
+    "id": "vs18tab",
+    "type": "tab",
+    "label": "Vaccine Sense - Coleta",
+    "disabled": false,
+    "info": "# app18 - Vaccine Sense: ingestao\n\nAssina o topico da caixa e grava no InfluxDB.\n\nConfigure o no InfluxDB (url, org, bucket, token) uma vez.\nDepois disso nao ha nada para editar entre rodadas:\no botao da caixa inicia, para e numera cada rodada.\n",
+    "env": []
+  },
+  {
+    "id": "vs18grp",
+    "type": "group",
+    "z": "vs18tab",
+    "name": "app18 - da caixa ao InfluxDB",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "vs18in",
+      "vs18fn",
+      "vs18out",
+      "vs18dbg"
+    ],
+    "x": 34,
+    "y": 39,
+    "w": 852,
+    "h": 142
+  },
+  {
+    "id": "vs18in",
+    "type": "mqtt in",
+    "z": "vs18tab",
+    "g": "vs18grp",
+    "name": "",
+    "topic": "fiap/iot/vaccinesense",
+    "qos": "0",
+    "datatype": "auto-detect",
+    "broker": "vs18brk",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 100,
+    "wires": [
+      [
+        "vs18fn"
+      ]
+    ]
+  },
+  {
+    "id": "vs18fn",
+    "type": "function",
+    "z": "vs18tab",
+    "g": "vs18grp",
+    "name": "Preparar para o InfluxDB",
+    "func": "// Node-RED carimba o horario: o InfluxDB usa a hora de gravacao como _time.\n// Por isso o dispositivo nao envia timestamp.\n//\n// Nada aqui precisa ser editado entre rodadas: quem numera a rodada e o botao\n// da caixa. Configure o no InfluxDB uma vez e esqueca este arquivo.\n\nconst p = msg.payload || {};\n\nconst campos = {\n    device: p.device,\n    id: p.id,\n    tempInterna: p.tempInterna,\n    tempExterna: p.tempExterna,\n    umidade: p.umidade,\n    luz: p.luz,\n    criticidade: p.criticidade,\n    distancia: p.distancia,\n    tempoForaDaFaixa: p.tempoForaDaFaixa\n};\n\n// Unica tag: a rodada, que vem do firmware. Tag no InfluxDB e sempre texto.\nconst tags = { rodada: String(p.rodada) };\n\n// O no influxdb out grava [campos, tags] quando recebe um array de 2 objetos.\nmsg.payload = [campos, tags];\n\nnode.warn(\"Rodada \" + p.rodada + \": \" + JSON.stringify(campos));\n\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 420,
+    "y": 100,
+    "wires": [
+      [
+        "vs18out",
+        "vs18dbg"
+      ]
+    ]
+  },
+  {
+    "id": "vs18out",
+    "type": "influxdb out",
+    "z": "vs18tab",
+    "g": "vs18grp",
+    "influxdb": "vs18db",
+    "name": "Gravar vaccinesense_raw_2026",
+    "measurement": "vaccinesense_raw_2026",
+    "precision": "",
+    "retentionPolicy": "",
+    "database": "database",
+    "precisionV18FluxV20": "ms",
+    "retentionPolicyV18Flux": "",
+    "org": "COLOQUE_SUA_ORG",
+    "bucket": "IoTSensores",
+    "x": 700,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "vs18dbg",
+    "type": "debug",
+    "z": "vs18tab",
+    "g": "vs18grp",
+    "name": "debug",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 690,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "vs18brk",
+    "type": "mqtt-broker",
+    "name": "MQTT Broker local",
+    "broker": "mqtt-broker",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "vs18db",
+    "type": "influxdb",
+    "hostname": "127.0.0.1",
+    "port": 8086,
+    "protocol": "http",
+    "database": "database",
+    "name": "InfluxDB Cloud",
+    "usetls": false,
+    "tls": "",
+    "influxdbVersion": "2.0",
+    "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+    "timeout": 10,
+    "rejectUnauthorized": true
+  }
+]
