@@ -1,3 +1,22 @@
+# PlatformIO
 .pio/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Ambientes virtuais
+venv/
+.venv/
 .occupancyEnv/
+
+# Segredos (o .env.exemplo continua versionado)
+.env
+
+# Ferramentas
 .claude/
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -17,12 +17,33 @@ ESP32  →  MQTT  →  n8n  →  API FastAPI (.pkl)  →  n8n  →  MQTT  →  E
   └── publica as 6 medições                        aciona o buzzer ──┘
 ```
 
+## As três fases
+
+A aplicação é construída em três etapas, cada uma acrescentando uma capacidade.
+
+| Fase | O que o aluno ganha | O que sobe |
+|---|---|---|
+| **1 — A API responde** | o modelo vira serviço; você pergunta na mão | `uvicorn` |
+| **2 — O ciclo se fecha** | a decisão vira automática e **o buzzer toca** | `docker compose`: mosquitto + API + n8n |
+| **3 — Perguntar em português** | uma pessoa pergunta em linguagem natural | agente LLM no n8n |
+
+Cada fase tem o seu README:
+
+- [`Fase1_API_Responde/README-Fase1.md`](Fase1_API_Responde/README-Fase1.md)
+- [`Fase2_Ciclo_Se_Fecha/README-Fase2.md`](Fase2_Ciclo_Se_Fecha/README-Fase2.md)
+- [`Fase3_Perguntar_em_Portugues/README-Fase3.md`](Fase3_Perguntar_em_Portugues/README-Fase3.md)
+
+A Fase 2 é o ponto alto: é onde o modelo passa a acionar o hardware.
+
 ## Estrutura
 
 ```
-device/     firmware: publica as medições E assina o tópico de comando
-api/        FastAPI que carrega o modelo e responde /predict
-n8n/        fluxo que liga os dois
+device/                        firmware: publica as medições E assina o comando
+api/                           a API isolada, para consulta rápida
+Fase1_API_Responde/            rodar o FastAPI na mão
+Fase2_Ciclo_Se_Fecha/          docker compose + n8n: o buzzer toca
+Fase3_Perguntar_em_Portugues/  agente LLM no n8n
+n8n/                           o fluxo de predição, avulso
 ```
 
 ## 1. Subir a API

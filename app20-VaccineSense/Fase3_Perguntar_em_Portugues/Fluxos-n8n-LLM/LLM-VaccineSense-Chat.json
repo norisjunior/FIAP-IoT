@@ -1,0 +1,133 @@
+{
+  "name": "Vaccine Sense - agente em linguagem natural",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -220,
+        300
+      ],
+      "id": "vs-chat",
+      "name": "Pergunta do operador",
+      "webhookId": "vaccinesense-chat"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Voce e o assistente do Vaccine Sense, um sistema que monitora caixas termicas de transporte de vacinas.\n\nVoce tem uma ferramenta que classifica a condicao da carga a partir de seis medicoes: tempInterna, tempExterna, umidade, luz, criticidade e distancia.\n\nRegras do dominio que voce deve conhecer:\n- carga PADRAO (criticidade ate 50): faixa segura de 2 a 8 graus\n- carga CRITICA (criticidade acima de 50): faixa segura de 4 a 6 graus\n- luz alta dentro da caixa indica tampa aberta\n\nResponda em portugues, de forma curta e direta. Quando o resultado for CARGA_EM_PERIGO, diga o que provavelmente causou."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        40,
+        300
+      ],
+      "id": "vs-agent",
+      "name": "Agente Vaccine Sense"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -40,
+        520
+      ],
+      "id": "vs-llm",
+      "name": "Modelo de linguagem",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "sessionIdType": "fromInput",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        120,
+        520
+      ],
+      "id": "vs-mem",
+      "name": "Memoria da conversa"
+    },
+    {
+      "parameters": {
+        "name": "classificar_carga",
+        "description": "Classifica a condicao da carga. Recebe as seis medicoes e devolve TRANSPORTE_OK ou CARGA_EM_PERIGO com as probabilidades.",
+        "method": "POST",
+        "url": "http://ml-service:8000/predict",
+        "sendBody": true,
+        "specifyBody": "model",
+        "jsonSchemaExample": "{\n  \"tempInterna\": 7.0,\n  \"tempExterna\": 24.0,\n  \"umidade\": 70,\n  \"luz\": 55,\n  \"criticidade\": 75,\n  \"distancia\": 13\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        300,
+        520
+      ],
+      "id": "vs-tool",
+      "name": "classificar_carga"
+    }
+  ],
+  "connections": {
+    "Pergunta do operador": {
+      "main": [
+        [
+          {
+            "node": "Agente Vaccine Sense",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modelo de linguagem": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Vaccine Sense",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria da conversa": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Vaccine Sense",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "classificar_carga": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Vaccine Sense",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
