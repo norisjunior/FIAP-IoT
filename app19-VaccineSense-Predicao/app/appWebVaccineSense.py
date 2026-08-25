@@ -5,12 +5,20 @@ Vaccine Sense - Classificação em tempo real (versão web)
 Mesma lógica da versão console, apresentada em uma página que atualiza sozinha.
 """
 
+import os
 import threading
 import time
 
 import joblib
 import pandas as pd
 from flask import Flask, render_template_string
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    print("❌ Erro: python-dotenv não encontrado!")
+    print("Execute: pip install -r requirements.txt")
+    exit(1)
 
 try:
     from influxdb_client_3 import InfluxDBClient3
@@ -20,14 +28,27 @@ except ImportError:
     exit(1)
 
 # ===== CONFIGURAÇÕES =====
-INFLUX_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
-INFLUX_TOKEN = "XXXXX"
-INFLUX_ORG = "XXXXX"
-INFLUX_BUCKET = "XXXXX"
+# As credenciais ficam no arquivo .env, que NÃO vai para o repositório.
+# Copie o .env.exemplo para .env e preencha com os seus dados.
+load_dotenv()
 
-MEASUREMENT = "vaccinesense_raw_2026"
-DISPOSITIVO = "ESP32Noris001Vaccine"
-MODELO_ARQUIVO = "modelo_vaccinesense.pkl"
+INFLUX_URL = os.getenv("INFLUX_URL", "https://us-east-1-1.aws.cloud2.influxdata.com")
+INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
+INFLUX_ORG = os.getenv("INFLUX_ORG")
+INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
+
+MEASUREMENT = os.getenv("INFLUX_MEASUREMENT", "vaccinesense_raw_2026")
+DISPOSITIVO = os.getenv("DISPOSITIVO", "ESP32Noris001Vaccine")
+MODELO_ARQUIVO = os.getenv("MODELO_ARQUIVO", "modelo_vaccinesense.pkl")
+
+if not (INFLUX_TOKEN and INFLUX_ORG and INFLUX_BUCKET):
+    print("❌ Faltam credenciais.")
+    print()
+    print("Crie um arquivo .env nesta pasta, copiando o .env.exemplo:")
+    print("   INFLUX_TOKEN=seu_token")
+    print("   INFLUX_ORG=sua_org")
+    print("   INFLUX_BUCKET=seu_bucket")
+    exit(1)
 INTERVALO = 5  # segundos entre consultas
 
 # As cinco medições que o modelo recebe, na ordem do treinamento.
