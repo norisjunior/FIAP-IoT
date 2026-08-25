@@ -109,101 +109,207 @@ mosquitto_sub -h localhost -t "fiap/iot/vaccinesense" -v
 Configure o nó InfluxDB com a sua URL, organização, bucket e token. Isso é feito
 **uma vez** — depois não se mexe mais no fluxo.
 
-**5. Coletar.** Monte a condição, **depois** aperte o botão. Colete cinco
-minutos. Aperte de novo para parar. Anote o número da rodada e o que ela foi.
+**5. Coletar.** Monte a condição, **depois** aperte o botão. Colete cerca de
+**40 medições** por rodada, variando os sensores dentro da faixa indicada.
+Aperte de novo para parar. Anote o número da rodada e o que ela foi.
+
+Conte pelas **medições do Serial Monitor**, não pelo relógio: o Wokwi simula
+mais devagar que o tempo real, então 40 segundos de simulação levam mais que
+40 segundos de aula.
 
 **6. Abrir o Colab.** `colab/app18_coleta_e_rotulagem.ipynb` — traz os dados do
 InfluxDB, você rotula cada rodada e salva o dataset.
 
 ## Protocolo de coleta
 
-Três rodadas de cada tipo, cinco minutos cada.
+São **24 rodadas**, cada uma com uma condição física estável. Doze rodadas
+produzem a classe `0` do alvo binário (`TRANSPORTE_OK` e `AMBIENTE_HOSTIL`) e
+doze produzem a classe `1` (`CARGA_EM_PERIGO`).
 
-| O que fazer | Rótulo no Colab |
+| Condição física | Rótulo no Colab |
 |---|---|
-| caixa fechada, gelo suficiente, sala normal | `TRANSPORTE_OK` |
-| **caixa fechada**, perto de aquecedor ou ao sol | `AMBIENTE_HOSTIL` |
-| tampa aberta | `CARGA_EM_PERIGO` |
+| caixa fechada, ambiente normal e carga dentro da faixa | `TRANSPORTE_OK` |
+| caixa fechada, ambiente acima de 30 °C e carga ainda preservada | `AMBIENTE_HOSTIL` |
+| tampa aberta, ou carga fora da faixa aceita para sua criticidade | `CARGA_EM_PERIGO` |
 
-## Receita das nove rodadas no Wokwi
+### Por que 24 e não 12
 
-Clique em cada peça do simulador para abrir o controle: DS18B20 e DHT22 têm
-sliders de temperatura, o fotorresistor tem `lux`, o HC-SR04 tem distância em cm.
+**Cada condição aparece em duas rodadas.** Não é redundância: é o que permite
+dividir treino e teste por rodada.
 
-**Varie os valores devagar durante a rodada.** Se você deixar os controles
-parados, as 300 medições saem quase idênticas e o modelo aprende nove *pontos*
-em vez de nove *regiões*. Os números entre parênteses são a faixa para percorrer.
+Se uma condição existir em uma rodada só e essa rodada cair no teste, o treino
+nunca viu aquela região do espaço — e o modelo erra 100% ali, sem ter como
+aprender. Com o par, uma fica no treino e ensina a outra.
 
-| # | Rótulo | Temp. interna | Temp. externa | Luz | Distância |
-|---:|---|---|---|---|---|
-| 1 | `TRANSPORTE_OK` | 4 (3–5) | 22 (21–24) | baixa | 12 (10–14) |
-| 2 | `TRANSPORTE_OK` | 5 (4–6) | 24 (23–26) | baixa | 15 (13–17) |
-| 3 | `TRANSPORTE_OK` | 6 (5–7) | 26 (25–28) | baixa | 10 (8–12) |
-| 4 | `AMBIENTE_HOSTIL` | 5 (4–6) | **35** (33–37) | baixa | 12 (10–14) |
-| 5 | `AMBIENTE_HOSTIL` | 5,5 (5–6,5) | **37** (35–39) | baixa | 14 (12–16) |
-| 6 | `AMBIENTE_HOSTIL` | 6 (5–7) | **40** (38–42) | baixa | 12 (10–14) |
-| 7 | `CARGA_EM_PERIGO` | **9** (8,5–10) | **38** (36–40) | baixa | 12 (10–14) |
-| 8 | `CARGA_EM_PERIGO` | **8,5** (8,2–9,5) | 25 (24–26) | **alta ≈ 3000** | **60** (50–70) |
-| 9 | `CARGA_EM_PERIGO` | **9,5** (9–10,5) | 24 (23–25) | **baixa** | **55** (45–65) |
+Isso é uma regra geral de coleta em IoT: **o número de rodadas é ditado pelo
+split, não pela quantidade de dados**.
 
-A umidade é contexto: deixe entre 50 e 70, variando um pouco.
+## A faixa aceita depende da criticidade
 
-### Por que estas nove e não outras
+O potenciômetro define o tipo da carga, e o tipo da carga define o que é seguro:
 
-Cada trio existe para desfazer uma confusão possível:
+| Criticidade | Tipo da carga | Faixa aceita |
+|---|---|---|
+| 0 – 50 | padrão | 2 a 8 °C |
+| 51 – 100 | crítica | 4 a 6 °C |
 
-- **1–3 contra 4–6** — mesma temperatura interna boa, temperatura externa muito
-  diferente. Ensina que calor lá fora, com a caixa fechada, **não** é perigo.
-- **4–6 contra 7** — mesma temperatura externa alta; o que muda é a interna.
-  Sem isso o modelo aprenderia "externa alta = perigo" e alarmaria em todo dia
-  quente.
-- **8 contra 9** — as duas são tampa aberta, mas na 9 a sala está escura e a luz
-  quase não sobe. Obriga o modelo a olhar também a distância, em vez de decidir
-  só pelo LDR.
+A mesma temperatura de 7 °C é **normal** numa carga padrão e é **perigo** numa
+carga crítica. É essa interação que o modelo precisa aprender, e é por isso que
+a criticidade entra como feature.
 
-A rodada 9 é a mais importante do conjunto: é o caminhão à noite.
+**A criticidade não muda durante uma rodada** — o potenciômetro fica parado.
+O valor lido oscila alguns pontos porque o `analogRead` tem ruído, e isso é
+esperado.
 
-### Antes da rodada 8: calibre o `lux`
+## Receita das 24 rodadas no Wokwi
+
+`Luz baixa`, `média` e `alta` são valores do campo `luz` no Serial Monitor, não
+o número de `lux` do controle do Wokwi.
+
+O HC-SR04 fica na tampa e mede até o topo da carga:
+
+- **mais vacinas**, próximas da tampa → distância **menor**;
+- **menos vacinas**, no fundo da caixa → distância **maior**;
+- **tampa aberta** → distância maior **e** luz alta.
+
+### Não-perigo — tampa sempre fechada
+
+| # | Rótulo | Situação | Temp. int. (°C) | Temp. ext. (°C) | Criticidade | Luz | Dist. (cm) |
+|---:|---|---|---:|---:|---:|---|---:|
+| 1 | `TRANSPORTE_OK` | padrão, varrendo a faixa segura | 2,4–7,6 | 21–27 | 12–46 | baixa | 10–18 |
+| 2 | `AMBIENTE_HOSTIL` | padrão preservada no calor | 2,6–7,4 | **34–39** | 14–44 | baixa | 12–20 |
+| 3 | `TRANSPORTE_OK` | padrão perto do limite superior | **6,0–7,7** | 23–29 | 10–45 | baixa | 10–18 |
+| 4 | `TRANSPORTE_OK` | padrão perto do limite superior | **6,2–7,6** | 22–28 | 16–48 | baixa | 11–19 |
+| 5 | `TRANSPORTE_OK` | padrão perto do limite inferior | **2,4–3,8** | 20–28 | 12–44 | baixa | 10–18 |
+| 6 | `TRANSPORTE_OK` | padrão perto do limite inferior | **2,3–4,0** | 21–27 | 18–46 | baixa | 12–20 |
+| 7 | `TRANSPORTE_OK` | crítica na faixa estreita | 4,3–5,7 | 20–28 | **56–92** | baixa | 10–18 |
+| 8 | `TRANSPORTE_OK` | crítica na faixa estreita | 4,4–5,8 | 21–29 | **62–98** | baixa | 12–20 |
+| 9 | `AMBIENTE_HOSTIL` | padrão preservada no calor | 2,6–7,4 | **33–38** | 12–46 | baixa | 10–18 |
+| 10 | `AMBIENTE_HOSTIL` | crítica preservada no calor | 4,3–5,7 | **35–41** | **58–94** | baixa | 10–18 |
+| 11 | `TRANSPORTE_OK` | pouca carga, sala com luz variando | 3,0–7,4 | 21–29 | 14–45 | **30–850** | **40–70** |
+| 12 | `TRANSPORTE_OK` | pouca carga, sala com luz variando | 3,2–7,2 | 23–30 | 16–47 | **30–850** | **30–65** |
+
+### Perigo
+
+| # | Rótulo | Situação | Temp. int. (°C) | Temp. ext. (°C) | Criticidade | Luz | Dist. (cm) |
+|---:|---|---|---:|---:|---:|---|---:|
+| 13 | `CARGA_EM_PERIGO` | padrão superaquecida | **8,5–11,0** | 24–40 | 12–46 | baixa | 10–18 |
+| 14 | `CARGA_EM_PERIGO` | padrão superaquecida | **8,6–10,5** | 22–38 | 16–44 | baixa | 12–20 |
+| 15 | `CARGA_EM_PERIGO` | padrão congelando | **0,2–1,6** | 20–28 | 14–45 | baixa | 10–18 |
+| 16 | `CARGA_EM_PERIGO` | padrão congelando | **0,4–1,7** | 21–27 | 18–47 | baixa | 12–20 |
+| 17 | `CARGA_EM_PERIGO` | crítica acima de 6 °C | **6,5–8,4** | 20–29 | **56–93** | baixa | 10–18 |
+| 18 | `CARGA_EM_PERIGO` | crítica acima de 6 °C | **6,6–8,2** | 21–28 | **60–97** | baixa | 12–20 |
+| 19 | `CARGA_EM_PERIGO` | crítica abaixo de 4 °C | **1,8–3,6** | 20–28 | **54–90** | baixa | 10–18 |
+| 20 | `CARGA_EM_PERIGO` | crítica abaixo de 4 °C | **2,0–3,5** | 21–27 | **64–99** | baixa | 12–20 |
+| 21 | `CARGA_EM_PERIGO` | tampa aberta, carga ainda fria | 3,4–6,6 | 22–29 | 12–46 | **alta 2700–3450** | **22–70** |
+| 22 | `CARGA_EM_PERIGO` | tampa aberta em ambiente hostil | 3,8–6,4 | **34–40** | 15–44 | **alta 2500–3400** | **20–65** |
+| 23 | `CARGA_EM_PERIGO` | tampa apenas entreaberta | 3,6–6,4 | 20–27 | 13–45 | **média-alta 1150–2100** | **18–32** |
+| 24 | `CARGA_EM_PERIGO` | tampa apenas entreaberta | 3,8–6,6 | 21–28 | 17–47 | **média-alta 1200–2200** | **20–35** |
+
+### A umidade acompanha a temperatura externa
+
+Não escolha a umidade ao acaso: ar mais quente carrega umidade relativa mais
+baixa. Ajuste o slider do DHT22 seguindo a temperatura externa da rodada.
+
+| Temp. externa | Umidade externa |
+|---:|---:|
+| 20–24 °C | 72–82 % |
+| 25–29 °C | 64–74 % |
+| 30–34 °C | 56–66 % |
+| 35–42 °C | 48–60 % |
+
+Como as rodadas quentes aparecem dos dois lados do alvo (rodadas 2, 9 e 10 são
+não-perigo; 13, 14 e 22 são perigo), a umidade dá contexto sem entregar o rótulo.
+
+### Por que estas 24
+
+Cada atalho possível tem um contracaso no dataset:
+
+| Atalho errado | Contracasos que o desfazem |
+|---|---|
+| temperatura interna alta é sempre perigo | 3 e 4 são seguras a 7,6 °C; 21–24 são perigo com a carga ainda fria |
+| temperatura externa alta é sempre perigo | 2, 9 e 10 preservam a carga no calor; 13, 14 e 22 são perigo no mesmo calor |
+| luz alta é sempre tampa aberta | 11 e 12 têm luz até 850 com a tampa fechada |
+| distância alta é sempre tampa aberta | 11 e 12 são fechadas com pouca carga, na mesma faixa de distância de 21 e 22 |
+| criticidade alta é sempre perigo | 7, 8 e 10 preservam carga crítica; 17–20 mostram quando ela participa do risco |
+| a umidade identifica a classe | as faixas de umidade aparecem dos dois lados do alvo |
+
+As rodadas **21 a 24** são essenciais: a tampa está aberta e a temperatura ainda
+não subiu. Sem elas, uma regra de temperatura resolveria o dataset e não haveria
+motivo para treinar um modelo.
+
+As rodadas **3, 4, 17 e 18** são as mais difíceis de propósito: 7,6 °C é seguro
+numa carga padrão e 6,6 °C é perigo numa carga crítica. É aí que o modelo erra —
+e é aí que se aprende que o limite físico é uma região, não uma linha.
+
+### Calibrar a luz antes de coletar
 
 O Wokwi controla `lux`, mas o payload traz `luz = 4095 − analogRead`. A
-correspondência depende do circuito, então descubra na tela:
+correspondência depende do circuito:
 
-1. Clique no fotorresistor e ponha `lux` no mínimo. Olhe o valor de `luz` no
-   Serial Monitor.
-2. Ponha `lux` no máximo e olhe de novo.
-3. Anote os dois extremos e escolha o `lux` que deixa `luz` perto de 3000.
+1. Ponha `lux` no mínimo e anote o campo `luz` do Serial Monitor.
+2. Ponha `lux` no máximo e anote novamente.
+3. Escolha um ajuste para `luz` baixa, um para `luz` média entre 200 e 800 e um
+   para `luz` alta perto de 3000.
 
-O mesmo valor de "luz baixa" das outras rodadas sai do primeiro extremo.
+Use os valores observados no payload; não suponha que o número de `lux` é igual
+ao campo `luz`.
 
 ### Confira pelo LED enquanto coleta
 
-| Rodada | LED esperado |
-|---:|---|
-| 1–3 | apagado |
-| 4–7 | **aceso** (temp. externa passou de 30) |
-| 8–9 | apagado |
-| 7, 8, 9 | **piscando** depois de ~2 min (temperatura interna acumulou 120 s fora da faixa) |
+| Rodadas | LED esperado |
+|---|---|
+| 1, 3–8, 11, 12, 21, 23, 24 | apagado |
+| 2, 9, 10, 22 | **aceso** (temperatura externa acima de 30 °C) |
+| 13–20 | apagado no início e **piscando** depois de ~2 min |
 
-Se o LED não fizer isso, a rodada saiu diferente do planejado — vale repetir
-antes de descobrir no Colab.
+O pisca começa após mais de 120 segundos com a temperatura interna fora da faixa
+aceita para a criticidade. O LED é conferência ao vivo: não é rótulo nem feature.
+
+Se numa rodada de ambiente hostil o LED nunca acender, o aquecedor não passou de
+30 °C e a rodada saiu fraca. Repita.
 
 ### Folha de anotação
 
-| Rodada | Condição |
+Leve esta folha para a bancada. O número vem do Serial Monitor quando você
+aperta o botão.
+
+| Rodada | Condição anotada |
 |---:|---|
-| 1, 2, 3 | caixa fechada, sala normal |
-| 4, 5, 6 | caixa fechada, ambiente quente |
-| 7 | ambiente quente **e** carga esquentando |
-| 8 | tampa aberta, sala clara |
-| 9 | tampa aberta, sala escura |
+| 1 | fechada, padrão, varrendo a faixa segura |
+| 2 | fechada, padrão preservada no calor |
+| 3 | fechada, padrão perto de 8 °C |
+| 4 | fechada, padrão perto de 8 °C |
+| 5 | fechada, padrão perto de 2 °C |
+| 6 | fechada, padrão perto de 2 °C |
+| 7 | fechada, crítica entre 4 e 6 °C |
+| 8 | fechada, crítica entre 4 e 6 °C |
+| 9 | fechada, padrão preservada no calor |
+| 10 | fechada, crítica preservada no calor |
+| 11 | fechada, pouca carga, luz da sala variando |
+| 12 | fechada, pouca carga, luz da sala variando |
+| 13 | fechada, padrão superaquecida |
+| 14 | fechada, padrão superaquecida |
+| 15 | fechada, padrão congelando |
+| 16 | fechada, padrão congelando |
+| 17 | fechada, crítica acima de 6 °C |
+| 18 | fechada, crítica acima de 6 °C |
+| 19 | fechada, crítica abaixo de 4 °C |
+| 20 | fechada, crítica abaixo de 4 °C |
+| 21 | **aberta**, carga ainda fria |
+| 22 | **aberta** em ambiente hostil |
+| 23 | **entreaberta**, carga ainda fria |
+| 24 | **entreaberta**, carga ainda fria |
 
 Regras:
 
-- monte a condição **antes** de apertar o botão, e mantenha estável até parar;
-- as rodadas `hostil` são obrigatórias: sem elas o modelo confunde dia quente
-  com tampa aberta, porque as duas coisas esquentam a carga;
-- rodadas separadas e numeradas — é isso que permite dividir treino e teste sem
-  vazamento.
+- configure a situação **antes** de apertar o botão;
+- mantenha tampa, tipo da carga e rótulo estáveis durante toda a rodada, mas
+  varie as medições dentro das faixas;
+- não deixe sliders parados nem repita a mesma sequência em todas as rodadas;
+- **não pule as rodadas pares**: elas são o par de cada condição, e sem elas o
+  split por rodada deixa o modelo sem referência;
+- rodadas separadas e numeradas permitem dividir treino e teste sem vazamento.
 
 ## Sobre os limiares
 
