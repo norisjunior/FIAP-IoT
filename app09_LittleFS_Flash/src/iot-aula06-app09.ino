@@ -88,7 +88,7 @@ void gravaMedicoes() {
   }
 
   //Escreve no arquivo
-  f.printf("%.2f,%.2f,%.2f\n",
+  f.printf("%.2f,%.2f,%.2f\r\n",
            ambiente.temp,
            ambiente.umid,
            ambiente.ic);
