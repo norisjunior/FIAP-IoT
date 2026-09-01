@@ -1,16 +1,21 @@
-/* app17-11-motormulticlasse — features de aceleração por janela (2 s @ 500 Hz), 5 classes cíclicas, publicadas via MQTT (JSON). */
+/* app17-11-motormulticlasse — features de aceleração por janela (1 s @ 100 Hz), 4 classes
+   cíclicas (motor sempre ligado), publicadas via MQTT (JSON). Evolução multiclasse do
+   app17-6 (binário: parado vs anomalia). */
 /*
 PARA USAR NO WOKWI:
-- Não há equivalente físico fiel no simulador para as classes de inclinação
-  (gabarito 3D); este app foi pensado para hardware físico.
-- Ajustar #define MPU_TYPE (padrão MPU6050) e remover/comentar
-  `mpu.calibrateAccelGyro(&calib);` (trava no Wokwi, FIFO ausente).
+- Ajustar as credenciais WiFi e o IP do MQTT_SERVER (ou usar as linhas comentadas do Wokwi abaixo)
+- Ajustar #define MPU_TYPE:
+  - #define MPU_TYPE MPU6050
+- Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);` (trava no Wokwi, FIFO ausente)
+- As classes de inclinação não têm equivalente fiel no simulador (não há como
+  inclinar o MPU6050 do Wokwi); serve para testar botões, LED e publicação MQTT.
 */
 
 #include <Arduino.h>
 #include "FastIMU.h"
 #include <Wire.h>
 #include <math.h>
+#include <time.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <PubSubClient.h>
@@ -35,12 +40,19 @@ WiFiClient wifiClient;
 #define MQTT_CLIENT_ID "IoTDevMultiClasse001"
 PubSubClient mqttClient(wifiClient);
 
+/* ---- Relógio (NTP) ---- */
+const char* NTP_SERVER_1 = "pool.ntp.org";
+const char* NTP_SERVER_2 = "time.google.com";
+uint64_t epochBaseMs        = 0;
+uint32_t millisNaSync       = 0;
+bool     relogioSincronizado = false;
+
 /* ---- Pinos ---- */
 #define SDA_PIN      22
 #define SCL_PIN      23
 #define BTN_COLETA   21   // inicia/para a coleta
 #define BTN_CLASSE   18   // avança para a próxima classe (só com a coleta parada)
-#define LED_PIN       4   // LED externo: aceso = coleta em andamento
+#define LED_PIN       4   // LED externo: pisca N vezes = índice da classe atual
 #define LED_ONBOARD   2   // LED onboard: aceso = coleta em andamento
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
@@ -49,15 +61,15 @@ MPU_TYPE mpu;
 
 calData calib = { 0 };
 
-/* ---- Sequência cíclica de classes ---- */
-const char* SEQUENCIA[] = { "desligado", "operando", "inclinado_frente",
-                            "inclinado_tras", "anomalia" };
-const int   N_CLASSES = 5;
+/* ---- Sequência cíclica de classes (motor sempre ligado, só muda a postura/intensidade) ---- */
+const char* SEQUENCIA[] = { "operando", "inclinado_frente", "inclinado_tras", "anomalia" };
+const int   N_CLASSES = 4;
 
 int indiceClasse = 0;   // posição atual na sequência (0..N_CLASSES-1)
 int rodada        = 1;  // incrementa a cada volta completa pela sequência (group do LeaveOneGroupOut)
 
 bool coletando = false;
+const int META_JANELAS = 30;   // a coleta para sozinha ao atingir esta contagem
 
 int ultimoBotaoColeta = HIGH;
 int ultimoBotaoClasse = HIGH;
@@ -65,10 +77,20 @@ unsigned long ultimoDebounceColeta = 0;
 unsigned long ultimoDebounceClasse = 0;
 const unsigned long debounceMs = 300;
 
-/* ---- Amostragem: 500 Hz, janela de 2 s ---- */
-const int FS_HZ          = 500;
-const int AMOSTRA_MS     = 1000 / FS_HZ;      // 2 ms
-const int TAMANHO_JANELA = FS_HZ * 2;         // 1000 amostras = 2 s
+/* ---- LED de classe: pisca N vezes = índice da classe (1..N_CLASSES), em loop contínuo,
+        independente da coleta estar rodando ou não ---- */
+const uint32_t LED_ON_MS    = 150;
+const uint32_t LED_OFF_MS   = 200;
+const uint32_t LED_PAUSA_MS = 1200;
+
+int      ledPiscadasFeitas = 0;
+bool     ledClasseAceso    = false;
+uint32_t ledUltimaMudanca  = 0;
+
+/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão do app17-6) ---- */
+const int FS_HZ          = 100;
+const int AMOSTRA_MS     = 1000 / FS_HZ;      // 10 ms
+const int TAMANHO_JANELA = FS_HZ;             // 100 amostras = 1 s
 
 float ax_buf[TAMANHO_JANELA];
 float ay_buf[TAMANHO_JANELA];
@@ -77,20 +99,33 @@ float mag_buf[TAMANHO_JANELA];
 
 int indice = 0;
 uint32_t tempoAnterior = 0;
-uint32_t millisInicioJanela = 0;
 int janelaAtual = 0;   // conta janelas desde que a coleta desta classe começou
 
 /* ---- Protótipos ---- */
 void conectarWiFi();
+void sincronizarRelogio();
+uint64_t agoraEpochMs();
 void conectarMQTT();
 void avancarClasse();
 void imprimirClasseAtual();
-void publicarJanela(int janelaIdx, float fsReal,
+void atualizarLedClasse();
+void publicarJanela(const char* label, uint64_t ts_epoch_ms, int rodadaAtual, int janelaIdx,
                     float mx, float my, float mz,
-                    float sx, float sy, float sz, float rmag,
-                    float stdMag, float p2p, float crest, float kurt, float zcr);
+                    float sx, float sy, float sz,
+                    float stdMag, float p2p);
 
-/* =========================== Features =========================== */
+/* =========================== Features ===========================
+   mean_ax/ay/az    -> orientação (projeção da gravidade nos 3 eixos): separa
+                       inclinado_frente de inclinado_tras.
+   std_ax/ay/az     -> vibração por eixo: separa operando de anomalia.
+   std_mag          -> vibração total, invariante à orientação do sensor.
+   p2p_mag          -> pior caso da janela (máx-mín da magnitude); complementa
+                       std_mag, pois um impacto isolado move o p2p sem mover
+                       muito o desvio-padrão.
+   Não entram aqui: rms_* (rms² = mean² + std², não traz informação nova —
+   ver app17-6), crest_mag (≈ razão entre p2p_mag e std_mag, o modelo já
+   consegue combiná-las), kurt_mag/zcr_mag (conteúdo de alta frequência que
+   100 Hz não enxerga) e fs_real (instrumentação de dataset, não feature). */
 float calcMean(float arr[], int n) {
   float soma = 0;
   for (int i = 0; i < n; i++) soma += arr[i];
@@ -100,18 +135,6 @@ float calcMean(float arr[], int n) {
 float calcStd(float arr[], int n, float media) {
   float soma = 0;
   for (int i = 0; i < n; i++) soma += (arr[i] - media) * (arr[i] - media);
-  return sqrt(soma / n);
-}
-
-float calcRMS(float arr[], int n) {
-  float soma = 0;
-  for (int i = 0; i < n; i++) soma += arr[i] * arr[i];
-  return sqrt(soma / n);
-}
-
-float calcRMSMagnitude(float axArr[], float ayArr[], float azArr[], int n) {
-  float soma = 0;
-  for (int i = 0; i < n; i++) soma += axArr[i]*axArr[i] + ayArr[i]*ayArr[i] + azArr[i]*azArr[i];
   return sqrt(soma / n);
 }
 
@@ -130,40 +153,6 @@ float calcPtP(float arr[], int n) {
   return mx - mn;
 }
 
-float calcCrest(float arr[], int n, float media, float desvio) {
-  if (desvio <= 0) return 0.0;
-  float pico = 0;
-  for (int i = 0; i < n; i++) {
-    float d = fabs(arr[i] - media);
-    if (d > pico) pico = d;
-  }
-  return pico / desvio;
-}
-
-// Curtose populacional (viesada, ddof=0) -- só precisa ser consistente
-// consigo mesma (o notebook 2.6 lê a feature pronta, não recalcula).
-float calcKurtosis(float arr[], int n, float media, float desvio) {
-  if (desvio <= 0) return 0.0;
-  float soma4 = 0;
-  for (int i = 0; i < n; i++) {
-    float d = arr[i] - media;
-    soma4 += d * d * d * d;
-  }
-  float m4 = soma4 / n;
-  return (m4 / (desvio * desvio * desvio * desvio)) - 3.0;
-}
-
-// Taxa de cruzamento por zero da componente AC (arr - media).
-float calcZCR(float arr[], int n, float media) {
-  int cruzamentos = 0;
-  for (int i = 1; i < n; i++) {
-    bool sinalAnterior = (arr[i-1] - media) >= 0;
-    bool sinalAtual    = (arr[i]   - media) >= 0;
-    if (sinalAnterior != sinalAtual) cruzamentos++;
-  }
-  return (float)cruzamentos / (n - 1);
-}
-
 /* ============================== SETUP ============================== */
 void setup() {
   Serial.begin(115200);
@@ -174,15 +163,9 @@ void setup() {
     while (1);
   }
   mpu.setAccelRange(8);
-  // Sem filtro anti-aliasing (DLPF) de propósito: a banda cheia do sensor
-  // fica disponível para capturar o máximo de conteúdo do sinal. Trade-off:
-  // energia acima de Nyquist (FS_HZ/2) volta rebatida (aliasing) pra dentro
-  // da janela -- pra features estatísticas (RMS/std/etc.) isso costuma ser
-  // aceitável, mas não é "mais informação limpa", é mais energia (parte
-  // dela distorcida) entrando na janela.
-  mpu.setAccelODR(FS_HZ); // acompanha a taxa de leitura, evita amostra duplicada
+  mpu.setAccelLPF(50);   // anti-aliasing p/ amostragem a 100 Hz (Nyquist 50 Hz)
 
-  Serial.println("Mantenha o sensor parado e nivelado para calibrar...");
+  Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
   mpu.calibrateAccelGyro(&calib);   // habilite no ESP32 físico; trava no Wokwi (FIFO ausente)
   mpu.init(calib, 0x68);
@@ -195,8 +178,10 @@ void setup() {
   pinMode(LED_ONBOARD, OUTPUT);
   digitalWrite(LED_PIN,     LOW);
   digitalWrite(LED_ONBOARD, LOW);
+  ledUltimaMudanca = millis();
 
   conectarWiFi();
+  sincronizarRelogio();
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setKeepAlive(60);
@@ -206,15 +191,19 @@ void setup() {
   Serial.println("Sistema pronto.");
   Serial.println("  Botão 21: inicia/para a coleta");
   Serial.println("  Botão 18: avança para a próxima classe (só com a coleta parada)");
+  Serial.println("  A coleta para sozinha ao completar 30 janelas da classe atual.");
+  Serial.println("  LED onboard aceso = coleta em andamento");
+  Serial.println("  LED externo: pisca N vezes = índice da classe atual (1..4), em loop");
   Serial.printf("  Tópico MQTT: %s\r\n\r\n", MQTT_PUB_TOPIC);
-  Serial.println("classe,rodada,janela,fs_real,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,"
-                 "rms_mag,std_mag,p2p_mag,crest_mag,kurt_mag,zcr_mag");
+  Serial.println("ts_epoch_ms,label,rodada,janela,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,std_mag,p2p_mag");
   imprimirClasseAtual();
 }
 
 /* ============================== LOOP =============================== */
 void loop() {
-  conectarMQTT();
+  if (!mqttClient.connected()) {
+    conectarMQTT();
+  }
   mqttClient.loop();
 
   // --- Botão coleta (inicia/para) ---
@@ -224,14 +213,10 @@ void loop() {
       coletando = !coletando;
       if (coletando) {
         indice = 0;
-        janelaAtual = 0;
         tempoAnterior = millis();
-        millisInicioJanela = millis();
-        digitalWrite(LED_PIN,     HIGH);
         digitalWrite(LED_ONBOARD, HIGH);
         Serial.printf("Coleta INICIADA (classe: %s)\r\n", SEQUENCIA[indiceClasse]);
       } else {
-        digitalWrite(LED_PIN,     LOW);
         digitalWrite(LED_ONBOARD, LOW);
         Serial.println("Coleta PARADA");
       }
@@ -254,13 +239,19 @@ void loop() {
   }
   ultimoBotaoClasse = leituraClasse;
 
+  // --- LED externo: pisca N vezes = índice da classe (roda sempre, coletando ou não) ---
+  atualizarLedClasse();
+
   if (!coletando) return;
 
-  // --- Coleta IMU a FS_HZ ---
+  // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
-    // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o
-    // atraso de um ciclo não empurra o próximo e a taxa não escorrega.
+    // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o atraso
+    // de um ciclo não empurra o próximo e a taxa não escorrega abaixo de 100 Hz.
     tempoAnterior += AMOSTRA_MS;
+    // Se ainda estamos mais de uma amostra atrasados (reconexão MQTT, publish
+    // lento), não adianta amostrar em rajada para recuperar: as amostras sairiam
+    // sem espaçamento real. Recomeça do agora.
     if (millis() - tempoAnterior >= AMOSTRA_MS) tempoAnterior = millis();
 
     AccelData accel;
@@ -272,7 +263,8 @@ void loop() {
     indice++;
 
     if (indice >= TAMANHO_JANELA) {
-      float fsReal = TAMANHO_JANELA * 1000.0f / (millis() - millisInicioJanela);
+      const char* label = SEQUENCIA[indiceClasse];
+      uint64_t ts_epoch_ms = agoraEpochMs();
 
       float mx = calcMean(ax_buf, TAMANHO_JANELA);
       float my = calcMean(ay_buf, TAMANHO_JANELA);
@@ -280,28 +272,29 @@ void loop() {
       float sx = calcStd(ax_buf, TAMANHO_JANELA, mx);
       float sy = calcStd(ay_buf, TAMANHO_JANELA, my);
       float sz = calcStd(az_buf, TAMANHO_JANELA, mz);
-      float rmag = calcRMSMagnitude(ax_buf, ay_buf, az_buf, TAMANHO_JANELA);
 
       calcMagnitude(ax_buf, ay_buf, az_buf, mag_buf, TAMANHO_JANELA);
-      float mMag = calcMean(mag_buf, TAMANHO_JANELA);
+      float mMag   = calcMean(mag_buf, TAMANHO_JANELA);
       float stdMag = calcStd(mag_buf, TAMANHO_JANELA, mMag);
-      float p2p = calcPtP(mag_buf, TAMANHO_JANELA);
-      float crest = calcCrest(mag_buf, TAMANHO_JANELA, mMag, stdMag);
-      float kurt = calcKurtosis(mag_buf, TAMANHO_JANELA, mMag, stdMag);
-      float zcr = calcZCR(mag_buf, TAMANHO_JANELA, mMag);
+      float p2p    = calcPtP(mag_buf, TAMANHO_JANELA);
 
       janelaAtual++;
 
-      Serial.printf("%s,%02d,%d,%.1f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
-                    SEQUENCIA[indiceClasse], rodada, janelaAtual, fsReal,
-                    mx, my, mz, sx, sy, sz, rmag,
-                    stdMag, p2p, crest, kurt, zcr);
+      Serial.printf("%llu,%s,%02d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
+                    (unsigned long long)ts_epoch_ms, label, rodada, janelaAtual,
+                    mx, my, mz, sx, sy, sz, stdMag, p2p);
 
-      publicarJanela(janelaAtual, fsReal, mx, my, mz, sx, sy, sz, rmag,
-                    stdMag, p2p, crest, kurt, zcr);
+      publicarJanela(label, ts_epoch_ms, rodada, janelaAtual,
+                    mx, my, mz, sx, sy, sz, stdMag, p2p);
 
       indice = 0;
-      millisInicioJanela = millis();
+
+      if (janelaAtual >= META_JANELAS) {
+        coletando = false;
+        digitalWrite(LED_ONBOARD, LOW);
+        Serial.printf(">>> %d janelas coletadas para %s (rodada %02d). Reposicione o sensor e aperte o botao 18 para a proxima classe.\r\n",
+                      META_JANELAS, label, rodada);
+      }
     }
   }
 }
@@ -313,11 +306,42 @@ void avancarClasse() {
     indiceClasse = 0;
     rodada++;
   }
+  janelaAtual = 0;
+
+  // Reinicia o padrão de piscadas do zero para a nova classe.
+  ledPiscadasFeitas = 0;
+  ledClasseAceso    = false;
+  digitalWrite(LED_PIN, LOW);
+  ledUltimaMudanca = millis();
+
   imprimirClasseAtual();
 }
 
 void imprimirClasseAtual() {
   Serial.printf("Classe selecionada: %s (rodada %02d)\r\n", SEQUENCIA[indiceClasse], rodada);
+}
+
+/* ---- LED de classe: N piscadas curtas + pausa longa, repetindo sempre ---- */
+void atualizarLedClasse() {
+  int totalPiscadas = indiceClasse + 1;
+  uint32_t agora = millis();
+
+  if (ledClasseAceso) {
+    if (agora - ledUltimaMudanca >= LED_ON_MS) {
+      digitalWrite(LED_PIN, LOW);
+      ledClasseAceso = false;
+      ledUltimaMudanca = agora;
+      ledPiscadasFeitas++;
+    }
+  } else {
+    uint32_t intervalo = (ledPiscadasFeitas >= totalPiscadas) ? LED_PAUSA_MS : LED_OFF_MS;
+    if (agora - ledUltimaMudanca >= intervalo) {
+      if (ledPiscadasFeitas >= totalPiscadas) ledPiscadasFeitas = 0;
+      digitalWrite(LED_PIN, HIGH);
+      ledClasseAceso = true;
+      ledUltimaMudanca = agora;
+    }
+  }
 }
 
 /* ---- WiFi ---- */
@@ -336,6 +360,30 @@ void conectarWiFi() {
   Serial.println(WiFi.localIP());
 }
 
+/* ---- Relógio (NTP) ---- */
+void sincronizarRelogio() {
+  configTime(0, 0, NTP_SERVER_1, NTP_SERVER_2);   // UTC (offset 0)
+  Serial.print("Sincronizando relógio via NTP");
+  struct tm tm;
+  for (int i = 0; i < 16 && !relogioSincronizado; i++) {
+    if (getLocalTime(&tm, 500)) relogioSincronizado = true;
+    else { Serial.print('.'); delay(500); }
+  }
+  if (relogioSincronizado) {
+    epochBaseMs  = (uint64_t)time(nullptr) * 1000ULL;
+    millisNaSync = millis();
+    Serial.printf(" OK (%04d-%02d-%02d %02d:%02d:%02d UTC)\r\n",
+                  tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                  tm.tm_hour, tm.tm_min, tm.tm_sec);
+  } else {
+    Serial.println(" FALHOU. ts_epoch_ms vira uptime; a ponte usa o horário de recepção.");
+  }
+}
+
+uint64_t agoraEpochMs() {
+  return epochBaseMs + (uint64_t)(millis() - millisNaSync);
+}
+
 /* ---- MQTT ---- */
 void conectarMQTT() {
   while (!mqttClient.connected()) {
@@ -349,28 +397,24 @@ void conectarMQTT() {
   }
 }
 
-void publicarJanela(int janelaIdx, float fsReal,
+void publicarJanela(const char* label, uint64_t ts_epoch_ms, int rodadaAtual, int janelaIdx,
                     float mx, float my, float mz,
-                    float sx, float sy, float sz, float rmag,
-                    float stdMag, float p2p, float crest, float kurt, float zcr) {
+                    float sx, float sy, float sz,
+                    float stdMag, float p2p) {
   JsonDocument doc;
-  doc["device"]    = MQTT_CLIENT_ID;
-  doc["classe"]    = SEQUENCIA[indiceClasse];
-  doc["rodada"]    = rodada;
-  doc["janela"]    = janelaIdx;
-  doc["fs_real"]   = serialized(String(fsReal, 1));
-  doc["mean_ax"]   = serialized(String(mx, 3));
-  doc["mean_ay"]   = serialized(String(my, 3));
-  doc["mean_az"]   = serialized(String(mz, 3));
-  doc["std_ax"]    = serialized(String(sx, 3));
-  doc["std_ay"]    = serialized(String(sy, 3));
-  doc["std_az"]    = serialized(String(sz, 3));
-  doc["rms_mag"]   = serialized(String(rmag, 3));
-  doc["std_mag"]   = serialized(String(stdMag, 3));
-  doc["p2p_mag"]   = serialized(String(p2p, 3));
-  doc["crest_mag"] = serialized(String(crest, 3));
-  doc["kurt_mag"]  = serialized(String(kurt, 3));
-  doc["zcr_mag"]   = serialized(String(zcr, 3));
+  doc["device"]      = MQTT_CLIENT_ID;
+  doc["label"]       = label;
+  doc["rodada"]      = rodadaAtual;
+  doc["janela"]      = janelaIdx;
+  doc["ts_epoch_ms"] = ts_epoch_ms;
+  doc["mean_ax"] = serialized(String(mx, 3));
+  doc["mean_ay"] = serialized(String(my, 3));
+  doc["mean_az"] = serialized(String(mz, 3));
+  doc["std_ax"]  = serialized(String(sx, 3));
+  doc["std_ay"]  = serialized(String(sy, 3));
+  doc["std_az"]  = serialized(String(sz, 3));
+  doc["std_mag"] = serialized(String(stdMag, 3));
+  doc["p2p_mag"] = serialized(String(p2p, 3));
 
   String buffer;
   serializeJson(doc, buffer);
