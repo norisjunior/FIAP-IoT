@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 102,
+      "left": 177,
+      "attrs": { "color": "blue", "flip": "1" }
+    },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -143.7, "left": 33, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn1",
+      "top": 122.6,
+      "left": 124.8,
+      "attrs": { "color": "black", "xray": "1", "bounce": "1" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 157.55,
+      "left": 124.8,
+      "attrs": { "value": "220" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v19.2", "h-38.4" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h28.8" ] ],
+    [ "dht1:SDA", "esp:21", "blue", [ "v28.8", "h57.7", "v96" ] ],
+    [ "led1:C", "esp:GND.2", "black", [ "v9.6", "h9.2", "v-105.6" ] ],
+    [ "led1:A", "r1:2", "green", [ "v0" ] ],
+    [ "r1:1", "esp:4", "green", [ "v0" ] ],
+    [ "btn1:1.l", "esp:18", "green", [ "h0" ] ],
+    [ "btn1:2.r", "esp:GND.2", "black", [ "h20", "v-95.6" ] ]
+  ],
+  "dependencies": {}
+}
