@@ -45,11 +45,15 @@ O `.pkl` é um **`Pipeline`**: o `StandardScaler` viaja dentro dele, junto com o
 classificador. É por isso que a API cabe em 35 linhas — ela carrega um arquivo e
 chama `predict`, sem normalizar nada na mão.
 
-> **Enquanto o dataset real não existe:** `api/` já vem com um `.pkl` treinado
-> com dados **sintéticos**, gerado por `api/gerar_modelo_sintetico.py`. Serve
-> para o loop inteiro rodar antes da primeira coleta. Substitua pelo modelo de
-> verdade quando ele existir — e acerte o pin do `scikit-learn` no
-> `requirements.txt` para a versão que o notebook imprimiu.
+O `.pkl` versionado em `api/` foi treinado com dados reais, no Colab. Ele carrega
+sem `InconsistentVersionWarning` porque o `requirements.txt` fixa exatamente as
+versões de `numpy`, `pandas`, `scikit-learn` e `joblib` que a primeira célula do
+notebook instala — o arquivo é lido pelo mesmo ambiente que o escreveu.
+
+> `api/gerar_modelo_sintetico.py` e `api/dataset_sintetico.csv` são o andaime que
+> segurou a ponta antes da coleta: geram janelas plausíveis e treinam um modelo de
+> brinquedo, para o loop rodar sem hardware. O script se recusa a sobrescrever um
+> `.pkl` existente, justamente para não apagar o modelo real.
 
 ## 2. Subir a API
 
