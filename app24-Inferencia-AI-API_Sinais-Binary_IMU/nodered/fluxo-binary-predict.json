@@ -1,0 +1,148 @@
+[
+    {
+        "id": "app24_tab",
+        "type": "tab",
+        "label": "app24 - inferencia binaria (MQTT -> API -> MQTT)",
+        "disabled": false,
+        "info": "app24 - inferencia binaria na nuvem.\n\nA janela de features publicada pelo ESP32 em FIAPIoT/motor/features vai\ndireto para a API (nao passa pelo InfluxDB) e a classe prevista volta em\nFIAPIoT/motor/features/cmd, onde o proprio ESP32 esta inscrito.\n\nO no http request manda msg.payload inteiro como corpo JSON; a API le so os\n7 campos que declarou e ignora device e ts_epoch_ms.\n\nURL: http://host.docker.internal:8000/predict -- e assim que o container do Node-RED\nenxerga a API rodando na sua maquina. Se o Node-RED for nativo, troque por\nhttp://localhost:8000/predict."
+    },
+    {
+        "id": "app24_mqtt_in",
+        "type": "mqtt in",
+        "z": "app24_tab",
+        "name": "FIAPIoT/motor/features",
+        "topic": "FIAPIoT/motor/features",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "app24_broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 170,
+        "y": 140,
+        "wires": [
+            [
+                "app24_http",
+                "app24_dbg_in"
+            ]
+        ]
+    },
+    {
+        "id": "app24_http",
+        "type": "http request",
+        "z": "app24_tab",
+        "name": "POST /predict",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://host.docker.internal:8000/predict",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 450,
+        "y": 140,
+        "wires": [
+            [
+                "app24_change",
+                "app24_dbg_out"
+            ]
+        ]
+    },
+    {
+        "id": "app24_change",
+        "type": "change",
+        "z": "app24_tab",
+        "name": "payload = payload.class",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.class",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 700,
+        "y": 140,
+        "wires": [
+            [
+                "app24_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "app24_mqtt_out",
+        "type": "mqtt out",
+        "z": "app24_tab",
+        "name": "FIAPIoT/motor/features/cmd",
+        "topic": "FIAPIoT/motor/features/cmd",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "app24_broker",
+        "x": 990,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "app24_dbg_in",
+        "type": "debug",
+        "z": "app24_tab",
+        "name": "janela recebida",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 440,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "app24_dbg_out",
+        "type": "debug",
+        "z": "app24_tab",
+        "name": "resposta do modelo",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.class",
+        "statusType": "msg",
+        "x": 700,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "app24_broker",
+        "type": "mqtt-broker",
+        "name": "Mosquitto da IoT-platform",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "node-red-app24",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true
+    }
+]

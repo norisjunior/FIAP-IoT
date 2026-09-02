@@ -32,11 +32,20 @@ Tópico `FIAPIoT/motor/features` — 1 JSON por janela:
   "device": "IoTDevJanelaFixa001",
   "label": "ligado_anomalia",
   "ts_epoch_ms": 1749760205123,
-  "mean_ax": 0.021, "mean_ay": -0.015, "mean_az": 9.812,
+  "mean_ax": 0.021, "mean_ay": -0.015, "mean_az": 0.998,
   "std_ax": 1.402,  "std_ay": 1.187,  "std_az": 0.945,
-  "rms_ax": 1.403,  "rms_ay": 1.190,  "rms_az": 9.857,
-  "rms_mag": 10.12
+  "rms_ax": 1.402,  "rms_ay": 1.187,  "rms_az": 1.374,
+  "rms_mag": 2.294
 }
 ```
 
 `ts_epoch_ms` = epoch em ms (UTC), via NTP + `millis()`. Rótulos: `ligado_normal` / `ligado_anomalia`.
+
+Os valores estão em **`g`**: o FastIMU devolve aceleração em `g` e o firmware publica o número
+cru. Parado e nivelado, `mean_az` fica perto de `1.0`.
+
+## Treino
+
+[`colab/treinamento_binario.ipynb`](colab/treinamento_binario.ipynb) lê estas janelas do
+InfluxDB (measurement `vibracao_binario`) e gera o `modelo_vibracao_binaria.pkl`, que a
+[Aplicação 24](../../app24-Inferencia-AI-API_Sinais-Binary_IMU/) carrega para responder no MQTT.
