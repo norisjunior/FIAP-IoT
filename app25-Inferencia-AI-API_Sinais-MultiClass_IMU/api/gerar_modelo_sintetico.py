@@ -19,6 +19,8 @@ A fisica que este gerador respeita (a mesma do app17-7):
   - nenhuma familia sozinha resolve as 4 classes: e o gancho do notebook 2.6
 """
 
+import os
+
 import numpy as np
 import pandas as pd
 import joblib
@@ -35,6 +37,11 @@ RODADAS = 3              # voltas completas pela sequencia de classes
 JANELAS_POR_RODADA = 30  # META_JANELAS do app17-7
 ARQUIVO_MODELO = "modelo_motor_multiclasse.pkl"
 ARQUIVO_CSV = "dataset_sintetico.csv"
+
+if os.path.exists(ARQUIVO_MODELO):
+    raise SystemExit(
+        f"\n{ARQUIVO_MODELO} ja existe e este script gera um modelo SINTETICO.\n"
+        "Apague o arquivo antes de rodar, para nao sobrescrever um modelo real.")
 
 RUIDO_MONTAGEM_GRAUS = 4.0
 

@@ -1,5 +1,11 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
-pandas>=2.0.0
-scikit-learn==1.9.0
-joblib>=1.3.0
+
+# Estas quatro sao as mesmas do notebook que gera o .pkl, pinadas na primeira
+# celula de colab/treinamento_binario.ipynb. numpy e scikit-learn sao as que quebram o
+# joblib.load se divergirem; pandas e joblib vao pinados junto para o ambiente
+# ser o mesmo dos dois lados.
+numpy==2.1.3
+pandas==2.2.3
+scikit-learn==1.6.1
+joblib==1.5.3

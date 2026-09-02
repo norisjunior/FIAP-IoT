@@ -55,8 +55,10 @@ rodada e baixa o `modelo_motor_multiclasse.pkl`. Copie o arquivo para `api/`.
 > **Enquanto o dataset real não existe:** `api/` já vem com um `.pkl` treinado
 > com dados **sintéticos**, gerado por `api/gerar_modelo_sintetico.py`. Serve
 > para o loop inteiro rodar antes da primeira coleta. Substitua pelo modelo de
-> verdade quando ele existir — e acerte o pin do `scikit-learn` no
-> `requirements.txt` para a versão que o notebook imprimiu.
+> verdade quando ele existir — o script se recusa a sobrescrever um `.pkl` que já
+> exista. O `requirements.txt` não muda: ele e a primeira célula do notebook fixam
+> as mesmas versões de `numpy`, `pandas`, `scikit-learn` e `joblib`, para o `.pkl`
+> ser lido pelo mesmo ambiente que o escreveu.
 
 ## 2. Subir a API
 

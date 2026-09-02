@@ -17,6 +17,8 @@ A fisica que este gerador respeita (a mesma do app17-6):
     que e o que o notebook 1.5 espera que o modelo aprenda.
 """
 
+import os
+
 import numpy as np
 import pandas as pd
 import joblib
@@ -32,6 +34,11 @@ G = 1.0                 # gravidade em g (unidade do FastIMU)
 JANELAS_POR_CLASSE = 90  # 3 rodadas de 30 janelas, como no protocolo de coleta
 ARQUIVO_MODELO = "modelo_vibracao_binaria.pkl"
 ARQUIVO_CSV = "dataset_sintetico.csv"
+
+if os.path.exists(ARQUIVO_MODELO):
+    raise SystemExit(
+        f"\n{ARQUIVO_MODELO} ja existe e este script gera um modelo SINTETICO.\n"
+        "Apague o arquivo antes de rodar, para nao sobrescrever um modelo real.")
 
 # Ruido de montagem: o sensor nunca fica perfeitamente nivelado. Vale para as
 # DUAS classes, entao mean_* nao carrega informacao de classe nenhuma.
