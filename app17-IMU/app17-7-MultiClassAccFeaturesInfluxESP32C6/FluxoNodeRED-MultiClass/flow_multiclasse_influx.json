@@ -1,0 +1,114 @@
+[
+ {
+  "id": "fiapiot_multiclasse_tab",
+  "type": "tab",
+  "label": "app17-11 - multiclasse -> InfluxDB",
+  "disabled": false,
+  "info": "app17-11-MotorMultiClasse (Forma 1, 4 classes do motor).\n\nO ESP32 calcula 8 features por janela de 1 s e publica 1 JSON por janela em\nFIAPIoT/motor/multiclasse. Este fluxo assina o topico, monta o ponto (label e\nrodada viram TAGS; as 8 features + janela + ts_epoch_ms viram fields) e grava\nno measurement vibracao_multiclasse em um InfluxDB na NUVEM.\n\nA classe atual (label) e a rodada vem do proprio ESP32 (sequencia ciclica de\n4 classes, avancada pelo botao 18 -- ver README do app17-11)."
+ },
+ {
+  "id": "fiapiot_mc_mqtt_in",
+  "type": "mqtt in",
+  "z": "fiapiot_multiclasse_tab",
+  "name": "FIAPIoT/motor/multiclasse",
+  "topic": "FIAPIoT/motor/multiclasse",
+  "qos": "0",
+  "datatype": "json",
+  "broker": "fiapiot_mc_mqtt_broker",
+  "nl": false,
+  "rap": true,
+  "rh": 0,
+  "inputs": 0,
+  "x": 180,
+  "y": 140,
+  "wires": [
+   [
+    "fiapiot_mc_fn_ponto",
+    "fiapiot_mc_debug"
+   ]
+  ]
+ },
+ {
+  "id": "fiapiot_mc_fn_ponto",
+  "type": "function",
+  "z": "fiapiot_multiclasse_tab",
+  "name": "Monta ponto InfluxDB (multiclasse)",
+  "func": "// Recebe o JSON publicado pelo app17-11 em FIAPIoT/motor/multiclasse.\n// No MQTT-in em datatype \"json\" o payload ja chega como objeto; protegemos\n// mesmo assim contra string.\nlet p = msg.payload;\nif (typeof p === \"string\") {\n    try { p = JSON.parse(p); }\n    catch (e) { node.error(\"Payload nao e JSON valido\", msg); return null; }\n}\n\n// label vem da SEQUENCIA CICLICA do proprio ESP32 (avancada pelo botao 18).\nconst label = p.label || \"desconhecido\";\n// rodada identifica a VOLTA completa pela sequencia -- e o group do\n// LeaveOneGroupOut no notebook 2.6, por isso vira tag (como no app17-6), nao field.\nconst rodada = String(p.rodada != null ? p.rodada : \"00\");\n\n// As 8 features (mean_*/std_* dos 3 eixos + std_mag + p2p_mag) + janela\n// (indice dentro da rodada) + ts_epoch_ms (NTP, so para referencia -- o ponto\n// usa o horario de recepcao, igual ao app17-6).\nconst fields = {\n    janela:      Number(p.janela),\n    ts_epoch_ms: Number(p.ts_epoch_ms) || 0,\n    mean_ax:     Number(p.mean_ax),\n    mean_ay:     Number(p.mean_ay),\n    mean_az:     Number(p.mean_az),\n    std_ax:      Number(p.std_ax),\n    std_ay:      Number(p.std_ay),\n    std_az:      Number(p.std_az),\n    std_mag:     Number(p.std_mag),\n    p2p_mag:     Number(p.p2p_mag)\n};\n\n// label e rodada como TAGS: e o que o notebook 2.6 usa pra agrupar\n// (groupby label/rodada) e pro LeaveOneGroupOut por rodada.\nconst tags = {\n    label:  label,\n    rodada: rodada,\n    device: p.device || \"esp32\"\n};\n\nnode.status({ fill: \"green\", shape: \"dot\",\n    text: label + \" r\" + rodada + \" | std_mag=\" + (isFinite(fields.std_mag) ? fields.std_mag.toFixed(3) : \"?\") });\n\n// node-red-contrib-influxdb: payload = [fields, tags]\nmsg.payload = [fields, tags];\nreturn msg;\n",
+  "outputs": 1,
+  "timeout": 0,
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 480,
+  "y": 140,
+  "wires": [
+   [
+    "fiapiot_mc_influx_out"
+   ]
+  ]
+ },
+ {
+  "id": "fiapiot_mc_influx_out",
+  "type": "influxdb out",
+  "z": "fiapiot_multiclasse_tab",
+  "influxdb": "fiapiot_mc_influx_cloud",
+  "name": "InfluxDB nuvem (vibracao_multiclasse)",
+  "measurement": "vibracao_multiclasse",
+  "precision": "",
+  "retentionPolicy": "",
+  "database": "database",
+  "precisionV18FluxV20": "ms",
+  "retentionPolicyV18Flux": "",
+  "org": "SUA_ORG",
+  "bucket": "sensores",
+  "x": 850,
+  "y": 140,
+  "wires": []
+ },
+ {
+  "id": "fiapiot_mc_debug",
+  "type": "debug",
+  "z": "fiapiot_multiclasse_tab",
+  "name": "payload recebido",
+  "active": true,
+  "tosidebar": true,
+  "console": false,
+  "tostatus": false,
+  "complete": "payload",
+  "targetType": "msg",
+  "statusVal": "",
+  "statusType": "auto",
+  "x": 470,
+  "y": 220,
+  "wires": []
+ },
+ {
+  "id": "fiapiot_mc_mqtt_broker",
+  "type": "mqtt-broker",
+  "name": "Mosquitto da IoT-platform",
+  "broker": "mosquitto",
+  "port": 1883,
+  "clientid": "node-red-multiclasse",
+  "autoConnect": true,
+  "usetls": false,
+  "protocolVersion": 4,
+  "keepalive": 60,
+  "cleansession": true
+ },
+ {
+  "id": "fiapiot_mc_influx_cloud",
+  "type": "influxdb",
+  "hostname": "127.0.0.1",
+  "port": 8086,
+  "protocol": "http",
+  "database": "database",
+  "name": "InfluxDB Cloud (EDITAR url/org/token)",
+  "usetls": false,
+  "tls": "",
+  "influxdbVersion": "2.0",
+  "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+  "timeout": 10,
+  "rejectUnauthorized": true
+ }
+]
