@@ -67,7 +67,7 @@ bool     relogioSincronizado = false;
 #define LED_ONBOARD   2   // LED onboard: aceso = conectado ao broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
-#define MPU_TYPE MPU6050
+#define MPU_TYPE MPU6500
 MPU_TYPE mpu;
 
 calData calib = { 0 };
