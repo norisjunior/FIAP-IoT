@@ -50,11 +50,6 @@ sem `InconsistentVersionWarning` porque o `requirements.txt` fixa exatamente as
 versões de `numpy`, `pandas`, `scikit-learn` e `joblib` que a primeira célula do
 notebook instala — o arquivo é lido pelo mesmo ambiente que o escreveu.
 
-> `api/gerar_modelo_sintetico.py` e `api/dataset_sintetico.csv` são o andaime que
-> segurou a ponta antes da coleta: geram janelas plausíveis e treinam um modelo de
-> brinquedo, para o loop rodar sem hardware. O script se recusa a sobrescrever um
-> `.pkl` existente, justamente para não apagar o modelo real.
-
 ## 2. Subir a API
 
 ```bash
