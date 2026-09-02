@@ -108,8 +108,7 @@ pio run
 String classePrevista = "";
 
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
-  classePrevista = "";
-  for (unsigned int i = 0; i < tamanho; i++) classePrevista += (char)conteudo[i];
+  classePrevista = String(conteudo, tamanho);
   classePrevista.trim();
   Serial.printf("MODELO: %s\r\n", classePrevista.c_str());
 }
@@ -117,6 +116,12 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
 
 Mais `mqttClient.setCallback(receberComando)` no `setup()` e
 `mqttClient.subscribe(MQTT_SUB_TOPIC)` ao conectar.
+
+O `tamanho` não é decoração: o buffer que o PubSubClient entrega **não termina em
+`\0`** — ele aponta para dentro do buffer de rede, que logo depois é reaproveitado.
+`String((char*)conteudo)` compilaria e funcionaria na maior parte dos testes, lendo
+até topar com um zero por acaso: às vezes lixo no fim, às vezes a mensagem
+anterior. O construtor de dois argumentos elimina isso por construção.
 
 **A subtração são os botões.** O `app17-6` tinha dois porque era um gerador de
 dataset: um humano escolhia o rótulo de cada janela. Aqui não há o que escolher —

@@ -283,8 +283,8 @@ void conectarMQTT() {
 
 /* ---- A resposta da nuvem chega aqui ---- */
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
-  classePrevista = "";
-  for (unsigned int i = 0; i < tamanho; i++) classePrevista += (char)conteudo[i];
+  // O payload MQTT não termina em '\0', por isso o String recebe o tamanho junto.
+  classePrevista = String(conteudo, tamanho);
   classePrevista.trim();
 
   Serial.printf("MODELO: %s\r\n", classePrevista.c_str());
