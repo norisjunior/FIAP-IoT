@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "Forma 1 - features -> InfluxDB",
         "disabled": false,
-        "info": "Forma 1 (Edge / janela fixa).\n\nO ESP32 (app17-9) calcula as 7 features por janela e publica 1 JSON por janela\nem FIAPIoT/motor/features. Este fluxo apenas: assina o topico, monta o ponto\n(label vira TAG; features viram fields) e grava no measurement vibracao_features\nem um InfluxDB na NUVEM.\n\nNAO ha botao aqui: a condicao normal/anomalia vem do botao do proprio ESP32\n(app17-9), no campo label do JSON."
+        "info": "Forma 1 (Edge / janela fixa).\n\nO ESP32 (app17-9) calcula as 7 features por janela e publica 1 JSON por janela\nem FIAPIoT/motor/features. Este fluxo apenas: assina o topico, monta o ponto\n(label vira TAG; features viram fields) e grava no measurement vibracao_binario\nem um InfluxDB na NUVEM.\n\nNAO ha botao aqui: a condicao normal/anomalia vem do botao do proprio ESP32\n(app17-9), no campo label do JSON."
     },
     {
         "id": "fiapiot_mqtt_in",
@@ -53,8 +53,8 @@
         "type": "influxdb out",
         "z": "fiapiot_forma1_tab",
         "influxdb": "fiapiot_influx_cloud",
-        "name": "InfluxDB nuvem (vibracao_features)",
-        "measurement": "vibracao_features",
+        "name": "InfluxDB nuvem (vibracao_binario)",
+        "measurement": "vibracao_binario",
         "precision": "",
         "retentionPolicy": "",
         "database": "database",

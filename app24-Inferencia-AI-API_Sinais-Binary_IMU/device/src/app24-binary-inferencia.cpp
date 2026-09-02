@@ -1,4 +1,15 @@
-/* app17-9-accfeaturesinflux — features de aceleração por janela (1 s @ 100 Hz), publicadas via MQTT (JSON). */
+/* app24-binary-inferencia — o ESP32 mede, pergunta para a nuvem e obedece.
+
+   As features são as mesmas do app17-6 (janela de 100 amostras @ 100 Hz), mas
+   aqui o dispositivo não rotula nada: publica a janela em FIAPIoT/motor/features
+   e a classe prevista volta em FIAPIoT/motor/features/cmd. O LED mostra o que a
+   NUVEM respondeu.
+
+   Repare no que não existe aqui: nenhum if sobre vibração, nenhum limiar — e
+   nenhum botão. O app17-6 tinha botões porque era um GERADOR DE DATASET, onde
+   um humano rotulava cada janela. Este é um MONITOR de condição: quem rotula é
+   o modelo, do outro lado da rede.
+*/
 /*
 PARA USAR NO WOKWI:
 - Ajustar as credenciais WiFi e o IP do MQTT_SERVER
@@ -32,8 +43,9 @@ WiFiClient wifiClient;
 
 /* ---- MQTT ---- */
 #define MQTT_PORT      1883
-#define MQTT_PUB_TOPIC "FIAPIoT/motor/features"
-#define MQTT_CLIENT_ID "IoTDevJanelaFixa001"
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/features"       // a janela vai por aqui
+#define MQTT_SUB_TOPIC "FIAPIoT/motor/features/cmd"   // a classe volta por aqui
+#define MQTT_CLIENT_ID "IoTDevInferenciaBinaria001"
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Relógio (NTP) ---- */
@@ -44,10 +56,8 @@ uint32_t millisNaSync       = 0;
 bool     relogioSincronizado = false;
 
 /* ---- Pinos ---- */
-#define BTN_COLETA   21   // inicia/para a coleta
-#define BTN_ANOMALIA 18   // seleciona NORMAL/ANOMALIA
-#define LED_PIN       4   // LED externo
-#define LED_ONBOARD   2   // LED onboard
+#define LED_PIN       4   // LED externo: aceso = normal, piscando = anomalia
+#define LED_ONBOARD   2   // LED onboard: aceso = conectado ao broker
 #define SDA_PIN      22
 #define SCL_PIN      23
 
@@ -57,17 +67,12 @@ MPU_TYPE mpu;
 
 calData calib = { 0 };
 
-bool coletando     = false;
-bool anomaliaAtiva = false;   // false = NORMAL, true = ANOMALIA
+/* ---- A resposta da nuvem ----
+   Vazia até a primeira resposta chegar: com o LED apagado, dá para ver a
+   diferença entre "ainda não perguntei" e "a nuvem disse normal". */
+String classePrevista = "";
 
-int ultimoBotaoColeta   = HIGH;
-int ultimoBotaoAnomalia = HIGH;
-
-unsigned long ultimoDebounceColeta   = 0;
-unsigned long ultimoDebounceAnomalia = 0;
-const unsigned long debounceMs = 300;
-
-/* ---- Pisca do LED (condição ANOMALIA) ---- */
+/* ---- Pisca do LED (classe ligado_anomalia) ---- */
 uint32_t ultimoPiscaLed = 0;
 bool ledAceso = false;
 const int PISCA_MS = 250;
@@ -86,12 +91,13 @@ void conectarWiFi();
 void sincronizarRelogio();
 uint64_t agoraEpochMs();
 void conectarMQTT();
-void publicarFeatures(const char* label, uint64_t ts_epoch_ms,
+void receberComando(char* topico, byte* conteudo, unsigned int tamanho);
+void atualizarLed();
+void publicarFeatures(uint64_t ts_epoch_ms,
                       float mx, float my, float mz,
-                      float sx, float sy, float sz,
-                      float rx, float ry, float rz, float rmag);
+                      float sx, float sy, float sz, float rmag);
 
-/* ---- Features ---- */
+/* ---- Features: exatamente as 7 que o modelo recebe ---- */
 float calcMean(float arr[], int n) {
   float soma = 0;
   for (int i = 0; i < n; i++) soma += arr[i];
@@ -102,12 +108,6 @@ float calcStd(float arr[], int n) {
   float media = calcMean(arr, n);
   float soma = 0;
   for (int i = 0; i < n; i++) soma += (arr[i] - media) * (arr[i] - media);
-  return sqrt(soma / n);
-}
-
-float calcRMS(float arr[], int n) {
-  float soma = 0;
-  for (int i = 0; i < n; i++) soma += arr[i] * arr[i];
   return sqrt(soma / n);
 }
 
@@ -142,28 +142,25 @@ void setup() {
 
   Serial.println("MPU iniciado");
 
-  pinMode(BTN_COLETA,   INPUT_PULLUP);
-  pinMode(BTN_ANOMALIA, INPUT_PULLUP);
-  pinMode(LED_PIN,      OUTPUT);
-  pinMode(LED_ONBOARD,  OUTPUT);
-  digitalWrite(LED_PIN,     HIGH);
-  digitalWrite(LED_ONBOARD, HIGH);
+  pinMode(LED_PIN,     OUTPUT);
+  pinMode(LED_ONBOARD, OUTPUT);
+  digitalWrite(LED_PIN,     LOW);
+  digitalWrite(LED_ONBOARD, LOW);
 
   conectarWiFi();
   sincronizarRelogio();
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setCallback(receberComando);   // é aqui que a resposta da nuvem entra
   mqttClient.setKeepAlive(60);
   mqttClient.setSocketTimeout(30);
   mqttClient.setBufferSize(512);
 
-  Serial.println("Sistema pronto.");
-  Serial.println("  Botão 21: inicia/para a coleta");
-  Serial.println("  Botão 18: seleciona NORMAL/ANOMALIA (só com a coleta parada)");
-  Serial.println("  LED aceso fixo = NORMAL | LED piscando = ANOMALIA");
-  Serial.println("  NORMAL = MPU parado | ANOMALIA = movimente o MPU durante a coleta");
-  Serial.printf("  Tópico MQTT: %s\r\n\r\n", MQTT_PUB_TOPIC);
-  Serial.println("ts_epoch_ms,label,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,rms_ax,rms_ay,rms_az,rms_mag");
+  Serial.println("Sistema pronto. Uma janela por segundo, sem botão nenhum.");
+  Serial.printf("  Publica em: %s\r\n", MQTT_PUB_TOPIC);
+  Serial.printf("  Escuta em:  %s\r\n", MQTT_SUB_TOPIC);
+  Serial.println("  LED aceso fixo = ligado_normal | LED piscando = ligado_anomalia");
+  Serial.println("  LED apagado = a nuvem ainda não respondeu\r\n");
 }
 
 /* ============================== LOOP =============================== */
@@ -173,57 +170,10 @@ void loop() {
   }
   mqttClient.loop();
 
-  // --- Botão coleta (inicia/para) ---
-  int leituraColeta = digitalRead(BTN_COLETA);
-  if (ultimoBotaoColeta == HIGH && leituraColeta == LOW) {
-    if (millis() - ultimoDebounceColeta > debounceMs) {
-      coletando = !coletando;
-      if (coletando) {
-        indice = 0;
-        tempoAnterior = millis();
-        Serial.printf("Coleta INICIADA (condição: %s)\r\n",
-                      anomaliaAtiva ? "ANOMALIA - movimente o MPU" : "NORMAL - deixe o MPU parado");
-      } else {
-        Serial.println("Coleta PARADA");
-      }
-      ultimoDebounceColeta = millis();
-    }
-  }
-  ultimoBotaoColeta = leituraColeta;
+  digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
+  atualizarLed();
 
-  // --- Botão anomalia (seleciona condição) ---
-  int leituraAnomalia = digitalRead(BTN_ANOMALIA);
-  if (ultimoBotaoAnomalia == HIGH && leituraAnomalia == LOW) {
-    if (millis() - ultimoDebounceAnomalia > debounceMs) {
-      if (!coletando) {
-        anomaliaAtiva = !anomaliaAtiva;
-        Serial.printf("Condição selecionada: %s\r\n",
-                      anomaliaAtiva ? "ANOMALIA (MPU em movimento)" : "NORMAL (MPU parado)");
-      } else {
-        Serial.println("Pare a coleta (botão 21) antes de trocar a condição.");
-      }
-      ultimoDebounceAnomalia = millis();
-    }
-  }
-  ultimoBotaoAnomalia = leituraAnomalia;
-
-  // --- LED indica a condição (externo 4 + onboard 2) ---
-  if (anomaliaAtiva) {
-    if (millis() - ultimoPiscaLed >= PISCA_MS) {
-      ultimoPiscaLed = millis();
-      ledAceso = !ledAceso;
-      digitalWrite(LED_PIN,     ledAceso ? HIGH : LOW);
-      digitalWrite(LED_ONBOARD, ledAceso ? HIGH : LOW);
-    }
-  } else {
-    digitalWrite(LED_PIN,     HIGH);
-    digitalWrite(LED_ONBOARD, HIGH);
-    ledAceso = true;
-  }
-
-  if (!coletando) return;
-
-  // --- Coleta IMU a 100 Hz ---
+  // --- Coleta IMU a 100 Hz, direto, sem esperar comando ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
     // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o atraso
     // de um ciclo não empurra o próximo e a taxa não escorrega abaixo de 100 Hz.
@@ -232,6 +182,7 @@ void loop() {
     // lento), não adianta amostrar em rajada para recuperar: as amostras sairiam
     // sem espaçamento real. Recomeça do agora.
     if (millis() - tempoAnterior >= AMOSTRA_MS) tempoAnterior = millis();
+
     AccelData accel;
     mpu.update();
     mpu.getAccel(&accel);
@@ -241,8 +192,6 @@ void loop() {
     indice++;
 
     if (indice >= TAMANHO_JANELA) {
-      const char* label = anomaliaAtiva ? "ligado_anomalia" : "ligado_normal";
-
       uint64_t ts_epoch_ms = agoraEpochMs();
 
       float mx   = calcMean(ax_buf, TAMANHO_JANELA);
@@ -251,19 +200,29 @@ void loop() {
       float sx   = calcStd(ax_buf,  TAMANHO_JANELA);
       float sy   = calcStd(ay_buf,  TAMANHO_JANELA);
       float sz   = calcStd(az_buf,  TAMANHO_JANELA);
-      float rx   = calcRMS(ax_buf,  TAMANHO_JANELA);
-      float ry   = calcRMS(ay_buf,  TAMANHO_JANELA);
-      float rz   = calcRMS(az_buf,  TAMANHO_JANELA);
       float rmag = calcRMSMagnitude(ax_buf, ay_buf, az_buf, TAMANHO_JANELA);
 
-      Serial.printf("%llu,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
-                    (unsigned long long)ts_epoch_ms, label,
-                    mx, my, mz, sx, sy, sz, rx, ry, rz, rmag);
-
-      publicarFeatures(label, ts_epoch_ms, mx, my, mz, sx, sy, sz, rx, ry, rz, rmag);
+      publicarFeatures(ts_epoch_ms, mx, my, mz, sx, sy, sz, rmag);
 
       indice = 0;
     }
+  }
+}
+
+/* ---- LED externo: mostra o que a NUVEM respondeu ---- */
+void atualizarLed() {
+  if (classePrevista == "ligado_anomalia") {
+    if (millis() - ultimoPiscaLed >= PISCA_MS) {
+      ultimoPiscaLed = millis();
+      ledAceso = !ledAceso;
+      digitalWrite(LED_PIN, ledAceso ? HIGH : LOW);
+    }
+  } else if (classePrevista == "ligado_normal") {
+    digitalWrite(LED_PIN, HIGH);
+    ledAceso = true;
+  } else {
+    digitalWrite(LED_PIN, LOW);   // ainda sem resposta
+    ledAceso = false;
   }
 }
 
@@ -299,7 +258,7 @@ void sincronizarRelogio() {
                   tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                   tm.tm_hour, tm.tm_min, tm.tm_sec);
   } else {
-    Serial.println(" FALHOU. ts_epoch_ms vira uptime; a ponte usa o horário de recepção.");
+    Serial.println(" FALHOU. ts_epoch_ms vira uptime.");
   }
 }
 
@@ -313,6 +272,8 @@ void conectarMQTT() {
     Serial.printf("Conectando ao MQTT Broker %s...", MQTT_SERVER);
     if (mqttClient.connect(MQTT_CLIENT_ID)) {
       Serial.println(" Conectado!");
+      mqttClient.subscribe(MQTT_SUB_TOPIC);
+      Serial.printf("Inscrito em: %s\r\n", MQTT_SUB_TOPIC);
     } else {
       Serial.printf(" Falha rc=%d. Tentando em 5s...\r\n", mqttClient.state());
       delay(5000);
@@ -320,31 +281,34 @@ void conectarMQTT() {
   }
 }
 
-void publicarFeatures(const char* label, uint64_t ts_epoch_ms,
+/* ---- A resposta da nuvem chega aqui ---- */
+void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
+  classePrevista = "";
+  for (unsigned int i = 0; i < tamanho; i++) classePrevista += (char)conteudo[i];
+  classePrevista.trim();
+
+  Serial.printf("MODELO: %s\r\n", classePrevista.c_str());
+}
+
+/* ---- Publica a janela: só o que o modelo precisa ---- */
+void publicarFeatures(uint64_t ts_epoch_ms,
                       float mx, float my, float mz,
-                      float sx, float sy, float sz,
-                      float rx, float ry, float rz, float rmag) {
+                      float sx, float sy, float sz, float rmag) {
   JsonDocument doc;
-  doc["device"]       = MQTT_CLIENT_ID;
-  doc["label"]        = label;
-  doc["ts_epoch_ms"]  = ts_epoch_ms;
+  doc["device"]      = MQTT_CLIENT_ID;
+  doc["ts_epoch_ms"] = ts_epoch_ms;
   doc["mean_ax"] = serialized(String(mx, 3));
   doc["mean_ay"] = serialized(String(my, 3));
   doc["mean_az"] = serialized(String(mz, 3));
   doc["std_ax"]  = serialized(String(sx, 3));
   doc["std_ay"]  = serialized(String(sy, 3));
   doc["std_az"]  = serialized(String(sz, 3));
-  doc["rms_ax"]  = serialized(String(rx, 3));
-  doc["rms_ay"]  = serialized(String(ry, 3));
-  doc["rms_az"]  = serialized(String(rz, 3));
   doc["rms_mag"] = serialized(String(rmag, 3));
 
   String buffer;
   serializeJson(doc, buffer);
 
-  Serial.print("PAYLOAD MQTT: ");
-  Serial.println(buffer.c_str());
-
-  bool ok = mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str());
-  Serial.println(ok ? "MQTT: enviado com sucesso" : "MQTT: falha no envio");
+  if (!mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str())) {
+    Serial.println("MQTT: falha no envio");
+  }
 }

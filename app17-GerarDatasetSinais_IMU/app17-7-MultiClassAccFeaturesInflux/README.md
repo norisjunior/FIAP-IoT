@@ -38,12 +38,22 @@ Tópico `FIAPIoT/motor/multiclasse` — 1 JSON por janela:
   "rodada": 1,
   "janela": 7,
   "ts_epoch_ms": 1749760205123,
-  "mean_ax": 3.214, "mean_ay": -0.082, "mean_az": 9.114,
-  "std_ax": 0.351,  "std_ay": 0.298,  "std_az": 0.412,
-  "std_mag": 0.447,
-  "p2p_mag": 2.108
+  "mean_ax": 0.328, "mean_ay": -0.008, "mean_az": 0.929,
+  "std_ax": 0.036,  "std_ay": 0.030,  "std_az": 0.042,
+  "std_mag": 0.046,
+  "p2p_mag": 0.215
 }
 ```
 
 `rótulos`: `operando` / `inclinado_frente` / `inclinado_tras` / `anomalia`. `rodada` = volta
 completa pela sequência de classes. `ts_epoch_ms` = epoch em ms (UTC), via NTP + `millis()`.
+
+Os valores estão em **`g`**: o FastIMU devolve aceleração em `g` e o firmware publica o número
+cru. Nivelado, `mean_az` fica perto de `1.0`; inclinado 25°, parte da gravidade migra para
+`mean_ax` (`sen 25° ≈ 0,42`).
+
+## Treino
+
+[`colab/treinamento_multiclasse.ipynb`](colab/treinamento_multiclasse.ipynb) lê estas janelas do
+InfluxDB (measurement `vibracao_multiclasse`) e gera o `modelo_motor_multiclasse.pkl`, que a
+[Aplicação 25](../../app25-Inferencia-AI-API_Sinais-MultiClass_IMU/) carrega para responder no MQTT.

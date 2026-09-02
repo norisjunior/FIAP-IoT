@@ -1,6 +1,18 @@
-/* app17-11-motormulticlasse — features de aceleração por janela (1 s @ 100 Hz), 4 classes
-   cíclicas (motor sempre ligado), publicadas via MQTT (JSON). Evolução multiclasse do
-   app17-6 (binário: parado vs anomalia). */
+/* app25-multiclasse-inferencia — o ESP32 mede, pergunta para a nuvem e obedece.
+
+   As features são as mesmas do app17-7 (janela de 100 amostras @ 100 Hz), mas
+   aqui o dispositivo não rotula nada: publica a janela em
+   FIAPIoT/motor/multiclasse e a classe prevista volta em
+   FIAPIoT/motor/multiclasse/cmd. O LED pisca o índice do que a NUVEM respondeu.
+
+   Repare no que não existe aqui: nenhum if sobre vibração ou inclinação, nenhum
+   limiar — e nenhum botão. O app17-7 tinha botões porque era um GERADOR DE
+   DATASET, onde um humano rotulava cada janela e a coleta parava em 30. Este é
+   um MONITOR de condição: roda sem parar, e quem rotula é o modelo.
+
+   A função atualizarLedClasse() é a mesma do app17-7. Só mudou de onde vem o
+   índice: antes era o botão 18, agora é a resposta da nuvem.
+*/
 /*
 PARA USAR NO WOKWI:
 - Ajustar as credenciais WiFi e o IP do MQTT_SERVER (ou usar as linhas comentadas do Wokwi abaixo)
@@ -8,7 +20,7 @@ PARA USAR NO WOKWI:
   - #define MPU_TYPE MPU6050
 - Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);` (trava no Wokwi, FIFO ausente)
 - As classes de inclinação não têm equivalente fiel no simulador (não há como
-  inclinar o MPU6050 do Wokwi); serve para testar botões, LED e publicação MQTT.
+  inclinar o MPU6050 do Wokwi); serve para testar o loop MQTT -> API -> MQTT.
 */
 
 #include <Arduino.h>
@@ -36,8 +48,9 @@ WiFiClient wifiClient;
 
 /* ---- MQTT ---- */
 #define MQTT_PORT      1883
-#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse"
-#define MQTT_CLIENT_ID "IoTDevMultiClasse001"
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse"       // a janela vai por aqui
+#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/cmd"   // a classe volta por aqui
+#define MQTT_CLIENT_ID "IoTDevInferenciaMultiClasse001"
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Relógio (NTP) ---- */
@@ -50,10 +63,8 @@ bool     relogioSincronizado = false;
 /* ---- Pinos ---- */
 #define SDA_PIN      22
 #define SCL_PIN      23
-#define BTN_COLETA   21   // inicia/para a coleta
-#define BTN_CLASSE   18   // avança para a próxima classe (só com a coleta parada)
-#define LED_PIN       4   // LED externo: pisca N vezes = índice da classe atual
-#define LED_ONBOARD   2   // LED onboard: aceso = coleta em andamento
+#define LED_PIN       4   // LED externo: pisca N vezes = índice da classe prevista
+#define LED_ONBOARD   2   // LED onboard: aceso = conectado ao broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
 #define MPU_TYPE MPU6050
@@ -61,24 +72,18 @@ MPU_TYPE mpu;
 
 calData calib = { 0 };
 
-/* ---- Sequência cíclica de classes (motor sempre ligado, só muda a postura/intensidade) ---- */
+/* ---- As classes, na mesma ordem do app17-7 ----
+   A ordem aqui não precisa bater com a do modelo (modelo.classes_ é
+   alfabética): a nuvem manda o NOME, e nós procuramos o nome nesta lista só
+   para saber quantas piscadas dar. */
 const char* SEQUENCIA[] = { "operando", "inclinado_frente", "inclinado_tras", "anomalia" };
 const int   N_CLASSES = 4;
 
-int indiceClasse = 0;   // posição atual na sequência (0..N_CLASSES-1)
-int rodada        = 1;  // incrementa a cada volta completa pela sequência (group do LeaveOneGroupOut)
+/* ---- A resposta da nuvem ----
+   -1 = ainda não respondeu (LED apagado). */
+int classePrevista = -1;
 
-bool coletando = false;
-const int META_JANELAS = 30;   // a coleta para sozinha ao atingir esta contagem
-
-int ultimoBotaoColeta = HIGH;
-int ultimoBotaoClasse = HIGH;
-unsigned long ultimoDebounceColeta = 0;
-unsigned long ultimoDebounceClasse = 0;
-const unsigned long debounceMs = 300;
-
-/* ---- LED de classe: pisca N vezes = índice da classe (1..N_CLASSES), em loop contínuo,
-        independente da coleta estar rodando ou não ---- */
+/* ---- LED de classe: N piscadas curtas + pausa longa, repetindo ---- */
 const uint32_t LED_ON_MS    = 150;
 const uint32_t LED_OFF_MS   = 200;
 const uint32_t LED_PAUSA_MS = 1200;
@@ -87,7 +92,7 @@ int      ledPiscadasFeitas = 0;
 bool     ledClasseAceso    = false;
 uint32_t ledUltimaMudanca  = 0;
 
-/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão do app17-6) ---- */
+/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão do app17-7) ---- */
 const int FS_HZ          = 100;
 const int AMOSTRA_MS     = 1000 / FS_HZ;      // 10 ms
 const int TAMANHO_JANELA = FS_HZ;             // 100 amostras = 1 s
@@ -99,33 +104,22 @@ float mag_buf[TAMANHO_JANELA];
 
 int indice = 0;
 uint32_t tempoAnterior = 0;
-int janelaAtual = 0;   // conta janelas desde que a coleta desta classe começou
 
 /* ---- Protótipos ---- */
 void conectarWiFi();
 void sincronizarRelogio();
 uint64_t agoraEpochMs();
 void conectarMQTT();
-void avancarClasse();
-void imprimirClasseAtual();
+void receberComando(char* topico, byte* conteudo, unsigned int tamanho);
 void atualizarLedClasse();
-void publicarJanela(const char* label, uint64_t ts_epoch_ms, int rodadaAtual, int janelaIdx,
+void publicarJanela(uint64_t ts_epoch_ms,
                     float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p);
 
 /* =========================== Features ===========================
-   mean_ax/ay/az    -> orientação (projeção da gravidade nos 3 eixos): separa
-                       inclinado_frente de inclinado_tras.
-   std_ax/ay/az     -> vibração por eixo: separa operando de anomalia.
-   std_mag          -> vibração total, invariante à orientação do sensor.
-   p2p_mag          -> pior caso da janela (máx-mín da magnitude); complementa
-                       std_mag, pois um impacto isolado move o p2p sem mover
-                       muito o desvio-padrão.
-   Não entram aqui: rms_* (rms² = mean² + std², não traz informação nova —
-   ver app17-6), crest_mag (≈ razão entre p2p_mag e std_mag, o modelo já
-   consegue combiná-las), kurt_mag/zcr_mag (conteúdo de alta frequência que
-   100 Hz não enxerga) e fs_real (instrumentação de dataset, não feature). */
+   As 8 que o modelo recebe: mean_* (orientação), std_* e std_mag (vibração)
+   e p2p_mag (pior caso da janela). */
 float calcMean(float arr[], int n) {
   float soma = 0;
   for (int i = 0; i < n; i++) soma += arr[i];
@@ -178,8 +172,6 @@ void setup() {
 
   Serial.println("MPU iniciado");
 
-  pinMode(BTN_COLETA,  INPUT_PULLUP);
-  pinMode(BTN_CLASSE,  INPUT_PULLUP);
   pinMode(LED_PIN,     OUTPUT);
   pinMode(LED_ONBOARD, OUTPUT);
   digitalWrite(LED_PIN,     LOW);
@@ -190,19 +182,17 @@ void setup() {
   sincronizarRelogio();
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setCallback(receberComando);   // é aqui que a resposta da nuvem entra
   mqttClient.setKeepAlive(60);
   mqttClient.setSocketTimeout(30);
   mqttClient.setBufferSize(512);
 
-  Serial.println("Sistema pronto.");
-  Serial.println("  Botão 21: inicia/para a coleta");
-  Serial.println("  Botão 18: avança para a próxima classe (só com a coleta parada)");
-  Serial.println("  A coleta para sozinha ao completar 30 janelas da classe atual.");
-  Serial.println("  LED onboard aceso = coleta em andamento");
-  Serial.println("  LED externo: pisca N vezes = índice da classe atual (1..4), em loop");
-  Serial.printf("  Tópico MQTT: %s\r\n\r\n", MQTT_PUB_TOPIC);
-  Serial.println("ts_epoch_ms,label,rodada,janela,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,std_mag,p2p_mag");
-  imprimirClasseAtual();
+  Serial.println("Sistema pronto. Uma janela por segundo, sem botão nenhum.");
+  Serial.printf("  Publica em: %s\r\n", MQTT_PUB_TOPIC);
+  Serial.printf("  Escuta em:  %s\r\n", MQTT_SUB_TOPIC);
+  Serial.println("  LED externo: pisca N vezes = índice da classe prevista (1..4)");
+  Serial.println("    1=operando  2=inclinado_frente  3=inclinado_tras  4=anomalia");
+  Serial.println("  LED apagado = a nuvem ainda não respondeu\r\n");
 }
 
 /* ============================== LOOP =============================== */
@@ -212,45 +202,10 @@ void loop() {
   }
   mqttClient.loop();
 
-  // --- Botão coleta (inicia/para) ---
-  int leituraColeta = digitalRead(BTN_COLETA);
-  if (ultimoBotaoColeta == HIGH && leituraColeta == LOW) {
-    if (millis() - ultimoDebounceColeta > debounceMs) {
-      coletando = !coletando;
-      if (coletando) {
-        indice = 0;
-        tempoAnterior = millis();
-        digitalWrite(LED_ONBOARD, HIGH);
-        Serial.printf("Coleta INICIADA (classe: %s)\r\n", SEQUENCIA[indiceClasse]);
-      } else {
-        digitalWrite(LED_ONBOARD, LOW);
-        Serial.println("Coleta PARADA");
-      }
-      ultimoDebounceColeta = millis();
-    }
-  }
-  ultimoBotaoColeta = leituraColeta;
-
-  // --- Botão classe (avança na sequência, só com a coleta parada) ---
-  int leituraClasse = digitalRead(BTN_CLASSE);
-  if (ultimoBotaoClasse == HIGH && leituraClasse == LOW) {
-    if (millis() - ultimoDebounceClasse > debounceMs) {
-      if (!coletando) {
-        avancarClasse();
-      } else {
-        Serial.println("Pare a coleta (botão 21) antes de trocar a classe.");
-      }
-      ultimoDebounceClasse = millis();
-    }
-  }
-  ultimoBotaoClasse = leituraClasse;
-
-  // --- LED externo: pisca N vezes = índice da classe (roda sempre, coletando ou não) ---
+  digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
   atualizarLedClasse();
 
-  if (!coletando) return;
-
-  // --- Coleta IMU a 100 Hz ---
+  // --- Coleta IMU a 100 Hz, direto, sem esperar comando ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
     // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o atraso
     // de um ciclo não empurra o próximo e a taxa não escorrega abaixo de 100 Hz.
@@ -269,7 +224,6 @@ void loop() {
     indice++;
 
     if (indice >= TAMANHO_JANELA) {
-      const char* label = SEQUENCIA[indiceClasse];
       uint64_t ts_epoch_ms = agoraEpochMs();
 
       float mx = calcMean(ax_buf, TAMANHO_JANELA);
@@ -284,52 +238,25 @@ void loop() {
       float stdMag = calcStd(mag_buf, TAMANHO_JANELA, mMag);
       float p2p    = calcPtP(mag_buf, TAMANHO_JANELA);
 
-      janelaAtual++;
-
-      Serial.printf("%llu,%s,%02d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
-                    (unsigned long long)ts_epoch_ms, label, rodada, janelaAtual,
-                    mx, my, mz, sx, sy, sz, stdMag, p2p);
-
-      publicarJanela(label, ts_epoch_ms, rodada, janelaAtual,
-                    mx, my, mz, sx, sy, sz, stdMag, p2p);
+      publicarJanela(ts_epoch_ms, mx, my, mz, sx, sy, sz, stdMag, p2p);
 
       indice = 0;
-
-      if (janelaAtual >= META_JANELAS) {
-        coletando = false;
-        digitalWrite(LED_ONBOARD, LOW);
-        Serial.printf(">>> %d janelas coletadas para %s (rodada %02d). Reposicione o sensor e aperte o botao 18 para a proxima classe.\r\n",
-                      META_JANELAS, label, rodada);
-      }
     }
   }
 }
 
-/* =========================== Sequência =============================== */
-void avancarClasse() {
-  indiceClasse++;
-  if (indiceClasse >= N_CLASSES) {
-    indiceClasse = 0;
-    rodada++;
-  }
-  janelaAtual = 0;
-
-  // Reinicia o padrão de piscadas do zero para a nova classe.
-  ledPiscadasFeitas = 0;
-  ledClasseAceso    = false;
-  digitalWrite(LED_PIN, LOW);
-  ledUltimaMudanca = millis();
-
-  imprimirClasseAtual();
-}
-
-void imprimirClasseAtual() {
-  Serial.printf("Classe selecionada: %s (rodada %02d)\r\n", SEQUENCIA[indiceClasse], rodada);
-}
-
-/* ---- LED de classe: N piscadas curtas + pausa longa, repetindo sempre ---- */
+/* ---- LED de classe: N piscadas curtas + pausa longa, repetindo sempre ----
+   Idêntica à do app17-7. A única diferença é o índice: vem de classePrevista
+   (a nuvem), não de indiceClasse (o botão). */
 void atualizarLedClasse() {
-  int totalPiscadas = indiceClasse + 1;
+  if (classePrevista < 0) {          // ainda sem resposta
+    digitalWrite(LED_PIN, LOW);
+    ledClasseAceso = false;
+    ledPiscadasFeitas = 0;
+    return;
+  }
+
+  int totalPiscadas = classePrevista + 1;
   uint32_t agora = millis();
 
   if (ledClasseAceso) {
@@ -382,7 +309,7 @@ void sincronizarRelogio() {
                   tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                   tm.tm_hour, tm.tm_min, tm.tm_sec);
   } else {
-    Serial.println(" FALHOU. ts_epoch_ms vira uptime; a ponte usa o horário de recepção.");
+    Serial.println(" FALHOU. ts_epoch_ms vira uptime.");
   }
 }
 
@@ -396,6 +323,8 @@ void conectarMQTT() {
     Serial.printf("Conectando ao MQTT Broker %s...", MQTT_SERVER);
     if (mqttClient.connect(MQTT_CLIENT_ID)) {
       Serial.println(" Conectado!");
+      mqttClient.subscribe(MQTT_SUB_TOPIC);
+      Serial.printf("Inscrito em: %s\r\n", MQTT_SUB_TOPIC);
     } else {
       Serial.printf(" Falha rc=%d. Tentando em 5s...\r\n", mqttClient.state());
       delay(5000);
@@ -403,15 +332,43 @@ void conectarMQTT() {
   }
 }
 
-void publicarJanela(const char* label, uint64_t ts_epoch_ms, int rodadaAtual, int janelaIdx,
+/* ---- A resposta da nuvem chega aqui ----
+   Vem o NOME da classe; procuramos na SEQUENCIA para saber quantas piscadas. */
+void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
+  String classe = "";
+  for (unsigned int i = 0; i < tamanho; i++) classe += (char)conteudo[i];
+  classe.trim();
+
+  int novaClasse = -1;
+  for (int i = 0; i < N_CLASSES; i++) {
+    if (classe == SEQUENCIA[i]) novaClasse = i;
+  }
+
+  if (novaClasse < 0) {
+    Serial.printf("MODELO: classe desconhecida (%s)\r\n", classe.c_str());
+    return;
+  }
+
+  // Reinicia o padrão de piscadas quando a classe muda, para a contagem não
+  // sair pela metade.
+  if (novaClasse != classePrevista) {
+    ledPiscadasFeitas = 0;
+    ledClasseAceso    = false;
+    digitalWrite(LED_PIN, LOW);
+    ledUltimaMudanca  = millis();
+  }
+  classePrevista = novaClasse;
+
+  Serial.printf("MODELO: %s (%d piscadas)\r\n", classe.c_str(), classePrevista + 1);
+}
+
+/* ---- Publica a janela: só o que o modelo precisa ---- */
+void publicarJanela(uint64_t ts_epoch_ms,
                     float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p) {
   JsonDocument doc;
   doc["device"]      = MQTT_CLIENT_ID;
-  doc["label"]       = label;
-  doc["rodada"]      = rodadaAtual;
-  doc["janela"]      = janelaIdx;
   doc["ts_epoch_ms"] = ts_epoch_ms;
   doc["mean_ax"] = serialized(String(mx, 3));
   doc["mean_ay"] = serialized(String(my, 3));
@@ -425,9 +382,7 @@ void publicarJanela(const char* label, uint64_t ts_epoch_ms, int rodadaAtual, in
   String buffer;
   serializeJson(doc, buffer);
 
-  Serial.print("PAYLOAD MQTT: ");
-  Serial.println(buffer.c_str());
-
-  bool ok = mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str());
-  Serial.println(ok ? "MQTT: enviado com sucesso" : "MQTT: falha no envio");
+  if (!mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str())) {
+    Serial.println("MQTT: falha no envio");
+  }
 }
