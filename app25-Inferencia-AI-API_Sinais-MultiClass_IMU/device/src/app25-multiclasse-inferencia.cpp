@@ -335,8 +335,8 @@ void conectarMQTT() {
 /* ---- A resposta da nuvem chega aqui ----
    Vem o NOME da classe; procuramos na SEQUENCIA para saber quantas piscadas. */
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
-  String classe = "";
-  for (unsigned int i = 0; i < tamanho; i++) classe += (char)conteudo[i];
+  // O payload MQTT não termina em '\0', por isso o String recebe o tamanho junto.
+  String classe(conteudo, tamanho);
   classe.trim();
 
   int novaClasse = -1;
