@@ -52,13 +52,10 @@ Rode `treinamento_multiclasse.ipynb` no Colab: ele lê as janelas do InfluxDB
 (measurement `vibracao_multiclasse`), treina, valida com `LeaveOneGroupOut` por
 rodada e baixa o `modelo_motor_multiclasse.pkl`. Copie o arquivo para `api/`.
 
-> **Enquanto o dataset real não existe:** `api/` já vem com um `.pkl` treinado
-> com dados **sintéticos**, gerado por `api/gerar_modelo_sintetico.py`. Serve
-> para o loop inteiro rodar antes da primeira coleta. Substitua pelo modelo de
-> verdade quando ele existir — o script se recusa a sobrescrever um `.pkl` que já
-> exista. O `requirements.txt` não muda: ele e a primeira célula do notebook fixam
-> as mesmas versões de `numpy`, `pandas`, `scikit-learn` e `joblib`, para o `.pkl`
-> ser lido pelo mesmo ambiente que o escreveu.
+O `.pkl` versionado em `api/` foi treinado com dados reais, no Colab. Ele carrega
+sem `InconsistentVersionWarning` porque o `requirements.txt` fixa exatamente as
+versões de `numpy`, `pandas`, `scikit-learn` e `joblib` que a primeira célula do
+notebook instala — o arquivo é lido pelo mesmo ambiente que o escreveu.
 
 ## 2. Subir a API
 
@@ -71,16 +68,24 @@ uvicorn service_app:app --host 0.0.0.0 --port 8000
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"mean_ax":0.355,"mean_ay":-0.01,"mean_az":0.935,"std_ax":0.036,"std_ay":0.046,"std_az":0.061,"std_mag":0.058,"p2p_mag":0.306}'
+  -d '{"mean_ax":-0.413,"mean_ay":0.811,"mean_az":0.965,"std_ax":0.017,"std_ay":0.011,"std_az":0.005,"std_mag":0.01,"p2p_mag":0.04}'
 ```
 
 ```json
-{"class":"inclinado_frente","probabilities":{"anomalia":0.01,"inclinado_frente":0.96,"inclinado_tras":0.01,"operando":0.03}}
+{"class":"inclinado_frente","probabilities":{"anomalia":0.0,"inclinado_frente":0.99,"inclinado_tras":0.01,"operando":0.0}}
 ```
 
-> **Os valores estão em `g`**, não em m/s². O FastIMU devolve aceleração em `g`,
-> e o firmware publica o número cru: nivelado, `mean_az` fica perto de `1.0`;
-> inclinado 25°, parte da gravidade migra para `mean_ax` (`sen 25° ≈ 0,42`).
+> **Os valores estão em `g`**, não em m/s²: o FastIMU devolve aceleração em `g` e
+> o firmware publica o número cru. As três médias descrevem a **postura** do motor.
+>
+> Repare que nesta janela o vetor médio tem módulo **1,326 g**, e não 1,000 g,
+> apesar de o sensor estar praticamente parado (`std` na casa de 0,01). É a
+> calibração: o `calibrateAccelGyro` supõe o sensor nivelado, e o firmware manda
+> calibrar com o motor **na posição de trabalho**. O desvio da hora da calibração
+> fica embutido como offset fixo em todas as leituras. Isso não atrapalha o modelo
+> — é o mesmo offset em todas as janelas, e o `StandardScaler` o absorve —, mas
+> significa que `mean_*` mede postura **relativa à calibração**, não a projeção
+> absoluta da gravidade.
 
 ## 3. Importar o fluxo no Node-RED
 
@@ -132,8 +137,9 @@ de **coleta**. Um monitor de condição roda sem parar e não rotula nada.
 | voltar ao nível e bater no motor | 4 piscadas — `anomalia` |
 
 A demonstração que vale a aula é o par **inclinado_frente × inclinado_tras**: as
-duas têm a mesma vibração, o motor está ligado nas duas, e o que as separa é só
-o sinal de `mean_ax`. Nenhuma feature de vibração distingue as duas — e nenhuma
+duas têm a mesma vibração, o motor está ligado nas duas, e o que as separa é só a
+orientação, no jogo de sinais das `mean_*` — qual eixo carrega a inclinação
+depende de como o sensor está montado no seu motor. Nenhuma feature de vibração distingue as duas — e nenhuma
 feature de orientação distingue `operando` de `anomalia`. Foi por isso que o
 modelo precisou das **duas famílias**: a permutation importance no notebook
 mostra `mean_*` e `std_*`/`p2p_mag` dividindo o trabalho.
