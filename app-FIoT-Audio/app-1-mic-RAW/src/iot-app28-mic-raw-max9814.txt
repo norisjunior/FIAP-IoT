@@ -1,0 +1,15 @@
+#include <Arduino.h>
+
+#define MIC_PIN 35
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int raw = analogRead(MIC_PIN);
+
+  Serial.printf(">som: %d\n",raw); Serial.println("");
+
+  delay(2); // amostragem mais rápida
+}
