@@ -31,6 +31,7 @@ uint64_t INTERVALO_COLETA = 500;
 void conectarWiFi() {
   Serial.print("Conectando ao Wi-Fi");
   WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  WiFi.setSleep(false);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);

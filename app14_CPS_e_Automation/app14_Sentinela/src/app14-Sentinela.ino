@@ -122,6 +122,7 @@ void loop() {
 /* ---- Função: Conectar ao WiFi ---- */
 void conectarWiFi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
   Serial.print("Conectando ao WiFi");
 
   int tentativas = 0;

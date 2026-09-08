@@ -105,6 +105,7 @@ void loop() {
 void conectarWiFi() {
   Serial.printf("Conectando ao WiFi %s", WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print('.');

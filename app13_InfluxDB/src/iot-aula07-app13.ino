@@ -13,7 +13,6 @@ const uint8_t TRIG_PIN    = 17;
 const uint8_t ECHO_PIN    = 16;
 const float   DIST_LIMIAR = 100.0;
 
-
 /* ==== CREDENCIAIS =================================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
@@ -85,6 +84,7 @@ void setup() {
 
   // Conecta ao Wi-Fi --------------------------------------------------
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
   Serial.print("Conectando-se ao Wi-Fi");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');

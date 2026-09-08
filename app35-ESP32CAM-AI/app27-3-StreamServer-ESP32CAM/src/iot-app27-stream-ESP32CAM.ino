@@ -101,6 +101,7 @@ void setup() {
 
     while (!wifi.connect().isOk())
         Serial.println(wifi.exception.toString());
+    WiFi.setSleep(false);
 
     server.on("/capture", HTTP_GET, handleCapture);
     server.on("/stream",  HTTP_GET, handleStream);

@@ -48,6 +48,7 @@ void setup() {
     // connect to WiFi
     while (!wifi.connect().isOk())
       Serial.println(wifi.exception.toString());
+    WiFi.setSleep(false);
 
     // init face detection http server
     while (!collectionServer.begin().isOk())

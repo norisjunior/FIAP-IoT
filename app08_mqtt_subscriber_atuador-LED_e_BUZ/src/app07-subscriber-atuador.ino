@@ -29,6 +29,7 @@ const char* CLIENT_ID = "aluno1";
 void conectarWiFi() {
   Serial.print("Conectando ao Wi-Fi");
   WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  WiFi.setSleep(false);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);

@@ -58,6 +58,7 @@ void setup() {
 
   // Wi-Fi ---------------------------------------------------------------
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
   Serial.print("Conectando-se ao Wi-Fi");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');

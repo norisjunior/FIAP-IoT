@@ -37,6 +37,7 @@ void setup() {
   ESP32Sensors::LED::inicializar(LED_PIN);
 
   WiFi.begin(ssid, password);
+  WiFi.setSleep(false);
   Serial.print("Conectando ao WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
