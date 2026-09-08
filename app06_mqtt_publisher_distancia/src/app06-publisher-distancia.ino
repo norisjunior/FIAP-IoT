@@ -8,12 +8,12 @@
 #include <PubSubClient.h>
 
 // Altere somente estes dados para a rede da sala.
-const char* WIFI_SSID = "NorisIoT";
-const char* WIFI_SENHA = "Secure10T";
-// const char* WIFI_SSID = "Wokwi-GUEST";
-// const char* WIFI_SENHA = "";
+// const char* WIFI_SSID = "NorisIoT";
+// const char* WIFI_SENHA = "Secure10T";
+const char* WIFI_SSID = "Wokwi-GUEST";
+const char* WIFI_SENHA = "";
 
-const char* BROKER_IP = "172.16.10.101";
+const char* BROKER_IP = "broker.emqx.io";
 
 const char* TOPICO = "fiap/iot/distancia";
 
