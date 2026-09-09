@@ -466,7 +466,7 @@ daquele que casar.
 > **O fluxo tem dois destinos, o firmware só conhece um.** Depois de
 > classificar, o n8n abre em dois ramos paralelos: um publica em `.../cmd`
 > (é este, o do dispositivo, a cada segundo) e o outro manda um alerta no
-> Telegram quando a classe *vira* `anomalia`. Nada disso muda o firmware: ele
+> Telegram a cada predição `anomalia`. Nada disso muda o firmware: ele
 > assina um tópico e reage ao que chegar. Trocar o alerta de Telegram por
 > e-mail, ou tirá-lo, não faz o ESP32 nem piscar diferente.
 
@@ -622,11 +622,9 @@ O degrau 4 testa **o firmware inteiro sem n8n e sem API**: o buzzer tem que
 tocar. Se tocar aqui e não tocar com o fluxo ligado, o problema está no n8n —
 provavelmente o `Send Input Data`.
 
-> **O alerta do Telegram não entra nesta escada.** Ele está no ramo paralelo do
-> n8n e só dispara na *virada* para `anomalia` — publicar `anomalia` duas vezes
-> seguidas manda **uma** mensagem só. Isso é de propósito: o LED atualiza a cada
-> segundo, uma pessoa não precisa de 60 mensagens por minuto. Para testar de
-> novo, passe por outra classe antes de voltar para `anomalia`.
+> **O alerta do Telegram fica no outro ramo do n8n.** O IF envia uma mensagem
+> a cada resposta `anomalia` da API, mesmo se a classe se repetir.
+> Publicar diretamente em `.../cmd` testa apenas a saída do ESP32, sem acionar o Telegram.
 
 No Wokwi não há como inclinar o MPU: só `operando` e `anomalia` têm
 equivalente no simulador. O ciclo MQTT → n8n → API → MQTT, esse funciona

@@ -46,35 +46,24 @@ Resposta, com as probabilidades arredondadas:
 Importe `n8n/Fluxo-n8n-predict.json` (n8n em `http://localhost:5678`) e
 selecione as credenciais: MQTT nos dois nós de MQTT e Telegram no nó de alerta.
 
+Passo a passo: [Construir o fluxo n8n](n8n/CONSTRUIR-O-FLUXO.md).
+
 | # | Nó | Configuração |
 |---|---|---|
 | 1 | `MQTT Trigger` | topic `FIAPIoT/motor/multiclasse` |
-| 2 | `Code` | *Run Once for Each Item* — faz `JSON.parse($json.message)` e deixa só as 8 features |
-| 3 | `IF` | as 8 features são `number` e não-`NaN` |
-| 4 | `HTTP Request` | `POST http://host.docker.internal:8000/predict`, body JSON `{{ $json }}` |
-| 5 | `MQTT` | topic `FIAPIoT/motor/multiclasse/cmd`, **Send Input Data: OFF**, message `{{ $json.class }}` |
-| 6 | `Code` | filtra: só passa na **virada** para `anomalia` |
-| 7 | `Telegram` | alerta de anomalia |
+| 2 | `Code` | *Run Once for Each Item* — converte a mensagem em JSON |
+| 3 | `HTTP Request` | `POST http://host.docker.internal:8000/predict`, body JSON `{{ $json }}` |
+| 4 | `MQTT` | topic `FIAPIoT/motor/multiclasse/cmd`, **Send Input Data: OFF**, message `{{ $json.class }}` |
+| 5 | `IF` | `{{ $json.class }}` é igual a `anomalia` |
+| 6 | `Telegram` | conectado à saída **true** do IF |
 
-Os nós **5 e 6 saem os dois do nó 4**, em paralelo: o ciclo do dispositivo
-roda a cada segundo e não espera o alerta. Se a credencial do Telegram não
-estiver configurada, o LED continua funcionando — só o alerta falha.
+Os nós **4 e 5 saem diretamente do nó 3**. Todas as classes voltam ao ESP32;
+o Telegram recebe um alerta a cada predição `anomalia`, inclusive repetida.
+A validação das oito features fica na API.
 
-O nó 6 existe porque chega **uma janela por segundo**: sem ele, uma anomalia
-de 30 s viraria 30 mensagens. Ele guarda a última classe em
-`$getWorkflowStaticData` e só deixa passar quando ela *muda* para `anomalia`.
-
-Dois pontos que travam o fluxo se passarem batido:
-
-- **`Send Input Data` precisa ficar OFF** no nó 5. Ligado, o n8n publica o JSON
-  inteiro (`{"class":"...","probabilities":{...}}`) e o firmware responde
-  `MODELO: classe desconhecida`. O ESP32 espera a string pura.
-- **`host.docker.internal`** só resolve com o n8n em contêiner. n8n nativo:
-  `http://localhost:8000/predict`. API em outra máquina: o IP dela.
-
-O nó `Code` não é opcional: o `MQTT Trigger` entrega o payload como *string*
-em `$json.message`, então sem ele a API receberia `{message, topic}` e
-responderia `422`.
+- **Send Input Data desligado:** o ESP32 espera somente o nome da classe.
+- **URL:** com n8n no Docker Desktop e API no Windows, use `host.docker.internal`.
+  Com ambos nativos no mesmo computador, use `localhost`.
 
 ## 4) O firmware
 
