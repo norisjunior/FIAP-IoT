@@ -1,3 +1,4 @@
+#pragma once
 namespace ESP32Sensors {
 	namespace LED {
 		// Variável privada do módulo

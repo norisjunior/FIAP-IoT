@@ -1,13 +1,13 @@
 [
   {
-    "id": "938107cbdc5ce856",
+    "id": "172491b9e0590116",
     "type": "tab",
-    "label": "NexoLog 15 - InfluxDB",
+    "label": "NexoLog 14 - InfluxDB",
     "disabled": false,
     "info": "Equipe01. Ajuste os tópicos para sua equipe."
   },
   {
-    "id": "567b83733c943ac6",
+    "id": "aecd8b0d99220243",
     "type": "mqtt-broker",
     "name": "Mosquitto - plataforma IoT",
     "broker": "mosquitto",
@@ -38,14 +38,14 @@
     "sessionExpiry": ""
   },
   {
-    "id": "062bbeae322e07c7",
+    "id": "96aa45a41f445e83",
     "type": "mqtt in",
-    "z": "938107cbdc5ce856",
+    "z": "172491b9e0590116",
     "name": "Dados da caixa",
     "topic": "FIAPIoT/nexolog/equipe01/dados",
     "qos": "0",
     "datatype": "utf8",
-    "broker": "567b83733c943ac6",
+    "broker": "aecd8b0d99220243",
     "nl": false,
     "rap": true,
     "rh": 0,
@@ -54,20 +54,20 @@
     "y": 80,
     "wires": [
       [
-        "a5445c78fec004a8"
+        "c7b1f3f07e723edb"
       ]
     ]
   },
   {
-    "id": "a5445c78fec004a8",
+    "id": "c7b1f3f07e723edb",
     "type": "json",
-    "z": "938107cbdc5ce856",
+    "z": "172491b9e0590116",
     "x": 360,
     "y": 80,
     "wires": [
       [
-        "ce5110b78a6783c0",
-        "f3178bf38062ba21"
+        "dcc6d2afb495edab",
+        "9f231a9269382228"
       ]
     ],
     "name": "JSON para objeto",
@@ -76,9 +76,9 @@
     "pretty": false
   },
   {
-    "id": "ce5110b78a6783c0",
+    "id": "dcc6d2afb495edab",
     "type": "debug",
-    "z": "938107cbdc5ce856",
+    "z": "172491b9e0590116",
     "name": "Objeto recebido",
     "active": true,
     "tosidebar": true,
@@ -92,9 +92,9 @@
     "wires": []
   },
   {
-    "id": "f3178bf38062ba21",
+    "id": "9f231a9269382228",
     "type": "function",
-    "z": "938107cbdc5ce856",
+    "z": "172491b9e0590116",
     "name": "Condição da entrega",
     "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_INCLINACAO = 45;\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.inclinacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.inclinacao) && p.inclinacao > LIMIAR_INCLINACAO) motivos.push(\"Caixa inclinada\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
     "outputs": 1,
@@ -107,14 +107,14 @@
     "y": 160,
     "wires": [
       [
-        "959065fc18651076"
+        "251a77501923e84f"
       ]
     ]
   },
   {
-    "id": "959065fc18651076",
+    "id": "251a77501923e84f",
     "type": "function",
-    "z": "938107cbdc5ce856",
+    "z": "172491b9e0590116",
     "name": "Campos e tags",
     "func": "const p = msg.payload;\nlet campos = {alerta: p.alerta};\nfor (const nome of [\"temp\", \"umid\", \"dist\", \"inclinacao\", \"accel_x\", \"accel_y\", \"accel_z\"]) {\n    if (Number.isFinite(p[nome])) campos[nome] = p[nome];\n}\nmsg.payload = [campos, {device: p.device}];\nreturn msg;",
     "outputs": 1,
@@ -127,12 +127,12 @@
     "y": 160,
     "wires": [
       [
-        "411bb8ef68f8f124"
+        "95740ae961ea52ec"
       ]
     ]
   },
   {
-    "id": "0a7f7822d4ec300b",
+    "id": "7a716a6175666ccb",
     "type": "influxdb",
     "hostname": "127.0.0.1",
     "port": 8086,
@@ -147,10 +147,10 @@
     "rejectUnauthorized": true
   },
   {
-    "id": "411bb8ef68f8f124",
+    "id": "95740ae961ea52ec",
     "type": "influxdb out",
-    "z": "938107cbdc5ce856",
-    "influxdb": "0a7f7822d4ec300b",
+    "z": "172491b9e0590116",
+    "influxdb": "7a716a6175666ccb",
     "name": "Gravar leituras",
     "measurement": "nexolog",
     "precision": "",
