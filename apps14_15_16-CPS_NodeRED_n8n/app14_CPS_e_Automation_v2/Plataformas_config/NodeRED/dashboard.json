@@ -1,0 +1,609 @@
+[
+  {
+    "id": "69e5326f76928c61",
+    "type": "tab",
+    "label": "NexoLog 14 - Dashboard",
+    "disabled": false,
+    "info": "Equipe01. Ajuste os tópicos para sua equipe."
+  },
+  {
+    "id": "0705b78e51469992",
+    "type": "mqtt-broker",
+    "name": "Mosquitto - plataforma IoT",
+    "broker": "mosquitto",
+    "port": 1883,
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": 4,
+    "keepalive": 60,
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "3fd5e399cdaf37f4",
+    "type": "mqtt in",
+    "z": "69e5326f76928c61",
+    "name": "Dados da caixa",
+    "topic": "FIAPIoT/nexolog/equipe01/dados",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "0705b78e51469992",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 140,
+    "y": 80,
+    "wires": [
+      [
+        "16a6779c3779ddea"
+      ]
+    ]
+  },
+  {
+    "id": "16a6779c3779ddea",
+    "type": "json",
+    "z": "69e5326f76928c61",
+    "x": 360,
+    "y": 80,
+    "wires": [
+      [
+        "3578713664b2f423",
+        "eee234633af23cd9",
+        "06d8284feeb5833a",
+        "20f7dbf601619b1d"
+      ]
+    ],
+    "name": "JSON para objeto",
+    "property": "payload",
+    "action": "obj",
+    "pretty": false
+  },
+  {
+    "id": "3578713664b2f423",
+    "type": "debug",
+    "z": "69e5326f76928c61",
+    "name": "Objeto recebido",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 600,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "2c252bbf0cb3136e",
+    "type": "ui_tab",
+    "name": "NexoLog 14",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "0ee1f74a76248fdc",
+    "type": "ui_group",
+    "name": "Caixa equipe01",
+    "tab": "2c252bbf0cb3136e",
+    "order": 1,
+    "disp": true,
+    "width": "12",
+    "collapse": false
+  },
+  {
+    "id": "eee234633af23cd9",
+    "type": "function",
+    "z": "69e5326f76928c61",
+    "name": "separarDadosSensores",
+    "func": "const p = msg.payload;\nlet temp = {payload: p.temp, topic: \"Temperatura\"};\nlet umid = {payload: p.umid};\nlet dist = {payload: p.dist};\nlet inclinacao = {payload: p.inclinacao};\nreturn [temp, umid, dist, inclinacao];",
+    "outputs": 4,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 610,
+    "y": 180,
+    "wires": [
+      [
+        "4d3079db4e8b48ac",
+        "fcb3dc1e7168ed0b"
+      ],
+      [
+        "0c1a18dfa91cff9a"
+      ],
+      [
+        "7c35fc2a530f919c",
+        "8de2cfeab88fb3ab"
+      ],
+      [
+        "1348d4259c0e539e"
+      ]
+    ]
+  },
+  {
+    "id": "4d3079db4e8b48ac",
+    "type": "ui_gauge",
+    "z": "69e5326f76928c61",
+    "name": "Temperatura",
+    "group": "0ee1f74a76248fdc",
+    "order": 1,
+    "width": 3,
+    "height": 3,
+    "gtype": "gage",
+    "title": "Temperatura",
+    "label": "°C",
+    "format": "{{value | number:1}}",
+    "min": 0,
+    "max": 50,
+    "colors": [
+      "#00b500",
+      "#e6e600",
+      "#ca3838"
+    ],
+    "seg1": "25",
+    "seg2": "30",
+    "diff": false,
+    "className": "",
+    "x": 920,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "0c1a18dfa91cff9a",
+    "type": "ui_gauge",
+    "z": "69e5326f76928c61",
+    "name": "Umidade",
+    "group": "0ee1f74a76248fdc",
+    "order": 2,
+    "width": 3,
+    "height": 3,
+    "gtype": "gage",
+    "title": "Umidade",
+    "label": "%",
+    "format": "{{value | number:1}}",
+    "min": 0,
+    "max": 100,
+    "colors": [
+      "#00b500",
+      "#e6e600",
+      "#ca3838"
+    ],
+    "seg1": "60",
+    "seg2": "70",
+    "diff": false,
+    "className": "",
+    "x": 920,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "7c35fc2a530f919c",
+    "type": "ui_gauge",
+    "z": "69e5326f76928c61",
+    "name": "Distância até a tampa",
+    "group": "0ee1f74a76248fdc",
+    "order": 3,
+    "width": 3,
+    "height": 3,
+    "gtype": "gage",
+    "title": "Distância até a tampa",
+    "label": "cm",
+    "format": "{{value | number:1}}",
+    "min": 0,
+    "max": 100,
+    "colors": [
+      "#00b500",
+      "#e6e600",
+      "#ca3838"
+    ],
+    "seg1": "20",
+    "seg2": "25",
+    "diff": false,
+    "className": "",
+    "x": 920,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "1348d4259c0e539e",
+    "type": "ui_gauge",
+    "z": "69e5326f76928c61",
+    "name": "Inclinação",
+    "group": "0ee1f74a76248fdc",
+    "order": 4,
+    "width": 3,
+    "height": 3,
+    "gtype": "gage",
+    "title": "Inclinação",
+    "label": "graus",
+    "format": "{{value | number:1}}",
+    "min": 0,
+    "max": 180,
+    "colors": [
+      "#00b500",
+      "#e6e600",
+      "#ca3838"
+    ],
+    "seg1": "30",
+    "seg2": "45",
+    "diff": false,
+    "className": "",
+    "x": 920,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "fcb3dc1e7168ed0b",
+    "type": "ui_chart",
+    "z": "69e5326f76928c61",
+    "name": "Histórico na tela",
+    "group": "0ee1f74a76248fdc",
+    "order": 5,
+    "width": 12,
+    "height": 4,
+    "label": "Temperatura (°C)",
+    "chartType": "line",
+    "legend": "false",
+    "xformat": "HH:mm:ss",
+    "interpolate": "linear",
+    "nodata": "",
+    "dot": false,
+    "ymin": "",
+    "ymax": "",
+    "removeOlder": 5,
+    "removeOlderPoints": "",
+    "removeOlderUnit": "60",
+    "cutout": 0,
+    "useOneColor": false,
+    "useUTC": false,
+    "colors": [
+      "#1f77b4",
+      "#aec7e8",
+      "#ff7f0e",
+      "#2ca02c",
+      "#98df8a",
+      "#d62728",
+      "#ff9896",
+      "#9467bd",
+      "#c5b0d5"
+    ],
+    "outputs": 1,
+    "useDifferentColor": false,
+    "className": "",
+    "x": 920,
+    "y": 380,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "8de2cfeab88fb3ab",
+    "type": "switch",
+    "z": "69e5326f76928c61",
+    "name": "Tampa: dist > 25 cm",
+    "property": "payload",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "gt",
+        "v": "25",
+        "vt": "num"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 1,
+    "x": 920,
+    "y": 440,
+    "wires": [
+      [
+        "d1b972527ede0010"
+      ]
+    ]
+  },
+  {
+    "id": "d1b972527ede0010",
+    "type": "debug",
+    "z": "69e5326f76928c61",
+    "name": "Tampa aberta",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1160,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "06d8284feeb5833a",
+    "type": "function",
+    "z": "69e5326f76928c61",
+    "name": "Estado da entrega",
+    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_INCLINACAO = 45;\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.inclinacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.inclinacao) && p.inclinacao > LIMIAR_INCLINACAO) motivos.push(\"Caixa inclinada\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 610,
+    "y": 540,
+    "wires": [
+      [
+        "927051f96223a544",
+        "aa132ad8efaa5c13"
+      ]
+    ]
+  },
+  {
+    "id": "927051f96223a544",
+    "type": "ui_text",
+    "z": "69e5326f76928c61",
+    "group": "0ee1f74a76248fdc",
+    "order": 6,
+    "width": 12,
+    "height": 1,
+    "name": "Estado da entrega",
+    "label": "Entrega",
+    "format": "{{msg.payload.estado}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "Arial",
+    "fontSize": 16,
+    "color": "#333333",
+    "x": 930,
+    "y": 520,
+    "wires": []
+  },
+  {
+    "id": "aa132ad8efaa5c13",
+    "type": "function",
+    "z": "69e5326f76928c61",
+    "name": "Somente mudança de estado",
+    "func": "const p = msg.payload;\nconst chave = p.device;\nconst anterior = context.get(chave);\ncontext.set(chave, p.estado);\nif (anterior === p.estado) return null;\nif (anterior === undefined && !p.alerta) return null;\nmsg.payload = {...p, timestamp: new Date().toISOString()};\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 910,
+    "y": 600,
+    "wires": [
+      [
+        "74ef3205cc5ebd2c"
+      ]
+    ]
+  },
+  {
+    "id": "74ef3205cc5ebd2c",
+    "type": "json",
+    "z": "69e5326f76928c61",
+    "x": 1170,
+    "y": 600,
+    "wires": [
+      [
+        "fbf6d7a3ff76c648"
+      ]
+    ],
+    "name": "Objeto para JSON",
+    "property": "payload",
+    "action": "str",
+    "pretty": false
+  },
+  {
+    "id": "fbf6d7a3ff76c648",
+    "type": "mqtt out",
+    "z": "69e5326f76928c61",
+    "name": "Evento para n8n",
+    "topic": "FIAPIoT/nexolog/equipe01/eventos",
+    "qos": "0",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "0705b78e51469992",
+    "x": 1410,
+    "y": 600,
+    "wires": []
+  },
+  {
+    "id": "20f7dbf601619b1d",
+    "type": "trigger",
+    "z": "69e5326f76928c61",
+    "x": 610,
+    "y": 680,
+    "wires": [
+      [
+        "7fc1d4b62ef57d20"
+      ]
+    ],
+    "name": "Sem dados por 10 s",
+    "op1": "Recebendo dados",
+    "op2": "Sem dados há 10 s",
+    "op1type": "str",
+    "op2type": "str",
+    "duration": "10",
+    "extend": true,
+    "overrideDelay": false,
+    "units": "s",
+    "reset": "",
+    "bytopic": "all",
+    "topic": "topic",
+    "outputs": 1
+  },
+  {
+    "id": "7fc1d4b62ef57d20",
+    "type": "ui_text",
+    "z": "69e5326f76928c61",
+    "group": "0ee1f74a76248fdc",
+    "order": 7,
+    "width": 12,
+    "height": 1,
+    "name": "Conexão",
+    "label": "Conexão",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "Arial",
+    "fontSize": 16,
+    "color": "#333333",
+    "x": 930,
+    "y": 680,
+    "wires": []
+  },
+  {
+    "id": "86977ec7ec93a7b7",
+    "type": "inject",
+    "z": "69e5326f76928c61",
+    "x": 150,
+    "y": 180,
+    "wires": [
+      [
+        "16a6779c3779ddea"
+      ]
+    ],
+    "name": "Simular: Normal",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payloadType": "json"
+  },
+  {
+    "id": "0719f563bd9210c4",
+    "type": "inject",
+    "z": "69e5326f76928c61",
+    "x": 150,
+    "y": 240,
+    "wires": [
+      [
+        "16a6779c3779ddea"
+      ]
+    ],
+    "name": "Simular: Temperatura alta",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 35, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payloadType": "json"
+  },
+  {
+    "id": "c5d00f351f54f402",
+    "type": "inject",
+    "z": "69e5326f76928c61",
+    "x": 150,
+    "y": 300,
+    "wires": [
+      [
+        "16a6779c3779ddea"
+      ]
+    ],
+    "name": "Simular: Tampa aberta",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 40, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payloadType": "json"
+  },
+  {
+    "id": "06c82d6aa544df92",
+    "type": "inject",
+    "z": "69e5326f76928c61",
+    "x": 150,
+    "y": 360,
+    "wires": [
+      [
+        "16a6779c3779ddea"
+      ]
+    ],
+    "name": "Simular: Caixa inclinada",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 9.81, \"accel_y\": 0, \"accel_z\": 0, \"inclinacao\": 90}",
+    "payloadType": "json"
+  },
+  {
+    "id": "295850cacd1a6837",
+    "type": "inject",
+    "z": "69e5326f76928c61",
+    "x": 150,
+    "y": 420,
+    "wires": [
+      [
+        "16a6779c3779ddea"
+      ]
+    ],
+    "name": "Simular: Falha DHT",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": null, \"umid\": null, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payloadType": "json"
+  }
+]

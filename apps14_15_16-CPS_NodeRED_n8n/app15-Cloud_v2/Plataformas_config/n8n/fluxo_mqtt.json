@@ -1,0 +1,78 @@
+{
+  "name": "NexoLog app15 - eventos da entrega",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/nexolog/equipe01/eventos",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c882212d-5c51-4e9d-b963-58d91e4d3fd9",
+      "name": "MQTT Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = typeof $json.message === \"string\" ? JSON.parse($json.message) : $json.message;\nreturn {json: {...data, texto: `NexoLog | ${data.device}\\n${data.estado}\\nTemperatura: ${data.temp ?? \"sem leitura\"} °C\\nUmidade: ${data.umid ?? \"sem leitura\"} %\\nDistância: ${data.dist ?? \"sem leitura\"} cm\\nInclinação: ${data.inclinacao ?? \"sem leitura\"} graus\\n${data.timestamp}`}};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6f9ad8b8-14e8-4d5f-a598-498ed3aaf93d",
+      "name": "Preparar mensagem"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        460,
+        0
+      ],
+      "id": "0533f08d-d730-4755-abab-7b51c05ed043",
+      "name": "Avisar responsável"
+    }
+  ],
+  "connections": {
+    "MQTT Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar mensagem": {
+      "main": [
+        [
+          {
+            "node": "Avisar responsável",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
