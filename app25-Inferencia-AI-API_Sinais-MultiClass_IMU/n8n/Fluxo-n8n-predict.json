@@ -1,0 +1,222 @@
+{
+  "name": "Motor multiclasse (IMU)",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/motor/multiclasse",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f001",
+      "name": "FIAPIoT/motor/multiclasse",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1) O MQTT Trigger entrega o payload cru em $json.message (string).\n//    Sem este no, o HTTP Request mandaria {message, topic} para a API\n//    e ela responderia 422: nenhuma das 8 features estaria no corpo.\nlet data = $json.message;\nif (typeof data === \"string\") data = JSON.parse(data);\n\n// 2) Monta um objeto \"limpo\" so com as 8 features, usando os MESMOS\n//    nomes do treino (app17-7 / treinamento_multiclasse.ipynb).\n//    device e ts_epoch_ms sao descartados aqui. A API ate os ignoraria\n//    sozinha, mas o filtro explicito e o contrato com o .pkl: se um nome\n//    mudar de um lado, quebra aqui e nao silenciosamente na predicao.\nreturn {\n    json: {\n        mean_ax: data.mean_ax,\n        mean_ay: data.mean_ay,\n        mean_az: data.mean_az,\n        std_ax:  data.std_ax,\n        std_ay:  data.std_ay,\n        std_az:  data.std_az,\n        std_mag: data.std_mag,\n        p2p_mag: data.p2p_mag,\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f002",
+      "name": "Code (gera JSON)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b7e2f105-4a68-4c39-9d21-3f5c8ab41e77",
+              "leftValue": "={{ [\"mean_ax\",\"mean_ay\",\"mean_az\",\"std_ax\",\"std_ay\",\"std_az\",\"std_mag\",\"p2p_mag\"]\n    .every(k => typeof $json[k] === \"number\" && !isNaN($json[k])) \n    .toBoolean() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f003",
+      "name": "Verifica se as 8 features sao float"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        656,
+        -96
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f004",
+      "name": "Predict Motor"
+    },
+    {
+      "parameters": {
+        "topic": "FIAPIoT/motor/multiclasse/cmd",
+        "sendInputData": false,
+        "message": "={{ $json.class }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f005",
+      "name": "FIAPIoT/motor/multiclasse/cmd",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// So avisa uma pessoa na VIRADA para anomalia.\n//\n// O ESP32 quer a classe a cada segundo -- e por isso o no de MQTT fica no\n// ramo de cima, sempre. Uma pessoa nao: sem este filtro seriam 60 mensagens\n// por minuto enquanto a anomalia durasse, e o bot do Telegram seria\n// limitado. A cadencia do CONTROLE nao e a cadencia do ALERTA.\n//\n// $getWorkflowStaticData guarda um valor entre execucoes do fluxo.\nconst estado   = $getWorkflowStaticData('global');\nconst atual    = $input.first().json.class;\nconst anterior = estado.ultimaClasse;\nestado.ultimaClasse = atual;\n\nif (atual === 'anomalia' && anterior !== 'anomalia') {\n    return [{ json: { anterior: anterior || 'nenhuma' } }];\n}\n\nreturn [];   // nada a enviar: o ramo do Telegram para aqui\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        96
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f006",
+      "name": "So na virada para anomalia"
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=🚨 *ANOMALIA no motor* 🚨\n\nA rede neural classificou a vibração como fora do padrão (estado anterior: _{{ $json.anterior }}_).\n\n🛑 Verificar!!! 🛑\n\nClassificação em tempo real a partir das features de um MPU (acelerômetro) acoplado ao ESP32.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        96
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f007",
+      "name": "ANOMALIA: alerta no Telegram",
+      "webhookId": "c4a91f28-6b03-4d17-9e85-2f6a0b73d914",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIAPIoT/motor/multiclasse": {
+      "main": [
+        [
+          {
+            "node": "Code (gera JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (gera JSON)": {
+      "main": [
+        [
+          {
+            "node": "Verifica se as 8 features sao float",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica se as 8 features sao float": {
+      "main": [
+        [
+          {
+            "node": "Predict Motor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict Motor": {
+      "main": [
+        [
+          {
+            "node": "FIAPIoT/motor/multiclasse/cmd",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "So na virada para anomalia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "So na virada para anomalia": {
+      "main": [
+        [
+          {
+            "node": "ANOMALIA: alerta no Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3e8b1c40-7d92-4f56-a1b8-c05e2f7a9d31",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "MotorIMUMultiClasse",
+  "tags": []
+}
