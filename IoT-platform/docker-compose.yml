@@ -1,0 +1,124 @@
+services:
+  mosquitto:
+    image: ${MOSQUITTO_IMAGE:?Defina MOSQUITTO_IMAGE no .env}
+    container_name: mqtt-broker
+    ports:
+      - "${MQTT_PORT}:1883"
+      - "${MQTT_WEBSOCKET_PORT}:9001"
+    volumes:
+      - ./mqtt-broker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    restart: unless-stopped
+    networks: [iot-network]
+
+  node-red:
+    image: ${NODERED_IMAGE:?Defina NODERED_IMAGE no .env}
+    container_name: NorisNodeRED
+    ports:
+      - "${NODERED_PORT}:1880"
+      - "${NODERED_EXTRA_PORT}:3456"
+    environment:
+      TZ: ${TZ}
+      NODERED_USER: ${NODERED_USER:?Defina NODERED_USER no .env}
+      NODERED_PASSWORD_HASH: ${NODERED_PASSWORD_HASH:?Defina NODERED_PASSWORD_HASH no .env}
+    volumes:
+      - nodered-data:/data
+      - ./nodered/settings.js:/data/settings.js:ro
+    restart: unless-stopped
+    networks: [iot-network]
+    depends_on: [mosquitto, influxdb]
+
+  postgres:
+    image: ${POSTGRES_IMAGE:?Defina POSTGRES_IMAGE no .env}
+    container_name: n8n-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Defina POSTGRES_DB no .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [iot-network]
+
+  n8n:
+    image: ${N8N_IMAGE:?Defina N8N_IMAGE no .env}
+    container_name: n8n
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: ${N8N_PROTOCOL}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+      TZ: ${TZ}
+      GENERIC_TIMEZONE: ${TZ}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Defina N8N_ENCRYPTION_KEY no .env}
+      N8N_LOG_LEVEL: ${N8N_LOG_LEVEL}
+      N8N_RUNNERS_ENABLED: ${N8N_RUNNERS_ENABLED}
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE}
+    ports:
+      - "${N8N_PORT}:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [iot-network]
+
+  influxdb:
+    image: ${INFLUXDB_IMAGE:?Defina INFLUXDB_IMAGE no .env}
+    container_name: influxdb
+    ports:
+      - "${INFLUXDB_PORT}:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:?Defina INFLUXDB_PASSWORD no .env}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET}
+      DOCKER_INFLUXDB_INIT_RETENTION: ${INFLUXDB_RETENTION}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:?Defina INFLUXDB_TOKEN no .env}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    restart: unless-stopped
+    networks: [iot-network]
+
+  grafana:
+    image: ${GRAFANA_IMAGE:?Defina GRAFANA_IMAGE no .env}
+    container_name: grafana
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    environment:
+      TZ: ${TZ}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Defina GRAFANA_PASSWORD no .env}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on: [influxdb]
+    restart: unless-stopped
+    networks: [iot-network]
+
+networks:
+  iot-network:
+    driver: bridge
+
+volumes:
+  mosquitto-data:
+  nodered-data:
+  postgres-data:
+  n8n-data:
+  influxdb-data:
+  influxdb-config:
+  grafana-storage:
