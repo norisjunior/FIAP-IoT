@@ -1,23 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Script para parar MQTT Broker, Node-RED e n8n
-# WSL2 Ubuntu
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+if [[ ! -f .env ]]; then
+    echo "Arquivo .env ausente. Copie .env.exemplo para .env e ajuste os valores." >&2
+    exit 1
+fi
 
-set -e
-
-echo "================================================"
-echo "Parando todos os serviços..."
-echo "================================================"
-
-cd IoTStack
-
-# n8n
-echo ""
-sudo docker compose down
-cd ..
-
-echo ""
-echo "================================================"
-echo "Todos os serviços foram parados!"
-echo "================================================"
-echo ""
+docker compose --env-file .env -f docker-compose.yml down

@@ -1,5 +1,0 @@
-📏 Alerta: Objeto próximo!
-Sala: {{$json.topic}}
-Distância: {{ $json.dist }} cm
-
-timestamp={{$json.timestamp}}

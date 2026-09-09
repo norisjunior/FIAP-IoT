@@ -34,6 +34,7 @@ uint64_t tempo_anterior = 0;
 void conectarWiFi() {
   Serial.print("Conectando ao WiFi");
   WiFi.begin(ssid, password);
+  WiFi.setSleep(false);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");

@@ -1,73 +1,23 @@
-# Physical Computing, Embedded AI, Robotics & Cognitive IoT
+# App14 — NexoLog no Node-RED
 
-## Aplicação 14 - CPS (Cyber-Physical Systems) e Automação com Low-Code/No-Code
+Abra [app14_NexoLog](app14_NexoLog) no PlatformIO. Compile e inicie o Wokwi ou grave no ESP32.
 
-### app14_Sentinela
+O firmware lê DHT22, ultrassônico e MPU a cada 2,5 segundos e publica JSON. Não recebe comandos. O LED fica apagado, reservado para a próxima etapa.
 
-Aplicação IoT embarcada para ESP32 que monitora o ambiente de uma sala por meio de sensores de temperatura/umidade, distância e presença. Os dados coletados são publicados via MQTT e podem ser consumidos por plataformas de automação como Node-RED ou n8n.
+## Aula
 
----
+1. Importe [dashboard.json](Plataformas_config/NodeRED/dashboard.json), configure o broker e faça Deploy.
+2. Acompanhe MQTT-in, JSON e Debug.
+3. Abra `separarDadosSensores` e siga suas quatro saídas até os gauges e o gráfico.
+4. Use `Simular: Normal` e `Simular: Tampa aberta`. Depois altere a distância no Wokwi de 10 para 40 cm.
+5. Observe o Switch e o estado da entrega. Acesse `http://localhost:1880/ui/`.
 
-### Sensores e Atuadores (ESP32)
+Depois, acrescente [InfluxDB](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json) e [n8n](Plataformas_config/n8n/fluxo_mqtt.json). No n8n, configure credenciais e Chat ID. Os eventos saem apenas na mudança de estado.
 
-| Componente | Descrição | Pino GPIO |
-|---|---|---|
-| DHT22 | Temperatura e Umidade | 26 |
-| HC-SR04 (TRIG) | Distância ultrassônica | 17 |
-| HC-SR04 (ECHO) | Distância ultrassônica | 16 |
-| PIR | Detecção de movimento/presença | 25 |
-| LED Vermelho | Indicador de transmissão ativa | 27 |
+## MPU com FastIMU
 
----
+Em `src/ESP32SensorsAccel.hpp`, selecione `MPU_TYPE`: `MPU6050` para o diagrama Wokwi ou `MPU6500` para essa placa física. Endereço I2C: `0x68` (AD0 em GND). Sem calibração automática nesta aula.
 
-### Funcionamento
+FastIMU retorna aceleração em g. O módulo converte para m/s² para preservar o payload. A inclinação permanece em graus. Use a caixa parada ou mova lentamente, com Z para cima na posição normal.
 
-Após conectar-se ao WiFi e ao broker MQTT, o ESP32 inicia um ciclo de leitura a cada **2,5 segundos**:
-
-1. Lê temperatura, umidade e índice de calor (DHT22)
-2. Mede a distância ao objeto mais próximo (HC-SR04)
-3. Detecta presença ou movimento (PIR)
-4. Valida os dados (descarta ciclo se a leitura do DHT for inválida)
-5. Serializa os dados em JSON e publica no tópico MQTT
-6. Acende o LED durante a transmissão como indicador visual
-
-Em caso de falha de WiFi ou MQTT, o firmware tenta reconexão automática antes de retomar os ciclos de envio.
-
----
-
-### Publicação MQTT
-
-**Broker:** `host.wokwi.internal:1883`  
-**Tópico:** `FIAPIoT/sala1`  
-**Device ID:** `NorisESP32IoT2025001`  
-**Intervalo:** 2,5 segundos
-
-**Payload JSON publicado:**
-```json
-{
-  "temp": 25.3,
-  "umid": 60.5,
-  "ic": 26.1,
-  "dist": 45.2,
-  "mov": true
-}
-```
-
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `temp` | float | Temperatura em °C |
-| `umid` | float | Umidade relativa em % |
-| `ic` | float | Índice de calor (Heat Index) em °C |
-| `dist` | float | Distância medida em cm |
-| `mov` | bool | `true` se movimento detectado |
-
----
-
-### Integração com Plataforma IoT
-
-Os dados publicados no tópico `FIAPIoT/sala1` podem ser consumidos por qualquer cliente MQTT. Este projeto prevê integração com:
-
-- **Node-RED** — criação de dashboards, fluxos visuais e alertas
-- **n8n** — automação de workflows, notificações e lógica condicional
-
-A configuração das plataformas (flows, workflows, Docker) está nos respectivos subdiretórios do projeto.
+[Montagem e configuração comuns](Guia-NexoLog.md)

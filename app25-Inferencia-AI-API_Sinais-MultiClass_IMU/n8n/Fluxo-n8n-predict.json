@@ -1,0 +1,198 @@
+{
+  "name": "Motor multiclasse (IMU)",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/motor/multiclasse",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f001",
+      "name": "FIAPIoT/motor/multiclasse",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const dados = typeof $json.message === \"string\"\n    ? JSON.parse($json.message)\n    : $json.message;\n\nreturn { json: dados };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f002",
+      "name": "Code (gera JSON)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f004",
+      "name": "Predict Motor"
+    },
+    {
+      "parameters": {
+        "topic": "FIAPIoT/motor/multiclasse/cmd",
+        "sendInputData": false,
+        "message": "={{ $json.class }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -112
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f005",
+      "name": "FIAPIoT/motor/multiclasse/cmd",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b7e2f105-4a68-4c39-9d21-3f5c8ab41e77",
+              "leftValue": "={{ $json.class }}",
+              "rightValue": "anomalia",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        112
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f006",
+      "name": "E anomalia?"
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "🚨 ANOMALIA no motor!\nO modelo identificou uma anomalia. Verifique o motor.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        112
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f007",
+      "name": "ANOMALIA: alerta no Telegram",
+      "webhookId": "c4a91f28-6b03-4d17-9e85-2f6a0b73d914",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIAPIoT/motor/multiclasse": {
+      "main": [
+        [
+          {
+            "node": "Code (gera JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (gera JSON)": {
+      "main": [
+        [
+          {
+            "node": "Predict Motor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict Motor": {
+      "main": [
+        [
+          {
+            "node": "FIAPIoT/motor/multiclasse/cmd",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "E anomalia?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E anomalia?": {
+      "main": [
+        [
+          {
+            "node": "ANOMALIA: alerta no Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3e8b1c40-7d92-4f56-a1b8-c05e2f7a9d31",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "MotorIMUMultiClasse",
+  "tags": []
+}

@@ -8,10 +8,10 @@
 #include <PubSubClient.h>
 
 // Altere somente estes dados para a rede da sala.
-// const char* WIFI_SSID = "Wokwi-GUEST";
-// const char* WIFI_SENHA = "";
-const char* WIFI_SSID = "NorisIoT";
-const char* WIFI_SENHA = "Secure10T";
+const char* WIFI_SSID = "Wokwi-GUEST";
+const char* WIFI_SENHA = "";
+// const char* WIFI_SSID = "NorisIoT";
+// const char* WIFI_SENHA = "Secure10T";
 const char* BROKER_IP = "172.16.10.101";
 
 const char* TOPICO = "fiap/iot/distancia";
@@ -29,6 +29,7 @@ const char* CLIENT_ID = "aluno1";
 void conectarWiFi() {
   Serial.print("Conectando ao Wi-Fi");
   WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  WiFi.setSleep(false);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);

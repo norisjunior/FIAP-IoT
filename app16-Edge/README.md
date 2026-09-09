@@ -1,75 +1,31 @@
-# Physical Computing, Embedded AI, Robotics & Cognitive IoT
+# App16 — Plataforma no Raspberry Pi
 
-## Aplicação 16 - Arquitetura Edge/Fog Computing
+Use o mesmo firmware preparado no [app15](../app15-Cloud/README.md). A decisão continua nos fluxos da plataforma; o Raspberry Pi próximo dos dispositivos representa o Near Edge/Fog.
 
-Esta aplicação demonstra arquitetura de computação de borda (Edge Computing) e névoa (Fog Computing), implementando processamento local próximo aos sensores. O sistema conecta-se a um broker MQTT rodando em Raspberry Pi (camada Fog) para processamento intermediário antes do envio à nuvem.
+## Preparação
 
-## Pré-requisitos
+1. Conecte Raspberry Pi e ESP32 à mesma rede.
+2. Execute Mosquitto, Node-RED e n8n no Raspberry Pi. Se usar Docker, escolha imagens compatíveis com a arquitetura e o sistema do Raspberry. A `IoT-platform` pode servir como referência de configuração.
+3. Descubra o IP do Raspberry com `hostname -I`.
+4. No firmware, configure a rede Wi-Fi e altere somente `MQTT_SERVER` para esse IP. Exemplo: `"192.168.1.50"`. Recompile e grave quando alterar essas configurações.
+5. Acesse `http://IP_DO_RASPBERRY:1880` para importar o dashboard e `http://IP_DO_RASPBERRY:5678` para configurar o n8n.
 
-### Inicializar a Plataforma IoT
+## Mesmos fluxos do app15
 
-Esta aplicação requer a plataforma IoT completa rodando. Siga as instruções em `IoT-platform/README.md`:
+- [Node-RED: dashboard e comandos](../app15-Cloud/Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json)
+- [Node-RED: InfluxDB opcional](../app15-Cloud/Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json)
+- [n8n: notificações](../app15-Cloud/Plataformas_config/n8n/fluxo_mqtt.json)
 
-1. **Acessar WSL2 Ubuntu:**
-   ```bash
-   wsl -d ubuntu
-   ```
+Configure as conexões no Raspberry: na rede Docker, o broker pode ser `mosquitto`; em uma instalação nativa, `localhost`. O ESP32 usa o IP do Raspberry. Preserve tópicos, payload e regras do app15.
 
-2. **Clonar o repositório (se ainda não clonou):**
-   ```bash
-   cd ~
-   git clone https://github.com/norisjunior/FIAP-IoT
-   ```
+Reconfigure as credenciais do n8n e do InfluxDB no novo ambiente. O token não acompanha o JSON exportado. Se também usar Grafana/InfluxDB localmente, configure a fonte de dados para o banco do Raspberry.
 
-3. **Iniciar todos os serviços:**
-   ```bash
-   cd FIAP-IoT/IoT-platform/
-   sudo ./start-linux.sh
-   ```
+Desative a plataforma de comando anterior para evitar duas instâncias enviando comandos à mesma caixa.
 
-Isso iniciará: MQTT Broker, Node-RED, n8n, InfluxDB e Grafana.
+## Experimento
 
-**Serviços disponíveis:**
-- MQTT Broker: localhost:1883 (nome do container: mqtt-broker)
-- Node-RED: http://localhost:1880 (admin/FIAPIoT)
-- n8n: http://localhost:5678
-- InfluxDB: http://localhost:8086 (admin/FIAP@123)
-- Grafana: http://localhost:3000 (admin/admin)
+Desconecte o acesso à internet mantendo a rede local. Broker, Node-RED e ESP32 continuam trocando dados e comandos localmente. Telegram e outros serviços externos ficam indisponíveis.
 
-**Nota:** Para este app, você pode usar o broker MQTT local (plataforma IoT) ou configurar um Raspberry Pi como camada Fog intermediária.
+Se o Raspberry, o broker ou o Wi-Fi local parar, o ESP32 mantém o último estado do LED. Não há regra autônoma de alerta no ESP32, armazenamento offline ou reenvio de leituras perdidas.
 
-### Sensores e Atuadores
-
-**Sensores:**
-- DHT22 (Temperatura e Umidade) - Pino GPIO 26
-- MPU6050 (Acelerômetro/Giroscópio) - Pinos I2C:
-  - SDA: GPIO 18
-  - SCL: GPIO 19
-
-**Atuadores:**
-- LED - Pino GPIO 27 (Indicador de status do motor)
-
-### Funcionamento
-
-O sistema implementa arquitetura hierárquica Edge-Fog-Cloud, com processamento distribuído em múltiplas camadas:
-
-**Tópico de Publicação (Dados):**
-- `FIAPIoT/aula09/noris/motor/dados`
-- Envia dados a cada 3 segundos em formato JSON
-- Campos: temperatura, umidade, aceleração (x, y, z), status do motor
-
-**Tópico de Subscrição (Comandos):**
-- `FIAPIoT/aula09/noris/motor/cmd`
-- Recebe comandos para ligar/desligar o motor
-
-**Configuração MQTT:**
-- Broker: Raspberry Pi (IP local configurável)
-- Porta: 1883
-- Client ID: IoTDeviceNoris001
-
-**Arquitetura demonstrada:**
-- **Edge Layer:** ESP32 com sensores fazendo pré-processamento local
-- **Fog Layer (Near Edge):** Raspberry Pi executando broker MQTT, realizando agregação e filtragem de dados
-- **Cloud Layer:** Servidores remotos para análise avançada e armazenamento de longo prazo
-
-Esta arquitetura reduz latência, economiza largura de banda e permite operação parcial mesmo com conectividade intermitente à nuvem. O processamento próximo à origem dos dados (Edge) permite respostas rápidas para controle crítico.
+O que mudou foi a localização da plataforma, não a lógica do firmware. Esta pasta contém somente esta orientação.

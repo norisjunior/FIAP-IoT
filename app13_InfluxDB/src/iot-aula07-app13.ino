@@ -13,24 +13,17 @@ const uint8_t TRIG_PIN    = 17;
 const uint8_t ECHO_PIN    = 16;
 const float   DIST_LIMIAR = 100.0;
 
-
 /* ==== CREDENCIAIS =================================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
 const char* WIFI_PASSWORD = "";
 
 // InfluxDB Cloud - Configurações
 const char* INFLUX_URL         = "https://us-east-1-1.aws.cloud2.influxdata.com/api/v2/write";
-//e044ac59f07be199
-const char* INFLUX_ORG         = "e044ac59f07be199";     // Substituir pela sua organização
-//IoTSensores
-const char* INFLUX_BUCKET      = "IoTSensores";        // Nome do bucket criado
-//Tg1KYC6sbSaO_YMorJwEOEXTOYHjL9exDbkavgwD0cw5mfWXlkudjyhL3elfh6wjpti1Em0714nAHBcz8CqVqg==
-//KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ==
-const char* INFLUX_TOKEN       = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ==";      // Token de autenticação
-//Nome do measurement
-const char* INFLUX_MEASUREMENT = "sensores_iot";
-//Nome do dispositivo
-const char* DEVICE_ID = "2026Noris1_ESP32_Aula07";
+const char* INFLUX_ORG         = "";     // Substituir pela sua organização
+const char* INFLUX_BUCKET      = "";        // Nome do bucket criado
+const char* INFLUX_TOKEN       = "";      // Token de autenticação
+const char* INFLUX_MEASUREMENT = "";
+const char* DEVICE_ID = "2026NorisESP32Aula";
 
 /* ==== FUNÇÃO AUXILIAR: Envia dados para InfluxDB =================== */
 void enviaParaInfluxDB(float dist_cm, bool dist_alarme, float temp, float umid, float ic) {
@@ -91,6 +84,7 @@ void setup() {
 
   // Conecta ao Wi-Fi --------------------------------------------------
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
   Serial.print("Conectando-se ao Wi-Fi");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');

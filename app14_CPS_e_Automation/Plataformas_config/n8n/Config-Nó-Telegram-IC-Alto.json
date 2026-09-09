@@ -1,6 +1,0 @@
-🔥 Alerta: Índice de Calor Alto!
-Sala: {{$json.topic}}
-Temperatura: {{$json.temp}}°C
-Umidade: {{$json.umid}}%
-Índice de Calor: {{ $json.ic }}ºC
-timestamp: {{ $json.timestamp }}

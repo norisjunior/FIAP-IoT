@@ -3,15 +3,25 @@
    As features são as mesmas do app17-7 (janela de 100 amostras @ 100 Hz), mas
    aqui o dispositivo não rotula nada: publica a janela em
    FIAPIoT/motor/multiclasse e a classe prevista volta em
-   FIAPIoT/motor/multiclasse/cmd. O LED pisca o índice do que a NUVEM respondeu.
+   FIAPIoT/motor/multiclasse/cmd. Cada classe acende UMA saída:
+
+       operando          LED azul      (4)
+       inclinado_frente  LED amarelo  (21)
+       inclinado_tras    LED vermelho (18)
+       anomalia          buzzer       (19)
 
    Repare no que não existe aqui: nenhum if sobre vibração ou inclinação, nenhum
    limiar — e nenhum botão. O app17-7 tinha botões porque era um GERADOR DE
    DATASET, onde um humano rotulava cada janela e a coleta parava em 30. Este é
    um MONITOR de condição: roda sem parar, e quem rotula é o modelo.
 
-   A função atualizarLedClasse() é a mesma do app17-7. Só mudou de onde vem o
-   índice: antes era o botão 18, agora é a resposta da nuvem.
+   Os pinos 21 e 18 eram justamente os dois BOTÕES do app17-7 — de entrada do
+   rótulo humano viraram saída do rótulo do modelo.
+
+   Como a nuvem responde uma vez por segundo, a saída MANTÉM a última decisão
+   recebida até a próxima chegar. Não há temporização nenhuma no firmware: a
+   saída é a memória. Por isso quem acende os LEDs é a própria receberComando()
+   — o loop não precisa cuidar disso.
 */
 /*
 PARA USAR NO WOKWI:
@@ -27,7 +37,6 @@ PARA USAR NO WOKWI:
 #include "FastIMU.h"
 #include <Wire.h>
 #include <math.h>
-#include <time.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <PubSubClient.h>
@@ -53,17 +62,16 @@ WiFiClient wifiClient;
 #define MQTT_CLIENT_ID "IoTDevInferenciaMultiClasse001"
 PubSubClient mqttClient(wifiClient);
 
-/* ---- Relógio (NTP) ---- */
-const char* NTP_SERVER_1 = "pool.ntp.org";
-const char* NTP_SERVER_2 = "time.google.com";
-uint64_t epochBaseMs        = 0;
-uint32_t millisNaSync       = 0;
-bool     relogioSincronizado = false;
-
 /* ---- Pinos ---- */
 #define SDA_PIN      22
 #define SCL_PIN      23
-#define LED_PIN       4   // LED externo: pisca N vezes = índice da classe prevista
+/* Uma saída por classe: a que estiver ligada é a resposta da nuvem.
+   Repare que 21 e 18 eram os BOTÕES do app17-7 — os pinos com que um humano
+   rotulava agora mostram o rótulo que o modelo escolheu. */
+#define LED_AZUL      4   // operando
+#define LED_AMARELO  21   // inclinado_frente
+#define LED_VERMELHO 18   // inclinado_tras
+#define BUZZER       19   // anomalia
 #define LED_ONBOARD   2   // LED onboard: aceso = conectado ao broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
@@ -71,26 +79,6 @@ bool     relogioSincronizado = false;
 MPU_TYPE mpu;
 
 calData calib = { 0 };
-
-/* ---- As classes, na mesma ordem do app17-7 ----
-   A ordem aqui não precisa bater com a do modelo (modelo.classes_ é
-   alfabética): a nuvem manda o NOME, e nós procuramos o nome nesta lista só
-   para saber quantas piscadas dar. */
-const char* SEQUENCIA[] = { "operando", "inclinado_frente", "inclinado_tras", "anomalia" };
-const int   N_CLASSES = 4;
-
-/* ---- A resposta da nuvem ----
-   -1 = ainda não respondeu (LED apagado). */
-int classePrevista = -1;
-
-/* ---- LED de classe: N piscadas curtas + pausa longa, repetindo ---- */
-const uint32_t LED_ON_MS    = 150;
-const uint32_t LED_OFF_MS   = 200;
-const uint32_t LED_PAUSA_MS = 1200;
-
-int      ledPiscadasFeitas = 0;
-bool     ledClasseAceso    = false;
-uint32_t ledUltimaMudanca  = 0;
 
 /* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão do app17-7) ---- */
 const int FS_HZ          = 100;
@@ -107,13 +95,10 @@ uint32_t tempoAnterior = 0;
 
 /* ---- Protótipos ---- */
 void conectarWiFi();
-void sincronizarRelogio();
-uint64_t agoraEpochMs();
 void conectarMQTT();
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho);
-void atualizarLedClasse();
-void publicarJanela(uint64_t ts_epoch_ms,
-                    float mx, float my, float mz,
+void apagarTodasAsSaidas();
+void publicarJanela(float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p);
 
@@ -172,14 +157,28 @@ void setup() {
 
   Serial.println("MPU iniciado");
 
-  pinMode(LED_PIN,     OUTPUT);
-  pinMode(LED_ONBOARD, OUTPUT);
-  digitalWrite(LED_PIN,     LOW);
+  // As quatro saídas de classe, mais o LED da placa.
+  pinMode(LED_AZUL,     OUTPUT);
+  pinMode(LED_AMARELO,  OUTPUT);
+  pinMode(LED_VERMELHO, OUTPUT);
+  pinMode(BUZZER,       OUTPUT);
+  pinMode(LED_ONBOARD,  OUTPUT);
+
+  apagarTodasAsSaidas();
   digitalWrite(LED_ONBOARD, LOW);
-  ledUltimaMudanca = millis();
+
+  // Teste de ligação: acende uma saída por vez, para você conferir se cada
+  // componente está no pino certo ANTES de depender do modelo. Se o LED
+  // amarelo não acender aqui, o problema é o fio — não a rede neural.
+  // Os delay() aqui não atrapalham: o setup roda uma vez, antes do loop.
+  Serial.println("Testando as saidas...");
+  digitalWrite(LED_AZUL,     HIGH); delay(400); digitalWrite(LED_AZUL,     LOW);
+  digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
+  digitalWrite(LED_VERMELHO, HIGH); delay(400); digitalWrite(LED_VERMELHO, LOW);
+  //digitalWrite(BUZZER,       HIGH); delay(200); digitalWrite(BUZZER,       LOW);
+  tone(BUZZER, 500, 250); noTone(BUZZER);
 
   conectarWiFi();
-  sincronizarRelogio();
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(receberComando);   // é aqui que a resposta da nuvem entra
@@ -190,9 +189,12 @@ void setup() {
   Serial.println("Sistema pronto. Uma janela por segundo, sem botão nenhum.");
   Serial.printf("  Publica em: %s\r\n", MQTT_PUB_TOPIC);
   Serial.printf("  Escuta em:  %s\r\n", MQTT_SUB_TOPIC);
-  Serial.println("  LED externo: pisca N vezes = índice da classe prevista (1..4)");
-  Serial.println("    1=operando  2=inclinado_frente  3=inclinado_tras  4=anomalia");
-  Serial.println("  LED apagado = a nuvem ainda não respondeu\r\n");
+  Serial.println("  Saidas (uma por classe):");
+  Serial.printf("    GPIO %2d  LED azul     = operando\r\n",         LED_AZUL);
+  Serial.printf("    GPIO %2d  LED amarelo  = inclinado_frente\r\n", LED_AMARELO);
+  Serial.printf("    GPIO %2d  LED vermelho = inclinado_tras\r\n",   LED_VERMELHO);
+  Serial.printf("    GPIO %2d  BUZZER       = anomalia\r\n",         BUZZER);
+  Serial.println("  Tudo apagado = a nuvem ainda nao respondeu\r\n");
 }
 
 /* ============================== LOOP =============================== */
@@ -203,7 +205,6 @@ void loop() {
   mqttClient.loop();
 
   digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
-  atualizarLedClasse();
 
   // --- Coleta IMU a 100 Hz, direto, sem esperar comando ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
@@ -224,8 +225,6 @@ void loop() {
     indice++;
 
     if (indice >= TAMANHO_JANELA) {
-      uint64_t ts_epoch_ms = agoraEpochMs();
-
       float mx = calcMean(ax_buf, TAMANHO_JANELA);
       float my = calcMean(ay_buf, TAMANHO_JANELA);
       float mz = calcMean(az_buf, TAMANHO_JANELA);
@@ -238,43 +237,20 @@ void loop() {
       float stdMag = calcStd(mag_buf, TAMANHO_JANELA, mMag);
       float p2p    = calcPtP(mag_buf, TAMANHO_JANELA);
 
-      publicarJanela(ts_epoch_ms, mx, my, mz, sx, sy, sz, stdMag, p2p);
+      publicarJanela(mx, my, mz, sx, sy, sz, stdMag, p2p);
 
       indice = 0;
     }
   }
 }
 
-/* ---- LED de classe: N piscadas curtas + pausa longa, repetindo sempre ----
-   Idêntica à do app17-7. A única diferença é o índice: vem de classePrevista
-   (a nuvem), não de indiceClasse (o botão). */
-void atualizarLedClasse() {
-  if (classePrevista < 0) {          // ainda sem resposta
-    digitalWrite(LED_PIN, LOW);
-    ledClasseAceso = false;
-    ledPiscadasFeitas = 0;
-    return;
-  }
-
-  int totalPiscadas = classePrevista + 1;
-  uint32_t agora = millis();
-
-  if (ledClasseAceso) {
-    if (agora - ledUltimaMudanca >= LED_ON_MS) {
-      digitalWrite(LED_PIN, LOW);
-      ledClasseAceso = false;
-      ledUltimaMudanca = agora;
-      ledPiscadasFeitas++;
-    }
-  } else {
-    uint32_t intervalo = (ledPiscadasFeitas >= totalPiscadas) ? LED_PAUSA_MS : LED_OFF_MS;
-    if (agora - ledUltimaMudanca >= intervalo) {
-      if (ledPiscadasFeitas >= totalPiscadas) ledPiscadasFeitas = 0;
-      digitalWrite(LED_PIN, HIGH);
-      ledClasseAceso = true;
-      ledUltimaMudanca = agora;
-    }
-  }
+/* ---- Apaga as quatro saídas de classe ----
+   Chamada antes de acender a saída nova, para nunca ficarem duas ligadas. */
+void apagarTodasAsSaidas() {
+  digitalWrite(LED_AZUL,     LOW);
+  digitalWrite(LED_AMARELO,  LOW);
+  digitalWrite(LED_VERMELHO, LOW);
+  digitalWrite(BUZZER,       LOW);
 }
 
 /* ---- WiFi ---- */
@@ -284,6 +260,7 @@ void conectarWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.setTxPower(WIFI_POWER_2dBm);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print('.');
@@ -291,30 +268,6 @@ void conectarWiFi() {
   Serial.println("");
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
-}
-
-/* ---- Relógio (NTP) ---- */
-void sincronizarRelogio() {
-  configTime(0, 0, NTP_SERVER_1, NTP_SERVER_2);   // UTC (offset 0)
-  Serial.print("Sincronizando relógio via NTP");
-  struct tm tm;
-  for (int i = 0; i < 16 && !relogioSincronizado; i++) {
-    if (getLocalTime(&tm, 500)) relogioSincronizado = true;
-    else { Serial.print('.'); delay(500); }
-  }
-  if (relogioSincronizado) {
-    epochBaseMs  = (uint64_t)time(nullptr) * 1000ULL;
-    millisNaSync = millis();
-    Serial.printf(" OK (%04d-%02d-%02d %02d:%02d:%02d UTC)\r\n",
-                  tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                  tm.tm_hour, tm.tm_min, tm.tm_sec);
-  } else {
-    Serial.println(" FALHOU. ts_epoch_ms vira uptime.");
-  }
-}
-
-uint64_t agoraEpochMs() {
-  return epochBaseMs + (uint64_t)(millis() - millisNaSync);
 }
 
 /* ---- MQTT ---- */
@@ -333,43 +286,66 @@ void conectarMQTT() {
 }
 
 /* ---- A resposta da nuvem chega aqui ----
-   Vem o NOME da classe; procuramos na SEQUENCIA para saber quantas piscadas. */
+   É a única função que mexe nas saídas. Chega o NOME da classe, comparamos
+   com os quatro nomes possíveis e acendemos a saída daquele que casar.
+
+   Não há nada de temporal aqui: acendeu, FICA aceso até chegar a próxima
+   mensagem — e ela chega a cada segundo. A saída é a memória do dispositivo. */
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
   // O payload MQTT não termina em '\0', por isso o String recebe o tamanho junto.
   String classe(conteudo, tamanho);
   classe.trim();
 
-  int novaClasse = -1;
-  for (int i = 0; i < N_CLASSES; i++) {
-    if (classe == SEQUENCIA[i]) novaClasse = i;
+  // Mostra o que chegou ANTES de julgar: se o payload vier errado (um JSON
+  // inteiro, por exemplo), é aqui que se vê o que o n8n publicou de fato.
+  Serial.println("--- MQTT recebido ---");
+  Serial.printf("  topico:  %s\r\n", topico);
+  Serial.printf("  tamanho: %u bytes\r\n", tamanho);
+  Serial.printf("  payload: \"%s\"\r\n", classe.c_str());
+
+  // Passo 1: apaga tudo. Assim nunca ficam duas saídas ligadas ao mesmo tempo.
+  apagarTodasAsSaidas();
+
+  // Passo 2: acende SÓ a saída da classe que chegou.
+  if (classe == "operando") {
+    digitalWrite(LED_AZUL, HIGH);
+    Serial.println("  MODELO:  operando         -> LED azul aceso");
+
+  } else if (classe == "inclinado_frente") {
+    digitalWrite(LED_AMARELO, HIGH);
+    Serial.println("  MODELO:  inclinado_frente -> LED amarelo aceso");
+
+  } else if (classe == "inclinado_tras") {
+    digitalWrite(LED_VERMELHO, HIGH);
+    Serial.println("  MODELO:  inclinado_tras   -> LED vermelho aceso");
+
+  } else if (classe == "anomalia") {
+    //digitalWrite(BUZZER, HIGH);
+    tone(BUZZER, 500, 250);
+    Serial.println("  MODELO:  anomalia         -> BUZZER ligado");
+
+  } else {
+    // Nenhum nome casou. As saídas ficam todas apagadas, e isso é proposital:
+    // apagado avisa que algo está errado, melhor do que manter a última classe
+    // e parecer que o sistema continua funcionando.
+    Serial.println("  MODELO:  classe DESCONHECIDA - tudo apagado");
+    Serial.println("           esperado, sem aspas e sem JSON:");
+    Serial.println("           operando | inclinado_frente | inclinado_tras | anomalia");
   }
 
-  if (novaClasse < 0) {
-    Serial.printf("MODELO: classe desconhecida (%s)\r\n", classe.c_str());
-    return;
-  }
-
-  // Reinicia o padrão de piscadas quando a classe muda, para a contagem não
-  // sair pela metade.
-  if (novaClasse != classePrevista) {
-    ledPiscadasFeitas = 0;
-    ledClasseAceso    = false;
-    digitalWrite(LED_PIN, LOW);
-    ledUltimaMudanca  = millis();
-  }
-  classePrevista = novaClasse;
-
-  Serial.printf("MODELO: %s (%d piscadas)\r\n", classe.c_str(), classePrevista + 1);
+  Serial.println("---------------------");
 }
 
-/* ---- Publica a janela: só o que o modelo precisa ---- */
-void publicarJanela(uint64_t ts_epoch_ms,
-                    float mx, float my, float mz,
+/* ---- Publica a janela: só o que o modelo precisa ----
+   Não vai timestamp. No app17-7 ele existia porque as janelas iam para um
+   BANCO, onde o tempo é o eixo e a ordem importa. Aqui a janela vale agora:
+   é medida, classificada e respondida em menos de um segundo, e depois não
+   serve para mais nada. Sem timestamp no payload, o NTP também sai. */
+void publicarJanela(float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p) {
   JsonDocument doc;
-  doc["device"]      = MQTT_CLIENT_ID;
-  doc["ts_epoch_ms"] = ts_epoch_ms;
+  doc["device"]  = MQTT_CLIENT_ID;
   doc["mean_ax"] = serialized(String(mx, 3));
   doc["mean_ay"] = serialized(String(my, 3));
   doc["mean_az"] = serialized(String(mz, 3));
