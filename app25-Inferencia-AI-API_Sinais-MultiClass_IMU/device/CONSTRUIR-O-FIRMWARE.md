@@ -168,6 +168,27 @@ void loop() {
 
 **Confira:** uma linha `janela fechada` por segundo, sem atrasos acumulando.
 
+Para espiar os valores, imprima a **última amostra** da janela. Repare no
+índice: quando o `if` dispara, `indice` já vale `100`, e as posições válidas
+vão de `0` a `99`.
+
+```cpp
+    if (indice >= TAMANHO_JANELA) {
+      Serial.printf("janela fechada | ultima amostra [%d]: %.3f,%.3f,%.3f\r\n",
+                    TAMANHO_JANELA - 1,
+                    ax_buf[TAMANHO_JANELA - 1],
+                    ay_buf[TAMANHO_JANELA - 1],
+                    az_buf[TAMANHO_JANELA - 1]);
+      indice = 0;
+    }
+```
+
+> **A armadilha.** Escrever `ax_buf[indice]` aqui lê a posição `100`, que não
+> existe: o C++ não avisa, apenas lê o que estiver naquele endereço de memória.
+> O sintoma é traiçoeiro — um dos eixos fica **sempre 0.000** e os outros dois
+> mostram valores plausíveis, mas de outra amostra. Não é o sensor: é leitura
+> fora do array. Use `TAMANHO_JANELA - 1`, ou `indice - 1` antes de zerar.
+
 > O passo fixo é paridade também. Com `tempoAnterior = millis()` a taxa real
 > cai para ~95 Hz e a janela passa a cobrir 1,05 s de sinal.
 
@@ -275,8 +296,51 @@ PubSubClient mqttClient(wifiClient);
 > mais nada. Sem timestamp no payload, o NTP inteiro sai: `<time.h>`, os dois
 > servidores, `sincronizarRelogio()` e `agoraEpochMs()`.
 
-Copie `conectarWiFi()` do `app17-7` sem alteração. `conectarMQTT()` ganha
-**uma linha nova**, o `subscribe`:
+Declare os dois protótipos junto com os outros, antes do `setup()`:
+
+```cpp
+void conectarWiFi();
+void conectarMQTT();
+```
+
+**O Wi-Fi.** Fica num laço até conectar: sem rede não há o que publicar, e o
+resto do firmware não tem o que fazer.
+
+```cpp
+void conectarWiFi() {
+  Serial.printf("Conectando ao WiFi %s", WIFI_SSID);
+  // TxPower reduzido: evita brownout/reboot ao ligar o rádio nesta placa.
+  WiFi.mode(WIFI_STA);
+  WiFi.setTxPower(WIFI_POWER_2dBm);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print('.');
+  }
+  Serial.println("");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+```
+
+Três linhas nessa função não são óbvias:
+
+- **`WiFi.mode(WIFI_STA)`** — o ESP32 liga em modo dual (estação **e** ponto de
+  acesso) por padrão. Só precisamos de estação; o AP consome rádio à toa.
+- **`WiFi.setTxPower(WIFI_POWER_2dBm)`** — potência reduzida. Ligar o rádio na
+  potência cheia dá um pico de corrente que, em placas alimentadas pela USB do
+  notebook, derruba a tensão e reinicia o ESP32 (*brownout*). Se a sua placa
+  estiver longe do roteador e não conectar, é aqui que se aumenta.
+- **`WiFi.setSleep(false)`** — desliga o modo de economia do rádio. Com ele
+  ligado, o ESP32 dorme entre pacotes e a resposta da nuvem chega com centenas
+  de milissegundos de atraso.
+
+O `delay(500)` aqui é aceitável pelo mesmo motivo do teste de saídas: isto roda
+no `setup()`, antes de a amostragem de 100 Hz começar.
+
+**O MQTT.** Igual ao do `app17-7`, com **uma linha nova** — o `subscribe`, que
+é o que faz este app receber a resposta:
 
 ```cpp
 void conectarMQTT() {
@@ -313,6 +377,25 @@ E no topo do `loop()`:
   }
   mqttClient.loop();
 ```
+
+O `mqttClient.loop()` precisa rodar a cada volta: é ele que processa as
+mensagens que chegam e mantém a conexão viva. Sem essa linha o `subscribe`
+não serve para nada — o broker até envia, mas o firmware nunca lê.
+
+**Confira antes de seguir:** o Monitor Serial deve mostrar
+
+```text
+Conectando ao WiFi SUA_REDE....
+IP: 192.168.0.123
+Conectando ao MQTT Broker 192.168.0.100... Conectado!
+Inscrito em: FIAPIoT/motor/multiclasse/cmd
+```
+
+Se travar nos pontinhos do Wi-Fi, o SSID ou a senha estão errados — o ESP32
+só enxerga redes de **2,4 GHz**, então confira também se não é a rede de 5 GHz.
+Se o Wi-Fi conectar mas o MQTT ficar em `Falha rc=-2`, o IP do broker está
+errado ou a porta 1883 está bloqueada; o `rc` do `PubSubClient` é negativo para
+falha de rede e positivo para recusa do protocolo.
 
 ---
 
@@ -439,7 +522,7 @@ No `setup()`, os `pinMode` e um **teste de ligação**:
   digitalWrite(LED_AZUL,     HIGH); delay(400); digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
   digitalWrite(LED_VERMELHO, HIGH); delay(400); digitalWrite(LED_VERMELHO, LOW);
-  digitalWrite(BUZZER,       HIGH); delay(200); digitalWrite(BUZZER,       LOW);
+  tone(BUZZER, 500, 250); noTone(BUZZER);
 ```
 
 E no `loop()`, logo abaixo do `mqttClient.loop()`, só o LED da placa:
@@ -451,9 +534,22 @@ E no `loop()`, logo abaixo do `mqttClient.loop()`, só o LED da placa:
 **Confira:** ao ligar, os três LEDs acendem em sequência e o buzzer dá um bipe
 curto. Se algum não responder, o problema é a ligação — resolva antes de seguir.
 
+> **Por que `tone()` no buzzer, e não `digitalWrite()`?** Depende do
+> componente. Um buzzer **ativo** tem oscilador próprio e apita com
+> `digitalWrite(HIGH)`. Um buzzer **passivo** é só um alto-falante: com nível
+> constante ele dá um clique e cala. Precisa de um sinal oscilando, e é isso
+> que `tone(BUZZER, 500, 250)` faz — 500 Hz durante 250 ms. Se o seu buzzer
+> ficou mudo com `digitalWrite`, ele é passivo: use `tone()`.
+
 > **`delay()` no `setup()` pode; no `loop()`, não.** O `setup()` roda uma vez,
 > antes de a amostragem começar. Um `delay(400)` dentro do `loop()` faria a
 > taxa de 100 Hz desmoronar e as features saírem erradas.
+>
+> O `tone()` é a exceção que confirma a regra: **ele não bloqueia**. No ESP32
+> a chamada só põe um comando numa fila, e quem espera os 250 ms é uma *task*
+> separada do FreeRTOS. Por isso ele pode ser chamado de dentro do `loop()` sem
+> derrubar a amostragem — e por isso o `noTone()` logo depois não corta o bipe:
+> ele entra na mesma fila, atrás, e só executa quando o tom já acabou.
 
 ---
 
@@ -503,7 +599,7 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
     Serial.println("  MODELO:  inclinado_tras   -> LED vermelho aceso");
 
   } else if (classe == "anomalia") {
-    digitalWrite(BUZZER, HIGH);
+    tone(BUZZER, 500, 250);
     Serial.println("  MODELO:  anomalia         -> BUZZER ligado");
 
   } else {
@@ -569,11 +665,16 @@ Publique `operando` em seguida: o buzzer cala e o LED azul acende.
 > do nó MQTT do n8n ficou ligado. Veja o README. É exatamente para esse caso
 > que o payload é impresso cru, antes de qualquer comparação.
 
-> **Sobre o buzzer.** Em `anomalia` ele toca contínuo, o que é o comportamento
-> correto para um alarme mas é cansativo numa sala. Se incomodar, uma saída é
-> ligá-lo por um tempo curto e deixar o LED vermelho como indicação
-> permanente — mas aí o `loop()` volta a ter de cuidar do tempo, e a
-> simplicidade desta função se perde. Vale a pena só se for mesmo incômodo.
+> **Os três LEDs são estado; o buzzer é evento.** Um LED aceso **fica** aceso
+> até a próxima mensagem. O `tone(BUZZER, 500, 250)` não: ele dá um bipe de
+> 250 ms e cala sozinho. Como a nuvem responde uma vez por segundo, enquanto
+> durar a `anomalia` isso vira um **bipe por segundo** — alarme intermitente,
+> de graça, sem nenhum controle de tempo no `loop()`. Um `digitalWrite(HIGH)`
+> daria um zumbido contínuo, correto para um alarme mas insuportável numa sala
+> com a turma toda testando.
+>
+> Para mudar o alarme, mexa nos dois números: `tone(BUZZER, 500, 250)` é
+> frequência em Hz e duração em ms. Mais agudo, `1500`; mais curto, `100`.
 
 ---
 

@@ -175,8 +175,7 @@ void setup() {
   digitalWrite(LED_AZUL,     HIGH); delay(400); digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
   digitalWrite(LED_VERMELHO, HIGH); delay(400); digitalWrite(LED_VERMELHO, LOW);
-  //digitalWrite(BUZZER,       HIGH); delay(200); digitalWrite(BUZZER,       LOW);
-  tone(BUZZER, 500, 250); noTone(BUZZER);
+  tone(BUZZER, 500, 250); noTone(BUZZER);   // buzzer passivo: precisa de frequencia
 
   conectarWiFi();
 
@@ -320,8 +319,7 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
     Serial.println("  MODELO:  inclinado_tras   -> LED vermelho aceso");
 
   } else if (classe == "anomalia") {
-    //digitalWrite(BUZZER, HIGH);
-    tone(BUZZER, 500, 250);
+    tone(BUZZER, 500, 250);   // bipe de 250 ms; a cada mensagem, um bipe
     Serial.println("  MODELO:  anomalia         -> BUZZER ligado");
 
   } else {
