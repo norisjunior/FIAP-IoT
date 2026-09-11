@@ -116,7 +116,7 @@
     "type": "function",
     "z": "efd1c69a09330861",
     "name": "separarDadosSensores",
-    "func": "const p = msg.payload;\nlet temp = {payload: p.temp, topic: \"Temperatura\"};\nlet umid = {payload: p.umid};\nlet dist = {payload: p.dist};\nlet inclinacao = {payload: p.inclinacao};\nreturn [temp, umid, dist, inclinacao];",
+    "func": "const p = msg.payload;\nlet temp = {payload: p.temp, topic: \"Temperatura\"};\nlet umid = {payload: p.umid};\nlet dist = {payload: p.dist};\nlet movimentacao = {payload: p.movimentacao};\nreturn [temp, umid, dist, movimentacao];",
     "outputs": 4,
     "timeout": 0,
     "noerr": 0,
@@ -230,24 +230,24 @@
     "id": "90644ff70540edc2",
     "type": "ui_gauge",
     "z": "efd1c69a09330861",
-    "name": "Inclinação",
+    "name": "Movimentação",
     "group": "971cfe2ccd7a75ef",
     "order": 4,
     "width": 3,
     "height": 3,
     "gtype": "gage",
-    "title": "Inclinação",
-    "label": "graus",
+    "title": "Movimentação",
+    "label": "m/s²",
     "format": "{{value | number:1}}",
     "min": 0,
-    "max": 180,
+    "max": 20,
     "colors": [
       "#00b500",
       "#e6e600",
       "#ca3838"
     ],
-    "seg1": "30",
-    "seg2": "45",
+    "seg1": "1.5",
+    "seg2": "3",
     "diff": false,
     "className": "",
     "x": 920,
@@ -344,7 +344,7 @@
     "type": "function",
     "z": "efd1c69a09330861",
     "name": "Estado da entrega",
-    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_INCLINACAO = 45;\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.inclinacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.inclinacao) && p.inclinacao > LIMIAR_INCLINACAO) motivos.push(\"Caixa inclinada\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
+    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(\"Movimentação brusca\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
     "outputs": 1,
     "timeout": 0,
     "noerr": 0,
@@ -542,7 +542,7 @@
     "once": false,
     "onceDelay": 0.1,
     "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
     "payloadType": "json"
   },
   {
@@ -567,7 +567,7 @@
     "once": false,
     "onceDelay": 0.1,
     "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 35, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 35, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
     "payloadType": "json"
   },
   {
@@ -592,7 +592,7 @@
     "once": false,
     "onceDelay": 0.1,
     "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 40, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 40, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
     "payloadType": "json"
   },
   {
@@ -606,7 +606,7 @@
         "4fb6617d790fe9ae"
       ]
     ],
-    "name": "Simular: Caixa inclinada",
+    "name": "Simular: Movimentação brusca",
     "props": [
       {
         "p": "payload"
@@ -617,7 +617,7 @@
     "once": false,
     "onceDelay": 0.1,
     "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 9.81, \"accel_y\": 0, \"accel_z\": 0, \"inclinacao\": 90}",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 24.8, \"movimentacao\": 15}",
     "payloadType": "json"
   },
   {
@@ -642,7 +642,7 @@
     "once": false,
     "onceDelay": 0.1,
     "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": null, \"umid\": null, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"inclinacao\": 0}",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": null, \"umid\": null, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
     "payloadType": "json"
   }
 ]

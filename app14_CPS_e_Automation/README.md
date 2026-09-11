@@ -18,6 +18,6 @@ Depois, acrescente [InfluxDB](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.
 
 Em `src/ESP32SensorsAccel.hpp`, selecione `MPU_TYPE`: `MPU6050` para o diagrama Wokwi ou `MPU6500` para essa placa física. Endereço I2C: `0x68` (AD0 em GND). Sem calibração automática nesta aula.
 
-FastIMU retorna aceleração em g. O módulo converte para m/s² para preservar o payload. A inclinação permanece em graus. Use a caixa parada ou mova lentamente, com Z para cima na posição normal.
+FastIMU retorna aceleração em g. O módulo converte para m/s² para preservar o payload. A movimentação é a magnitude da aceleração menos a gravidade, também em m/s²: caixa parada fica próxima de 0.
 
 [Montagem e configuração comuns](Guia-NexoLog.md)

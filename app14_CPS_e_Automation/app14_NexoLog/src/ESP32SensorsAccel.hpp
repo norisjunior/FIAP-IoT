@@ -39,14 +39,13 @@ namespace ESP32Sensors {
       return accel;
     }
 
-    float medirInclinacao(AccelData accel) {
+    float medirMovimentacao(AccelData accel) {
       float x = accel.accelX;
       float y = accel.accelY;
       float z = accel.accelZ;
       if (!isfinite(x) || !isfinite(y) || !isfinite(z)) return NAN;
-      if (sqrtf(x*x + y*y + z*z) < 1.0f) return NAN;
-      // Caixa parada, com o eixo Z apontando para cima: 0 graus.
-      return atan2f(sqrtf(x*x + y*y), z) * 180.0f / PI;
+      // Magnitude da aceleracao descontando a gravidade: caixa parada = 0 m/s2.
+      return fabsf(sqrtf(x*x + y*y + z*z) - 9.80665f);
     }
   }
 }

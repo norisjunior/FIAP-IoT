@@ -14,20 +14,20 @@ O projeto embarcado está em `app14_CPS_e_Automation/app14_NexoLog`. O app15 con
 
 | Componente | GPIO | Função |
 |---|---|---|
-| DHT22 | 26 | Temperatura e umidade do ar |
-| HC-SR04 TRIG / ECHO | 17 / 16 | Distância até a tampa |
-| MPU6050 ou MPU6500 SDA / SCL | 18 / 19 | Inclinação da caixa |
-| LED vermelho | 27 | Reservado no app14; comandos ON/OFF a partir do app15 |
+| DHT22 | 4 | Temperatura e umidade do ar |
+| HC-SR04 TRIG / ECHO | 19 / 18 | Distância até a tampa |
+| MPU6050 ou MPU6500 SDA / SCL | 22 / 23 | Movimentação da caixa |
+| LED vermelho | 21 | Reservado no app14; comandos ON/OFF a partir do app15 |
 
 Fixe o ultrassônico dentro da caixa, apontado para a tampa, a aproximadamente 10 cm quando fechada. Ao levantar a tampa, a distância aumenta. Sem eco, a leitura é inválida; isso não confirma abertura.
 
-O diagrama inclui resistor de 220 Ω no LED e divisor no ECHO: ECHO ligado a 1 kΩ, GPIO16 na junção, 2 kΩ da junção ao GND. HC-SR04 em 5 V; DHT22 e MPU em 3,3 V. GND comum. No DHT sem módulo, acrescente pull-up de 10 kΩ entre DATA e 3,3 V.
+Os pinos ficam todos do lado direito da placa, para facilitar a montagem física. O diagrama inclui resistor de 220 Ω no LED. No Wokwi o HC-SR04 está em 3,3 V, com ECHO direto no GPIO18. Na montagem física com HC-SR04 alimentado em 5 V, use divisor no ECHO: ECHO ligado a 1 kΩ, GPIO18 na junção, 2 kΩ da junção ao GND. DHT22 e MPU em 3,3 V. GND comum. No DHT sem módulo, acrescente pull-up de 10 kΩ entre DATA e 3,3 V.
 
 ## FastIMU
 
 Usamos FastIMU 1.3.0, como nos projetos de IMU da disciplina. Em `ESP32SensorsAccel.hpp`, selecione `MPU_TYPE`: `MPU6050` para o diagrama Wokwi ou `MPU6500` para essa placa física. O endereço I2C é `0x68`, com AD0 em GND.
 
-A biblioteca retorna aceleração em g; o módulo converte para m/s² antes da publicação. Fixe o MPU com Z para cima e faça movimentos lentos. A inclinação é uma estimativa pela gravidade, em graus, não um detector de impactos. Não há calibração automática nesta aula.
+A biblioteca retorna aceleração em g; o módulo converte para m/s² antes da publicação. A movimentação é a magnitude da aceleração descontando a gravidade, em m/s²: caixa parada fica próxima de 0 e sobe conforme o chacoalho. Não há calibração automática nesta aula.
 
 ## Dados e comandos
 
@@ -40,7 +40,7 @@ Os tópicos são iguais nas três etapas:
 O dispositivo usa `NexoLogEquipe01`. Troque a identificação e `equipe01` no firmware e nos fluxos para sua equipe. Não execute dois ESP32 com o mesmo Client ID.
 
 ```json
-{"device":"NexoLogEquipe01","temp":24,"umid":55,"dist":10,"accel_x":0,"accel_y":0,"accel_z":9.81,"inclinacao":0}
+{"device":"NexoLogEquipe01","temp":24,"umid":55,"dist":10,"accel_x":0,"accel_y":0,"accel_z":9.81,"movimentacao":0}
 ```
 
 Falhas de leitura podem aparecer como `null`. O payload não muda no app15 e não contém confirmação do LED. Não usamos índice de calor para avaliar a carga.
@@ -52,7 +52,7 @@ Falhas de leitura podem aparecer como `null`. O payload não muda no app15 e nã
 | Temperatura | > 30 °C |
 | Umidade | > 70% |
 | Distância | > 25 cm |
-| Inclinação | > 45° |
+| Movimentação | > 3 m/s² |
 | Leitura inválida | Falha de sensor |
 
 São limites de aula, não especificações de conservação de uma carga real. O LED apenas sinaliza o alerta. No app14, a plataforma apresenta a condição; no app15 e app16, também envia o comando.

@@ -18,7 +18,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const data = typeof $json.message === \"string\" ? JSON.parse($json.message) : $json.message;\nreturn {json: {...data, texto: `NexoLog | ${data.device}\\n${data.estado}\\nTemperatura: ${data.temp ?? \"sem leitura\"} °C\\nUmidade: ${data.umid ?? \"sem leitura\"} %\\nDistância: ${data.dist ?? \"sem leitura\"} cm\\nInclinação: ${data.inclinacao ?? \"sem leitura\"} graus\\n${data.timestamp}`}};"
+        "jsCode": "const data = typeof $json.message === \"string\" ? JSON.parse($json.message) : $json.message;\nconst num = (v, casas) => Number.isFinite(v) ? v.toFixed(casas) : \"sem leitura\";\nreturn {json: {...data, texto: `NexoLog | ${data.device}\\n${data.estado}\\nTemperatura: ${num(data.temp, 1)} °C\\nUmidade: ${num(data.umid, 1)} %\\nDistância: ${num(data.dist, 1)} cm\\nMovimentação: ${num(data.movimentacao, 2)} m/s²\\n${data.timestamp}`}};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

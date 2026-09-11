@@ -3,218 +3,48 @@
   "author": "Noris Junior",
   "editor": "wokwi",
   "parts": [
-    {
-      "type": "board-esp32-devkit-c-v4",
-      "id": "esp",
-      "top": 19.2,
-      "left": 4.84,
-      "attrs": {}
-    },
-    {
-      "type": "wokwi-mpu6050",
-      "id": "imu1",
-      "top": 147.82,
-      "left": 136.72,
-      "attrs": {}
-    },
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": 167.02, "left": 155.92, "attrs": {} },
     {
       "type": "wokwi-led",
       "id": "led1",
-      "top": 44.4,
-      "left": -53.8,
-      "attrs": {
-        "color": "red"
-      }
+      "top": 54,
+      "left": 167.4,
+      "attrs": { "color": "red", "flip": "1" }
     },
-    {
-      "type": "wokwi-dht22",
-      "id": "dht1",
-      "top": -143.7,
-      "left": 33,
-      "attrs": {}
-    },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -143.7, "left": 33, "attrs": {} },
     {
       "type": "wokwi-hc-sr04",
       "id": "ultrasonic1",
-      "top": -110,
-      "left": 170,
-      "attrs": {
-        "distance": "10"
-      }
+      "top": -142.5,
+      "left": 159.1,
+      "attrs": { "distance": "10" }
     },
     {
       "type": "wokwi-resistor",
       "id": "rled",
-      "top": 90,
-      "left": -70,
-      "attrs": {
-        "value": "220"
-      }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "r1",
-      "top": 15,
-      "left": 240,
-      "attrs": {
-        "value": "1000"
-      }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "r2",
-      "top": 75,
-      "left": 240,
-      "attrs": {
-        "value": "2000"
-      }
+      "top": 90.35,
+      "left": 115.2,
+      "attrs": { "value": "220" }
     }
   ],
   "connections": [
-    [
-      "esp:TX",
-      "$serialMonitor:RX",
-      "",
-      []
-    ],
-    [
-      "esp:RX",
-      "$serialMonitor:TX",
-      "",
-      []
-    ],
-    [
-      "imu1:VCC",
-      "esp:3V3",
-      "red",
-      [
-        "v-144",
-        "h-211.12"
-      ]
-    ],
-    [
-      "imu1:GND",
-      "esp:GND.2",
-      "black",
-      [
-        "v-134.4",
-        "h-95.92"
-      ]
-    ],
-    [
-      "imu1:SCL",
-      "esp:19",
-      "limegreen",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "imu1:SDA",
-      "esp:18",
-      "green",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "led1:C",
-      "esp:GND.1",
-      "black",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "imu1:AD0",
-      "esp:GND.3",
-      "orange",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "dht1:VCC",
-      "esp:3V3",
-      "red",
-      [
-        "v19.2",
-        "h-38.4"
-      ]
-    ],
-    [
-      "dht1:GND",
-      "esp:GND.2",
-      "black",
-      [
-        "v19.2",
-        "h28.8"
-      ]
-    ],
-    [
-      "dht1:SDA",
-      "esp:26",
-      "green",
-      [
-        "v28.8",
-        "h-67.1",
-        "v144"
-      ]
-    ],
-    [
-      "led1:A",
-      "rled:1",
-      "green",
-      []
-    ],
-    [
-      "rled:2",
-      "esp:27",
-      "green",
-      []
-    ],
-    [
-      "ultrasonic1:VCC",
-      "esp:5V",
-      "red",
-      []
-    ],
-    [
-      "ultrasonic1:GND",
-      "esp:GND.2",
-      "black",
-      []
-    ],
-    [
-      "ultrasonic1:TRIG",
-      "esp:17",
-      "blue",
-      []
-    ],
-    [
-      "ultrasonic1:ECHO",
-      "r1:1",
-      "cyan",
-      []
-    ],
-    [
-      "r1:2",
-      "esp:16",
-      "cyan",
-      []
-    ],
-    [
-      "r1:2",
-      "r2:1",
-      "cyan",
-      []
-    ],
-    [
-      "r2:2",
-      "esp:GND.2",
-      "black",
-      []
-    ]
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "imu1:VCC", "esp:3V3", "red", [ "v-172.8", "h-220.87" ] ],
+    [ "imu1:GND", "esp:GND.2", "black", [ "v-124.8", "h-115.12" ] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v28.8", "h-38.55" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h28.8" ] ],
+    [ "ultrasonic1:VCC", "esp:3V3", "red", [ "v48", "h-220.95" ] ],
+    [ "ultrasonic1:GND", "esp:GND.2", "black", [ "v0" ] ],
+    [ "imu1:SDA", "esp:22", "yellow", [ "v0" ] ],
+    [ "imu1:SCL", "esp:23", "orange", [ "v0" ] ],
+    [ "ultrasonic1:TRIG", "esp:19", "cyan", [ "v0" ] ],
+    [ "ultrasonic1:ECHO", "esp:18", "blue", [ "v0" ] ],
+    [ "led1:A", "rled:2", "magenta", [ "v0" ] ],
+    [ "rled:1", "esp:21", "magenta", [ "v0" ] ],
+    [ "led1:C", "esp:GND.3", "black", [ "v0" ] ],
+    [ "dht1:SDA", "esp:4", "green", [ "v38.4", "h67.3", "v153.6" ] ]
   ],
   "dependencies": {}
 }

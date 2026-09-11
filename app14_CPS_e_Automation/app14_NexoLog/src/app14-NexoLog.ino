@@ -10,13 +10,13 @@
 #include "ESP32SensorsLED.hpp"
 
 /* ---- Config Hardware ---- */
-const uint8_t DHT_PIN = 26;
+const uint8_t DHT_PIN = 4;
 const uint8_t DHT_MODEL = DHT22;
-const uint8_t TRIG_PIN = 17;
-const uint8_t ECHO_PIN = 16;
-const uint8_t SCL_PIN = 19;
-const uint8_t SDA_PIN = 18;
-const uint8_t LED_PIN = 27;
+const uint8_t TRIG_PIN = 19;
+const uint8_t ECHO_PIN = 18;
+const uint8_t SCL_PIN = 23;
+const uint8_t SDA_PIN = 22;
+const uint8_t LED_PIN = 21;
 
 /* ---- Config Wi-Fi e MQTT ---- */
 const char* WIFI_SSID = "Wokwi-GUEST";
@@ -96,10 +96,10 @@ bool enviarDadosColetados() {
   ESP32Sensors::Ambiente::AMBIENTE amb = ESP32Sensors::Ambiente::medirAmbiente();
   ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
   AccelData accel = ESP32Sensors::Accel::medirAccel();
-  float inclinacao = ESP32Sensors::Accel::medirInclinacao(accel);
+  float movimentacao = ESP32Sensors::Accel::medirMovimentacao(accel);
 
-  Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Incl: %.1f graus\n",
-                amb.temp, amb.umid, dist.cm, inclinacao);
+  Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
+                amb.temp, amb.umid, dist.cm, movimentacao);
 
   JsonDocument doc;
   doc["device"] = MQTT_CLIENT_ID;
@@ -109,7 +109,7 @@ bool enviarDadosColetados() {
   doc["accel_x"] = accel.accelX;
   doc["accel_y"] = accel.accelY;
   doc["accel_z"] = accel.accelZ;
-  doc["inclinacao"] = inclinacao;
+  doc["movimentacao"] = movimentacao;
 
   String payload;
   serializeJson(doc, payload);
