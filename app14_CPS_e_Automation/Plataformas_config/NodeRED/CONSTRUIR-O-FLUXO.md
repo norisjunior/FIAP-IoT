@@ -89,15 +89,17 @@ if (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push("Temperatura a
 if (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push("Umidade alta");
 if (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push("Tampa aberta");
 if (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push("Movimentação brusca");
-msg.payload = {...p, motivos, alerta: motivos.length > 0, estado: motivos.join(" / ") || "Entrega em condição normal"};
+const alerta = motivos.length > 0;
+if (!alerta) motivos.push("Entrega em condição normal");
+msg.payload = {...p, motivos, alerta, estado: motivos.join(" / ")};
 return msg;
 ```
 
 Ligue num **ui_text** (order 6, 12×1, label `Entrega`, Value format `{{msg.payload.estado}}`).
 
 `estado` é o texto para ler na tela; `motivos` é a mesma coisa em lista. É por ela
-que o n8n vai separar uma mensagem por limiar — sem a lista, ele só teria o texto
-grudado para fatiar.
+que o n8n separa uma mensagem por limiar, com o nó Split Out — por isso a lista nunca
+fica vazia: quando não há alerta, ela leva "Entrega em condição normal".
 
 **d) Avisar só na mudança.** Nó **function**, depois do estado. Sem isso o n8n recebe 24 mensagens por minuto:
 

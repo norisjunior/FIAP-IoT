@@ -44,75 +44,63 @@ Clique em **Listen for test event**. No Wokwi, mude a distância de 10 para 40 c
 ## Iteração 2 — Uma mensagem por limiar
 
 Quatro limiares, quatro nós de Telegram. Se a entrega estoura temperatura **e**
-tampa ao mesmo tempo, saem duas mensagens — cada uma com o número que a disparou.
+tampa ao mesmo tempo, saem duas mensagens. Sem nó de código: três nós de ligar
+e os avisos.
 
-**a) Nó Code**, depois do trigger. Deixe o Mode em `Run Once for All Items`: este nó
-recebe um evento e pode devolver vários itens.
+**a) Volte no MQTT Trigger** e ligue duas opções (Add Option):
 
-```javascript
-const num = (v, casas) => Number.isFinite(v) ? v.toFixed(casas) : "sem leitura";
+| Opção | Por quê |
+|---|---|
+| **JSON Parse Body** | `message` chega como texto; assim vira objeto sozinho |
+| **Only Message** | tira o envelope: o item passa a ser o próprio payload |
 
-const mapa = {
-  "Temperatura alta":    {sensor: "temperatura",  linha: (d) => `Temperatura: ${num(d.temp, 1)} °C (limite 30)`},
-  "Umidade alta":        {sensor: "umidade",      linha: (d) => `Umidade: ${num(d.umid, 1)} % (limite 70)`},
-  "Tampa aberta":        {sensor: "distancia",    linha: (d) => `Distância: ${num(d.dist, 1)} cm (limite 25)`},
-  "Movimentação brusca": {sensor: "movimentacao", linha: (d) => `Movimentação: ${num(d.movimentacao, 2)} m/s² (limite 3)`},
-};
+Execute de novo. Onde antes vinha `{topic, message}`, agora vêm `device`, `temp`,
+`motivos` e o resto, no primeiro nível.
 
-const saida = [];
-
-for (const item of $input.all()) {
-  const d = typeof item.json.message === "string" ? JSON.parse(item.json.message) : item.json.message;
-  const motivos = d.motivos ?? [];
-
-  // Sem motivo: a entrega voltou ao normal. Uma mensagem só.
-  if (motivos.length === 0) {
-    saida.push({json: {...d, sensor: "normal",
-      texto: `NexoLog | ${d.device}\n${d.estado}\n${d.timestamp}`}});
-    continue;
-  }
-
-  // Um item por limiar ultrapassado: dois limiares, duas mensagens.
-  for (const motivo of motivos) {
-    const info = mapa[motivo] ?? {sensor: "outro", linha: () => motivo};
-    saida.push({json: {...d, sensor: info.sensor, motivo,
-      texto: `NexoLog | ${d.device}\n${motivo}\n${info.linha(d)}\n${d.timestamp}`}});
-  }
-}
-
-return saida;
-```
-
-`message` chega como texto — sem o `JSON.parse` os campos vêm `undefined`. E é o
-campo `motivos`, a lista que o Node-RED publica, que permite separar; o `estado` é
-só o texto grudado.
-
-Execute o nó com a tampa aberta: tem que sair **um** item, com `sensor: "distancia"`.
-
-**b) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.sensor }}`,
-`is equal to`, uma saída por valor:
-
-| Saída | Valor | Rename output |
-|---|---|---|
-| 1 | `temperatura` | Temperatura |
-| 2 | `umidade` | Umidade |
-| 3 | `distancia` | Distância |
-| 4 | `movimentacao` | Movimentação |
-
-Em **Options**, acrescente `Fallback Output` = `Extra Output`. É a saída 5, por onde
-sai o "voltou ao normal".
-
-**c) Cinco nós Telegram**, um por saída, action `Send a Text Message`. Todos com o
-mesmo conteúdo — o texto já vem pronto do Code:
+**b) Nó Split Out**, chamado `Um item por motivo`:
 
 | Campo | Valor |
 |---|---|
-| Credential | token do @BotFather |
-| Chat ID | o seu — mande um "oi" para o bot e pegue em `api.telegram.org/bot<TOKEN>/getUpdates` |
-| Text | `{{ $json.texto }}` (com o botão de expressão ligado) |
+| Fields To Split Out | `motivos` |
+| Include | `All Other Fields` |
 
-Nomeie cada um pelo limiar: `Avisar: temperatura`, `Avisar: umidade`, `Avisar: tampa`,
-`Avisar: movimentação`, `Avisar: normalizado`.
+`motivos` é a lista que o Node-RED publica. O Split Out faz um item por elemento,
+carregando junto todos os outros campos — dois limiares estourados viram dois itens,
+cada um com as medições completas. É o laço, sem o laço.
+
+**c) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.motivos }}`,
+`is equal to` — depois do Split Out esse campo é uma string, não mais a lista:
+
+| Saída | Valor | Rename output |
+|---|---|---|
+| 1 | `Temperatura alta` | Temperatura |
+| 2 | `Umidade alta` | Umidade |
+| 3 | `Tampa aberta` | Tampa |
+| 4 | `Movimentação brusca` | Movimentação |
+
+Em **Options**, acrescente `Fallback Output` = `Extra Output`. É a saída 5, por onde
+saem "Falha de sensor" e "Entrega em condição normal".
+
+**d) Cinco nós Telegram**, um por saída, action `Send a Text Message`. Credencial do
+@BotFather e o seu Chat ID em todos. Só o campo **Text** muda, e é onde mora o texto
+de cada sensor — com o botão de expressão ligado:
+
+```
+NexoLog | {{ $json.device }}
+{{ $json.motivos }}
+Temperatura: {{ $json.temp }} °C (limite 30)
+{{ $json.timestamp }}
+```
+
+Trocando a terceira linha em cada um:
+
+| Nó | Terceira linha |
+|---|---|
+| `Avisar: temperatura` | `Temperatura: {{ $json.temp }} °C (limite 30)` |
+| `Avisar: umidade` | `Umidade: {{ $json.umid }} % (limite 70)` |
+| `Avisar: tampa` | `Distância: {{ $json.dist }} cm (limite 25)` |
+| `Avisar: movimentação` | `Movimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)` |
+| `Avisar: outro` | sem terceira linha |
 
 **Save** e **Active**.
 
@@ -128,15 +116,15 @@ Distância: 40.0 cm (limite 25)
 - [ ] Uma mensagem ao abrir, outra ao fechar
 - [ ] Só o nó `Avisar: tampa` fica verde — os outros três não recebem nada
 - [ ] Suba a temperatura para 35 °C com a tampa aberta: chegam **duas** mensagens
-- [ ] Nenhum campo com "sem leitura" ou `undefined`
 
 | Deu errado | Onde olhar |
 |---|---|
-| `undefined` nos campos | faltou o `JSON.parse` do (a) |
-| Tudo cai na saída 5 | `motivos` não está no payload: veja a função "Estado da entrega" no Node-RED |
-| Uma mensagem só, com tudo junto | o Code está devolvendo um item por evento em vez de um por motivo |
+| Campos vazios no Telegram | faltou `JSON Parse Body` ou `Only Message` no trigger |
+| Tudo cai na saída 5 | o valor da regra tem que ser igual ao texto do `motivos.push` no Node-RED, acento incluído |
+| Nenhum item sai do Split Out | `motivos` não está no payload: veja a função "Estado da entrega" |
+| Uma mensagem só, com tudo junto | o Split Out ficou de fora |
 | `Bad Request: chat not found` | Chat ID errado, ou você nunca falou com o bot primeiro |
-| Manda o texto `{{ $json.texto }}` literal | o campo Text está em modo fixo, não expressão |
+| Manda `{{ $json.device }}` literal | o campo Text está em modo fixo, não expressão |
 | Uma enxurrada de mensagens | o nó "Somente mudança de estado" do Node-RED ficou de fora |
 
 O fluxo completo está em [fluxo_mqtt.json](fluxo_mqtt.json) — Import from File, para comparar com o seu.

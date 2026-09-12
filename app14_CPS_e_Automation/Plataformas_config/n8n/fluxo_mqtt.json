@@ -4,7 +4,10 @@
     {
       "parameters": {
         "topics": "FIAPIoT/nexolog/equipe01/eventos",
-        "options": {}
+        "options": {
+          "jsonParseBody": true,
+          "onlyMessage": true
+        }
       },
       "type": "n8n-nodes-base.mqttTrigger",
       "typeVersion": 1,
@@ -12,21 +15,23 @@
         0,
         0
       ],
-      "id": "972421f3-a960-44c9-9bf5-a2fb443f7b5f",
+      "id": "9aa1b2a3-3115-438f-9a29-4cf15edb67c0",
       "name": "MQTT Trigger"
     },
     {
       "parameters": {
-        "jsCode": "const num = (v, casas) => Number.isFinite(v) ? v.toFixed(casas) : \"sem leitura\";\n\nconst mapa = {\n  \"Temperatura alta\":    {sensor: \"temperatura\",  linha: (d) => `Temperatura: ${num(d.temp, 1)} °C (limite 30)`},\n  \"Umidade alta\":        {sensor: \"umidade\",      linha: (d) => `Umidade: ${num(d.umid, 1)} % (limite 70)`},\n  \"Tampa aberta\":        {sensor: \"distancia\",    linha: (d) => `Distância: ${num(d.dist, 1)} cm (limite 25)`},\n  \"Movimentação brusca\": {sensor: \"movimentacao\", linha: (d) => `Movimentação: ${num(d.movimentacao, 2)} m/s² (limite 3)`},\n};\n\nconst saida = [];\n\nfor (const item of $input.all()) {\n  const d = typeof item.json.message === \"string\" ? JSON.parse(item.json.message) : item.json.message;\n  const motivos = d.motivos ?? [];\n\n  // Sem motivo: a entrega voltou ao normal. Uma mensagem só.\n  if (motivos.length === 0) {\n    saida.push({json: {...d, sensor: \"normal\",\n      texto: `NexoLog | ${d.device}\\n${d.estado}\\n${d.timestamp}`}});\n    continue;\n  }\n\n  // Um item por limiar ultrapassado: dois limiares, duas mensagens.\n  for (const motivo of motivos) {\n    const info = mapa[motivo] ?? {sensor: \"outro\", linha: () => motivo};\n    saida.push({json: {...d, sensor: info.sensor, motivo,\n      texto: `NexoLog | ${d.device}\\n${motivo}\\n${info.linha(d)}\\n${d.timestamp}`}});\n  }\n}\n\nreturn saida;"
+        "fieldToSplitOut": "motivos",
+        "include": "allOtherFields",
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
       "position": [
         220,
         0
       ],
-      "id": "f58a6b3c-8f05-4d14-ad09-43e8b4b9eb00",
-      "name": "Um item por limiar"
+      "id": "87ec6c6c-7ce4-4ff0-bf3d-7080cc604754",
+      "name": "Um item por motivo"
     },
     {
       "parameters": {
@@ -42,9 +47,9 @@
                 },
                 "conditions": [
                   {
-                    "id": "e97d9401-f1dc-4f9b-ae07-ef1c07b1141e",
-                    "leftValue": "={{ $json.sensor }}",
-                    "rightValue": "temperatura",
+                    "id": "f34febec-e0c6-4f11-8c97-bf5f681e008e",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Temperatura alta",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
@@ -66,9 +71,9 @@
                 },
                 "conditions": [
                   {
-                    "id": "6b325fe7-2602-4da1-a7a9-a1b68668451b",
-                    "leftValue": "={{ $json.sensor }}",
-                    "rightValue": "umidade",
+                    "id": "1c57c5a1-0d82-477c-86aa-95bcf64401b9",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Umidade alta",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
@@ -90,9 +95,9 @@
                 },
                 "conditions": [
                   {
-                    "id": "ea07a994-e575-4811-b8de-26035ac81ed8",
-                    "leftValue": "={{ $json.sensor }}",
-                    "rightValue": "distancia",
+                    "id": "02e2ad0d-99c3-4842-8ba8-7cddfc887a87",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Tampa aberta",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
@@ -102,7 +107,7 @@
                 "combinator": "and"
               },
               "renameOutput": true,
-              "outputKey": "Distância"
+              "outputKey": "Tampa"
             },
             {
               "conditions": {
@@ -114,9 +119,9 @@
                 },
                 "conditions": [
                   {
-                    "id": "2e2bbefb-5310-499e-bddf-65149a971fb3",
-                    "leftValue": "={{ $json.sensor }}",
-                    "rightValue": "movimentacao",
+                    "id": "1f60c2c6-cfad-4d23-b8ed-ec722e779195",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Movimentação brusca",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
@@ -133,7 +138,7 @@
         "looseTypeValidation": false,
         "options": {
           "fallbackOutput": "extra",
-          "renameFallbackOutput": "Normal"
+          "renameFallbackOutput": "Outro"
         }
       },
       "type": "n8n-nodes-base.switch",
@@ -142,88 +147,88 @@
         440,
         0
       ],
-      "id": "44f3af2a-a6bb-414f-85bb-76d2e6228fde",
+      "id": "b3108c44-b555-4a5f-8386-b2a4bcdaa02e",
       "name": "Qual limiar?"
     },
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "={{ $json.texto }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nTemperatura: {{ $json.temp }} °C (limite 30)\n{{ $json.timestamp }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        680,
-        -260
+        660,
+        -300
       ],
-      "id": "eace3d78-4b91-454b-a2d1-8a34f27fa2de",
+      "id": "02546065-368b-441c-88f7-2cc2b687b29c",
       "name": "Avisar: temperatura",
-      "webhookId": "18b42ac2-ee99-4ac5-8096-66daff5880af"
+      "webhookId": "68f4b03a-12ce-4b8f-88fc-c716e0d89f34"
     },
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "={{ $json.texto }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nUmidade: {{ $json.umid }} % (limite 70)\n{{ $json.timestamp }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        680,
-        -130
+        660,
+        -150
       ],
-      "id": "c4f6ebc9-7a9b-48c8-97e3-b06f1b8f85e9",
+      "id": "f940ad53-b753-48b4-a8f8-186072ca1db8",
       "name": "Avisar: umidade",
-      "webhookId": "a25685c7-6298-40d5-b107-1b4919bad57b"
+      "webhookId": "7654b285-84ac-436f-9e4f-37edb4c55c02"
     },
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "={{ $json.texto }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nDistância: {{ $json.dist }} cm (limite 25)\n{{ $json.timestamp }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        680,
+        660,
         0
       ],
-      "id": "0c0dcbc3-3cdd-4218-a115-45f7a0bf0197",
+      "id": "d3a3fde8-921e-4f69-b2fc-e5c9d1853ae7",
       "name": "Avisar: tampa",
-      "webhookId": "12b42129-381a-44c3-bac8-e68cb8496662"
+      "webhookId": "d3f15d95-c039-4a6d-901f-b043fa5119b6"
     },
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "={{ $json.texto }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nMovimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)\n{{ $json.timestamp }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        680,
-        130
+        660,
+        150
       ],
-      "id": "8ea4c06b-8d73-4d6a-8326-d2eca092a770",
+      "id": "efb2d919-56dc-4b1a-859b-a2f26790dbc3",
       "name": "Avisar: movimentação",
-      "webhookId": "7841af70-0cb4-4d00-9afa-2c3bf7c6b585"
+      "webhookId": "f7d49131-3271-4819-88ba-2791d99156cb"
     },
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "={{ $json.texto }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\n{{ $json.timestamp }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        680,
-        260
+        660,
+        300
       ],
-      "id": "a08b0ecf-235d-48a0-a17e-5df3050dd44d",
-      "name": "Avisar: normalizado",
-      "webhookId": "6809f5af-9e78-4bc1-a641-4d5dceca8423"
+      "id": "0dd52312-b3d5-4763-a79d-f0a0845b588b",
+      "name": "Avisar: outro",
+      "webhookId": "85eea7ca-bd68-4d9d-9643-13665f6abcda"
     }
   ],
   "connections": {
@@ -231,14 +236,14 @@
       "main": [
         [
           {
-            "node": "Um item por limiar",
+            "node": "Um item por motivo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Um item por limiar": {
+    "Um item por motivo": {
       "main": [
         [
           {
@@ -281,7 +286,7 @@
         ],
         [
           {
-            "node": "Avisar: normalizado",
+            "node": "Avisar: outro",
             "type": "main",
             "index": 0
           }

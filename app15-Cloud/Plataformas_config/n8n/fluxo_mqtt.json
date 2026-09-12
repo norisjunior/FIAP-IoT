@@ -4,7 +4,10 @@
     {
       "parameters": {
         "topics": "FIAPIoT/nexolog/equipe01/eventos",
-        "options": {}
+        "options": {
+          "jsonParseBody": true,
+          "onlyMessage": true
+        }
       },
       "type": "n8n-nodes-base.mqttTrigger",
       "typeVersion": 1,
@@ -12,37 +15,220 @@
         0,
         0
       ],
-      "id": "c882212d-5c51-4e9d-b963-58d91e4d3fd9",
+      "id": "ea5d6f81-8e0f-4c4a-90af-ba1f292c35b3",
       "name": "MQTT Trigger"
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const data = typeof $json.message === \"string\" ? JSON.parse($json.message) : $json.message;\nconst num = (v, casas) => Number.isFinite(v) ? v.toFixed(casas) : \"sem leitura\";\nreturn {json: {...data, texto: `NexoLog | ${data.device}\\n${data.estado}\\nTemperatura: ${num(data.temp, 1)} °C\\nUmidade: ${num(data.umid, 1)} %\\nDistância: ${num(data.dist, 1)} cm\\nMovimentação: ${num(data.movimentacao, 2)} m/s²\\n${data.timestamp}`}};"
+        "fieldToSplitOut": "motivos",
+        "include": "allOtherFields",
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
       "position": [
-        208,
+        220,
         0
       ],
-      "id": "6f9ad8b8-14e8-4d5f-a598-498ed3aaf93d",
-      "name": "Preparar mensagem"
+      "id": "904d2b25-606a-43da-a537-94d965972446",
+      "name": "Um item por motivo"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8bc7ac7f-5e74-4610-858e-8353730e487f",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Temperatura alta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Temperatura"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a2608998-194b-4b3a-937a-d3a697625c4c",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Umidade alta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Umidade"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f9a005ce-573a-4f4d-9e2e-0cd36a2f0c9d",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Tampa aberta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Tampa"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2bb7591b-f185-4231-8c1e-15bd607b1384",
+                    "leftValue": "={{ $json.motivos }}",
+                    "rightValue": "Movimentação brusca",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Movimentação"
+            }
+          ]
+        },
+        "looseTypeValidation": false,
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Outro"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "be356560-0e95-463d-bd47-c5f591282e80",
+      "name": "Qual limiar?"
     },
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "={{ $json.texto }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nTemperatura: {{ $json.temp }} °C (limite 30)\n{{ $json.timestamp }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        460,
+        660,
+        -300
+      ],
+      "id": "c7fd4930-e7c9-447c-a2a6-aca332f54cd1",
+      "name": "Avisar: temperatura",
+      "webhookId": "0b2881d5-34c5-4075-a37d-0a7351cacd49"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nUmidade: {{ $json.umid }} % (limite 70)\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        -150
+      ],
+      "id": "86392405-702a-4462-9934-c852c7051fab",
+      "name": "Avisar: umidade",
+      "webhookId": "9c571916-e900-4e21-b951-237c7329051a"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nDistância: {{ $json.dist }} cm (limite 25)\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
         0
       ],
-      "id": "0533f08d-d730-4755-abab-7b51c05ed043",
-      "name": "Avisar responsável"
+      "id": "0776a91d-9649-4f50-b940-0e750cb75e54",
+      "name": "Avisar: tampa",
+      "webhookId": "ed401eca-b304-4e00-af85-f77fe39c5634"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\nMovimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        150
+      ],
+      "id": "25e86be1-a39d-41ee-9f12-79d18226f716",
+      "name": "Avisar: movimentação",
+      "webhookId": "c0d21bf8-bf3e-46c7-82d0-e22e9bfb3262"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivos }}\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        300
+      ],
+      "id": "c8a89a71-6a1c-4c92-b937-8adc8a159aa6",
+      "name": "Avisar: outro",
+      "webhookId": "37472555-e0d9-4a5b-a36c-8afe07d8d571"
     }
   ],
   "connections": {
@@ -50,18 +236,57 @@
       "main": [
         [
           {
-            "node": "Preparar mensagem",
+            "node": "Um item por motivo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Preparar mensagem": {
+    "Um item por motivo": {
       "main": [
         [
           {
-            "node": "Avisar responsável",
+            "node": "Qual limiar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qual limiar?": {
+      "main": [
+        [
+          {
+            "node": "Avisar: temperatura",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: umidade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: tampa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: movimentação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: outro",
             "type": "main",
             "index": 0
           }
