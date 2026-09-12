@@ -63,23 +63,27 @@ Execute de novo. Onde antes vinha `{topic, message}`, agora vêm `device`, `temp
 |---|---|
 | Fields To Split Out | `motivos` |
 | Include | `All Other Fields` |
+| Destination Field Name | `motivo` |
 
 `motivos` é a lista que o Node-RED publica. O Split Out faz um item por elemento,
 carregando junto todos os outros campos — dois limiares estourados viram dois itens,
 cada um com as medições completas. É o laço, sem o laço.
 
-**c) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.motivos }}`,
-`is equal to` — depois do Split Out esse campo é uma string, não mais a lista:
+Cada item ganha o campo `motivo`, com as duas partes: `motivo.sensor` (a chave, para
+rotear) e `motivo.texto` (a prosa, para mostrar).
+
+**c) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.motivo.sensor }}`,
+`is equal to`. Compara a chave, nunca a prosa:
 
 | Saída | Valor | Rename output |
 |---|---|---|
-| 1 | `Temperatura alta` | Temperatura |
-| 2 | `Umidade alta` | Umidade |
-| 3 | `Tampa aberta` | Tampa |
-| 4 | `Movimentação brusca` | Movimentação |
+| 1 | `temperatura` | Temperatura |
+| 2 | `umidade` | Umidade |
+| 3 | `tampa` | Tampa |
+| 4 | `movimento` | Movimentação |
 
 Em **Options**, acrescente `Fallback Output` = `Extra Output`. É a saída 5, por onde
-saem "Falha de sensor" e "Entrega em condição normal".
+saem as chaves `falha` e `normal`.
 
 **d) Cinco nós Telegram**, um por saída, action `Send a Text Message`. Credencial do
 @BotFather e o seu Chat ID em todos. Só o campo **Text** muda, e é onde mora o texto
@@ -87,7 +91,7 @@ de cada sensor — com o botão de expressão ligado:
 
 ```
 NexoLog | {{ $json.device }}
-{{ $json.motivos }}
+{{ $json.motivo.texto }}
 Temperatura: {{ $json.temp }} °C (limite 30)
 {{ $json.timestamp }}
 ```
@@ -120,7 +124,7 @@ Distância: 40.0 cm (limite 25)
 | Deu errado | Onde olhar |
 |---|---|
 | Campos vazios no Telegram | faltou `JSON Parse Body` ou `Only Message` no trigger |
-| Tudo cai na saída 5 | o valor da regra tem que ser igual ao texto do `motivos.push` no Node-RED, acento incluído |
+| Tudo cai na saída 5 | a regra compara `motivo.sensor`, não o texto. Confira a chave no `motivos.push` do Node-RED |
 | Nenhum item sai do Split Out | `motivos` não está no payload: veja a função "Estado da entrega" |
 | Uma mensagem só, com tudo junto | o Split Out ficou de fora |
 | `Bad Request: chat not found` | Chat ID errado, ou você nunca falou com o bot primeiro |

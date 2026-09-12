@@ -83,23 +83,28 @@ const LIMIAR_DIST = 25;
 const LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:
 // caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.
 
+// sensor e a chave que o n8n roteia; texto e o que o humano le.
 let motivos = [];
-if (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push("Falha de sensor");
-if (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push("Temperatura alta");
-if (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push("Umidade alta");
-if (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push("Tampa aberta");
-if (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push("Movimentação brusca");
+if (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push({sensor: "falha", texto: "Falha de sensor"});
+if (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push({sensor: "temperatura", texto: "Temperatura alta"});
+if (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push({sensor: "umidade", texto: "Umidade alta"});
+if (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push({sensor: "tampa", texto: "Tampa aberta"});
+if (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push({sensor: "movimento", texto: "Movimentação brusca"});
 const alerta = motivos.length > 0;
-if (!alerta) motivos.push("Entrega em condição normal");
-msg.payload = {...p, motivos, alerta, estado: motivos.join(" / ")};
+if (!alerta) motivos.push({sensor: "normal", texto: "Entrega em condição normal"});
+msg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(" / ")};
 return msg;
 ```
 
 Ligue num **ui_text** (order 6, 12×1, label `Entrega`, Value format `{{msg.payload.estado}}`).
 
-`estado` é o texto para ler na tela; `motivos` é a mesma coisa em lista. É por ela
-que o n8n separa uma mensagem por limiar, com o nó Split Out — por isso a lista nunca
-fica vazia: quando não há alerta, ela leva "Entrega em condição normal".
+Cada motivo tem duas partes de propósito. `sensor` é a **chave**: é por ela que o n8n
+roteia, e ela não muda. `texto` é a **prosa**: aparece na tela e no Telegram, e você
+reescreve à vontade ao adaptar o projeto — "Tampa aberta" vira "Bag aberta" aqui, num
+lugar só, sem tocar no n8n.
+
+`estado` junta as prosas para o `ui_text`. A lista nunca fica vazia: sem alerta, ela leva
+o motivo `normal` — é o que faz o Split Out do n8n render um item mesmo na entrega boa.
 
 **d) Avisar só na mudança.** Nó **function**, depois do estado. Sem isso o n8n recebe 24 mensagens por minuto:
 
