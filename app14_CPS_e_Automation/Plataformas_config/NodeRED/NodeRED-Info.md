@@ -1,3 +1,7 @@
 # NexoLog v2
 
-Consulte o README da aplicação para os fluxos desta versão. Os demais arquivos auxiliares copiados são referências do projeto anterior.
+Fluxos desta versão: veja o README da aplicação.
+
+Para montar do zero, em duas iterações: [CONSTRUIR-O-FLUXO.md](CONSTRUIR-O-FLUXO.md).
+
+Os demais arquivos auxiliares copiados são referências do projeto anterior.

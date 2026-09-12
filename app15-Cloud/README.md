@@ -2,6 +2,8 @@
 
 Parta de uma cópia do projeto [app14_NexoLog](../app14_CPS_e_Automation/app14_NexoLog). Mantenha sensores, coleta, JSON e tópicos de dados. Acrescente somente a recepção de comandos para o LED.
 
+Para montar em duas iterações que rodam: [CONSTRUIR-O-FIRMWARE.md](CONSTRUIR-O-FIRMWARE.md). O roteiro abaixo é o mesmo conteúdo em forma de referência.
+
 ## 1. Tópico de comandos
 
 Junto às configurações MQTT do `.ino`:
@@ -61,17 +63,19 @@ A assinatura acontece novamente em cada reconexão. O `mqttClient.loop()` já es
 
 1. Desative o dashboard do app14 antes de ativar o do app15: ambos usam os mesmos tópicos.
 2. Importe [Fluxo_1_dashboard_graphs_e_cmd.json](Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json) no Node-RED.
-3. Configure o broker e faça Deploy. A regra envia `ON` quando há uma condição de alerta e `OFF` quando volta ao normal.
+3. Configure o broker e faça Deploy. O nó `Tampa: dist > 25 cm` é quem decide: saída 1 envia `ON`, saída 2 (`otherwise`) envia `OFF`. A decisão fica visível no canvas, sem código.
 4. Para histórico, use [Fluxo_2_envio_InfluxDB.json](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json). Mantenha apenas uma cópia do fluxo de gravação ativa.
 5. Para notificações, importe [fluxo_mqtt.json](Plataformas_config/n8n/fluxo_mqtt.json) no n8n. Configure credenciais MQTT, Telegram e `SEU_CHAT_ID`. Ative apenas um workflow de eventos por equipe.
 
 O dashboard mostra a condição calculada pela plataforma. A confirmação física é o próprio LED ou a Serial; este firmware não publica confirmação de atuação.
 
-Os nós `Simular` também geram comandos para o ESP32 conectado. Use inicialmente o cenário Normal e depois Temperatura alta. A simulação é interna ao dashboard e não alimenta o fluxo separado de histórico.
+Os nós `Simular` alimentam o dashboard e o evento do n8n, mas não o comando: quem manda `ON`/`OFF` é o switch, ligado à distância real. Use inicialmente o cenário Normal e depois Tampa aberta. A simulação é interna ao dashboard e não alimenta o fluxo separado de histórico.
 
 ## Demonstração
 
-Com a caixa em condição normal, o LED fica apagado. Aumente a temperatura para 35 °C: a plataforma envia `ON`. Volte a 24 °C: envia `OFF`.
+Com a caixa fechada, o LED fica apagado. Levante a tampa — no Wokwi, mude a distância de 10 para 40 cm: a plataforma envia `ON`. Volte para 10 cm: envia `OFF`.
+
+O dispositivo não sabe o que é 25 cm. Ele mede, publica e obedece; o limite mora na nuvem e muda sem recompilar o firmware.
 
 Se a comunicação cair, o LED mantém o último comando. O ESP32 continua coletando, mas não decide sobre alertas.
 

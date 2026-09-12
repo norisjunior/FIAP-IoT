@@ -8,9 +8,11 @@ O firmware lê DHT22, ultrassônico e MPU a cada 2,5 segundos e publica JSON. N�
 
 1. Importe [dashboard.json](Plataformas_config/NodeRED/dashboard.json), configure o broker e faça Deploy.
 2. Acompanhe MQTT-in, JSON e Debug.
-3. Abra `separarDadosSensores` e siga suas quatro saídas até os gauges e o gráfico.
-4. Use `Simular: Normal` e `Simular: Tampa aberta`. Depois altere a distância no Wokwi de 10 para 40 cm.
+3. Abra `separarDadosSensores` e siga suas quatro saídas até os widgets e o gráfico.
+4. Altere a distância no Wokwi de 10 para 40 cm e volte para 10.
 5. Observe o Switch e o estado da entrega. Acesse `http://localhost:1880/ui/`.
+
+Para montar em vez de importar: [firmware](app14_NexoLog/CONSTRUIR-O-FIRMWARE.md), [Node-RED](Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md), [n8n](Plataformas_config/n8n/CONSTRUIR-O-FLUXO.md).
 
 Depois, acrescente [InfluxDB](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json) e [n8n](Plataformas_config/n8n/fluxo_mqtt.json). No n8n, configure credenciais e Chat ID. Os eventos saem apenas na mudança de estado.
 

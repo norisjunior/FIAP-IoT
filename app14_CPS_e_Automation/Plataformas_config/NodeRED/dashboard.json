@@ -87,7 +87,6 @@
                 "0c1a18dfa91cff9a"
             ],
             [
-                "8de2cfeab88fb3ab",
                 "52394c17cc7fb252"
             ],
             [
@@ -224,52 +223,11 @@
         ]
     },
     {
-        "id": "8de2cfeab88fb3ab",
-        "type": "switch",
-        "z": "69e5326f76928c61",
-        "name": "Tampa: dist > 25 cm",
-        "property": "payload",
-        "propertyType": "msg",
-        "rules": [
-            {
-                "t": "gt",
-                "v": "25",
-                "vt": "num"
-            }
-        ],
-        "checkall": "true",
-        "repair": false,
-        "outputs": 1,
-        "x": 980,
-        "y": 280,
-        "wires": [
-            [
-                "d1b972527ede0010"
-            ]
-        ]
-    },
-    {
-        "id": "d1b972527ede0010",
-        "type": "debug",
-        "z": "69e5326f76928c61",
-        "name": "Tampa aberta",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1220,
-        "y": 280,
-        "wires": []
-    },
-    {
         "id": "06d8284feeb5833a",
         "type": "function",
         "z": "69e5326f76928c61",
         "name": "Estado da entrega",
-        "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(\"Movimentação brusca\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
+        "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(\"Movimentação brusca\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,

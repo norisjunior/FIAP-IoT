@@ -45,6 +45,8 @@ namespace ESP32Sensors {
       float z = accel.accelZ;
       if (!isfinite(x) || !isfinite(y) || !isfinite(z)) return NAN;
       // Magnitude da aceleracao descontando a gravidade: caixa parada = 0 m/s2.
+      // O firmware so mede. O limite do que e "movimentacao demais" depende do
+      // contexto (caixa em prateleira x bag na garupa) e fica na plataforma.
       return fabsf(sqrtf(x*x + y*y + z*z) - 9.80665f);
     }
   }

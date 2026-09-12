@@ -200,28 +200,42 @@
   },
   {
     "id": "4f946f1e5a02fe38",
-    "type": "ui_gauge",
+    "type": "ui_level",
     "z": "efd1c69a09330861",
-    "name": "Distância até a tampa",
     "group": "971cfe2ccd7a75ef",
     "order": 3,
     "width": 3,
     "height": 3,
-    "gtype": "gage",
-    "title": "Distância até a tampa",
-    "label": "cm",
-    "format": "{{value | number:1}}",
+    "name": "Distância da tampa",
+    "label": "Tampa",
+    "colorHi": "#e60000",
+    "colorWarn": "#ff9900",
+    "colorNormal": "#00b33c",
+    "colorOff": "#595959",
     "min": 0,
-    "max": 100,
-    "colors": [
-      "#00b500",
-      "#e6e600",
-      "#ca3838"
-    ],
-    "seg1": "20",
-    "seg2": "25",
-    "diff": false,
-    "className": "",
+    "max": 50,
+    "segWarn": "20",
+    "segHigh": "25",
+    "unit": "cm",
+    "layout": "sv",
+    "channelA": "",
+    "channelB": "",
+    "decimals": 1,
+    "animations": "soft",
+    "shape": 2,
+    "colorschema": "fixed",
+    "textoptions": "default",
+    "colorText": "#eeeeee",
+    "fontLabel": "",
+    "fontValue": "",
+    "fontSmall": "",
+    "colorFromTheme": true,
+    "textAnimations": false,
+    "hideValue": false,
+    "tickmode": "off",
+    "peakmode": false,
+    "property": "payload",
+    "peaktime": 3000,
     "x": 920,
     "y": 240,
     "wires": []
@@ -310,16 +324,77 @@
         "t": "gt",
         "v": "25",
         "vt": "num"
+      },
+      {
+        "t": "else"
       }
     ],
     "checkall": "true",
     "repair": false,
-    "outputs": 1,
-    "x": 920,
-    "y": 440,
+    "outputs": 2,
+    "x": 900,
+    "y": 700,
     "wires": [
       [
+        "a1c0de0000ab1001",
         "15867f465e5f117d"
+      ],
+      [
+        "a1c0de0000ab1002"
+      ]
+    ]
+  },
+  {
+    "id": "a1c0de0000ab1001",
+    "type": "change",
+    "z": "efd1c69a09330861",
+    "name": "Comando ON",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "ON",
+        "tot": "str"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 1130,
+    "y": 700,
+    "wires": [
+      [
+        "948117e25c041dd8"
+      ]
+    ]
+  },
+  {
+    "id": "a1c0de0000ab1002",
+    "type": "change",
+    "z": "efd1c69a09330861",
+    "name": "Comando OFF",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "OFF",
+        "tot": "str"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 1130,
+    "y": 760,
+    "wires": [
+      [
+        "948117e25c041dd8"
       ]
     ]
   },
@@ -335,8 +410,8 @@
     "complete": "payload",
     "statusVal": "",
     "statusType": "auto",
-    "x": 1160,
-    "y": 440,
+    "x": 1400,
+    "y": 640,
     "wires": []
   },
   {
@@ -344,7 +419,7 @@
     "type": "function",
     "z": "efd1c69a09330861",
     "name": "Estado da entrega",
-    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(\"Movimentação brusca\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
+    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(\"Movimentação brusca\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
     "outputs": 1,
     "timeout": 0,
     "noerr": 0,
@@ -356,8 +431,7 @@
     "wires": [
       [
         "4273671bb5661029",
-        "bbf40fd9eed66a56",
-        "de0a87c35f7ed56c"
+        "bbf40fd9eed66a56"
       ]
     ]
   },
@@ -483,26 +557,6 @@
     "wires": []
   },
   {
-    "id": "de0a87c35f7ed56c",
-    "type": "function",
-    "z": "efd1c69a09330861",
-    "name": "Enviar comando de alerta",
-    "func": "msg.payload = msg.payload.alerta ? \"ON\" : \"OFF\";\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 920,
-    "y": 760,
-    "wires": [
-      [
-        "948117e25c041dd8"
-      ]
-    ]
-  },
-  {
     "id": "948117e25c041dd8",
     "type": "mqtt out",
     "z": "efd1c69a09330861",
@@ -516,8 +570,8 @@
     "correl": "",
     "expiry": "",
     "broker": "6c9a71ebeeca9850",
-    "x": 1190,
-    "y": 760,
+    "x": 1400,
+    "y": 720,
     "wires": []
   },
   {
