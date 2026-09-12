@@ -12,22 +12,138 @@
         0,
         0
       ],
-      "id": "c882212d-5c51-4e9d-b963-58d91e4d3fd9",
+      "id": "972421f3-a960-44c9-9bf5-a2fb443f7b5f",
       "name": "MQTT Trigger"
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const data = typeof $json.message === \"string\" ? JSON.parse($json.message) : $json.message;\nconst num = (v, casas) => Number.isFinite(v) ? v.toFixed(casas) : \"sem leitura\";\nreturn {json: {...data, texto: `NexoLog | ${data.device}\\n${data.estado}\\nTemperatura: ${num(data.temp, 1)} °C\\nUmidade: ${num(data.umid, 1)} %\\nDistância: ${num(data.dist, 1)} cm\\nMovimentação: ${num(data.movimentacao, 2)} m/s²\\n${data.timestamp}`}};"
+        "jsCode": "const num = (v, casas) => Number.isFinite(v) ? v.toFixed(casas) : \"sem leitura\";\n\nconst mapa = {\n  \"Temperatura alta\":    {sensor: \"temperatura\",  linha: (d) => `Temperatura: ${num(d.temp, 1)} °C (limite 30)`},\n  \"Umidade alta\":        {sensor: \"umidade\",      linha: (d) => `Umidade: ${num(d.umid, 1)} % (limite 70)`},\n  \"Tampa aberta\":        {sensor: \"distancia\",    linha: (d) => `Distância: ${num(d.dist, 1)} cm (limite 25)`},\n  \"Movimentação brusca\": {sensor: \"movimentacao\", linha: (d) => `Movimentação: ${num(d.movimentacao, 2)} m/s² (limite 3)`},\n};\n\nconst saida = [];\n\nfor (const item of $input.all()) {\n  const d = typeof item.json.message === \"string\" ? JSON.parse(item.json.message) : item.json.message;\n  const motivos = d.motivos ?? [];\n\n  // Sem motivo: a entrega voltou ao normal. Uma mensagem só.\n  if (motivos.length === 0) {\n    saida.push({json: {...d, sensor: \"normal\",\n      texto: `NexoLog | ${d.device}\\n${d.estado}\\n${d.timestamp}`}});\n    continue;\n  }\n\n  // Um item por limiar ultrapassado: dois limiares, duas mensagens.\n  for (const motivo of motivos) {\n    const info = mapa[motivo] ?? {sensor: \"outro\", linha: () => motivo};\n    saida.push({json: {...d, sensor: info.sensor, motivo,\n      texto: `NexoLog | ${d.device}\\n${motivo}\\n${info.linha(d)}\\n${d.timestamp}`}});\n  }\n}\n\nreturn saida;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
+        220,
         0
       ],
-      "id": "6f9ad8b8-14e8-4d5f-a598-498ed3aaf93d",
-      "name": "Preparar mensagem"
+      "id": "f58a6b3c-8f05-4d14-ad09-43e8b4b9eb00",
+      "name": "Um item por limiar"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e97d9401-f1dc-4f9b-ae07-ef1c07b1141e",
+                    "leftValue": "={{ $json.sensor }}",
+                    "rightValue": "temperatura",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Temperatura"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6b325fe7-2602-4da1-a7a9-a1b68668451b",
+                    "leftValue": "={{ $json.sensor }}",
+                    "rightValue": "umidade",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Umidade"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ea07a994-e575-4811-b8de-26035ac81ed8",
+                    "leftValue": "={{ $json.sensor }}",
+                    "rightValue": "distancia",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Distância"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2e2bbefb-5310-499e-bddf-65149a971fb3",
+                    "leftValue": "={{ $json.sensor }}",
+                    "rightValue": "movimentacao",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Movimentação"
+            }
+          ]
+        },
+        "looseTypeValidation": false,
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Normal"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "44f3af2a-a6bb-414f-85bb-76d2e6228fde",
+      "name": "Qual limiar?"
     },
     {
       "parameters": {
@@ -38,11 +154,76 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        460,
+        680,
+        -260
+      ],
+      "id": "eace3d78-4b91-454b-a2d1-8a34f27fa2de",
+      "name": "Avisar: temperatura",
+      "webhookId": "18b42ac2-ee99-4ac5-8096-66daff5880af"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        -130
+      ],
+      "id": "c4f6ebc9-7a9b-48c8-97e3-b06f1b8f85e9",
+      "name": "Avisar: umidade",
+      "webhookId": "a25685c7-6298-40d5-b107-1b4919bad57b"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        680,
         0
       ],
-      "id": "0533f08d-d730-4755-abab-7b51c05ed043",
-      "name": "Avisar responsável"
+      "id": "0c0dcbc3-3cdd-4218-a115-45f7a0bf0197",
+      "name": "Avisar: tampa",
+      "webhookId": "12b42129-381a-44c3-bac8-e68cb8496662"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        130
+      ],
+      "id": "8ea4c06b-8d73-4d6a-8326-d2eca092a770",
+      "name": "Avisar: movimentação",
+      "webhookId": "7841af70-0cb4-4d00-9afa-2c3bf7c6b585"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        260
+      ],
+      "id": "a08b0ecf-235d-48a0-a17e-5df3050dd44d",
+      "name": "Avisar: normalizado",
+      "webhookId": "6809f5af-9e78-4bc1-a641-4d5dceca8423"
     }
   ],
   "connections": {
@@ -50,18 +231,57 @@
       "main": [
         [
           {
-            "node": "Preparar mensagem",
+            "node": "Um item por limiar",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Preparar mensagem": {
+    "Um item por limiar": {
       "main": [
         [
           {
-            "node": "Avisar responsável",
+            "node": "Qual limiar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qual limiar?": {
+      "main": [
+        [
+          {
+            "node": "Avisar: temperatura",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: umidade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: tampa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: movimentação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: normalizado",
             "type": "main",
             "index": 0
           }

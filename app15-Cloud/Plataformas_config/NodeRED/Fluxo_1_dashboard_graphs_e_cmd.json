@@ -138,7 +138,8 @@
         "840543c9aea542e5"
       ],
       [
-        "90644ff70540edc2"
+        "90644ff70540edc2",
+        "a1c0de0000ab2000"
       ]
     ]
   },
@@ -333,7 +334,7 @@
     "repair": false,
     "outputs": 2,
     "x": 900,
-    "y": 700,
+    "y": 690,
     "wires": [
       [
         "a1c0de0000ab1001",
@@ -345,17 +346,48 @@
     ]
   },
   {
-    "id": "a1c0de0000ab1001",
+    "id": "a1c0de0000ab2000",
+    "type": "switch",
+    "z": "efd1c69a09330861",
+    "name": "Movimentação > 3 m/s²",
+    "property": "payload",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "gt",
+        "v": "3",
+        "vt": "num"
+      },
+      {
+        "t": "else"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 2,
+    "x": 900,
+    "y": 850,
+    "wires": [
+      [
+        "a1c0de0000ab2001"
+      ],
+      [
+        "a1c0de0000ab2002"
+      ]
+    ]
+  },
+  {
+    "id": "a1c0de0000ab2001",
     "type": "change",
     "z": "efd1c69a09330861",
-    "name": "Comando ON",
+    "name": "Comando: movimento ON",
     "rules": [
       {
         "t": "set",
         "p": "payload",
         "pt": "msg",
-        "to": "ON",
-        "tot": "str"
+        "to": "{\"alvo\": \"movimento\", \"estado\": \"ON\"}",
+        "tot": "json"
       }
     ],
     "action": "",
@@ -363,8 +395,62 @@
     "from": "",
     "to": "",
     "reg": false,
-    "x": 1130,
-    "y": 700,
+    "x": 1150,
+    "y": 820,
+    "wires": [
+      [
+        "948117e25c041dd8"
+      ]
+    ]
+  },
+  {
+    "id": "a1c0de0000ab2002",
+    "type": "change",
+    "z": "efd1c69a09330861",
+    "name": "Comando: movimento OFF",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "{\"alvo\": \"movimento\", \"estado\": \"OFF\"}",
+        "tot": "json"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 1150,
+    "y": 880,
+    "wires": [
+      [
+        "948117e25c041dd8"
+      ]
+    ]
+  },
+  {
+    "id": "a1c0de0000ab1001",
+    "type": "change",
+    "z": "efd1c69a09330861",
+    "name": "Comando: tampa ON",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "{\"alvo\": \"tampa\", \"estado\": \"ON\"}",
+        "tot": "json"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 1150,
+    "y": 660,
     "wires": [
       [
         "948117e25c041dd8"
@@ -375,14 +461,14 @@
     "id": "a1c0de0000ab1002",
     "type": "change",
     "z": "efd1c69a09330861",
-    "name": "Comando OFF",
+    "name": "Comando: tampa OFF",
     "rules": [
       {
         "t": "set",
         "p": "payload",
         "pt": "msg",
-        "to": "OFF",
-        "tot": "str"
+        "to": "{\"alvo\": \"tampa\", \"estado\": \"OFF\"}",
+        "tot": "json"
       }
     ],
     "action": "",
@@ -390,8 +476,8 @@
     "from": "",
     "to": "",
     "reg": false,
-    "x": 1130,
-    "y": 760,
+    "x": 1150,
+    "y": 720,
     "wires": [
       [
         "948117e25c041dd8"
@@ -411,7 +497,7 @@
     "statusVal": "",
     "statusType": "auto",
     "x": 1400,
-    "y": 640,
+    "y": 600,
     "wires": []
   },
   {
@@ -419,7 +505,7 @@
     "type": "function",
     "z": "efd1c69a09330861",
     "name": "Estado da entrega",
-    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(\"Movimentação brusca\");\nmsg.payload = {...p, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
+    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(\"Falha de sensor\");\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(\"Temperatura alta\");\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(\"Umidade alta\");\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(\"Tampa aberta\");\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(\"Movimentação brusca\");\nmsg.payload = {...p, motivos, alerta: motivos.length > 0, estado: motivos.join(\" / \") || \"Entrega em condição normal\"};\nreturn msg;",
     "outputs": 1,
     "timeout": 0,
     "noerr": 0,
@@ -570,8 +656,8 @@
     "correl": "",
     "expiry": "",
     "broker": "6c9a71ebeeca9850",
-    "x": 1400,
-    "y": 720,
+    "x": 1420,
+    "y": 770,
     "wires": []
   },
   {

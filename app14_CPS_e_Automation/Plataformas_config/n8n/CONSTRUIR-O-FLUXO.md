@@ -41,33 +41,78 @@ Clique em **Listen for test event**. No Wokwi, mude a distância de 10 para 40 c
 
 ---
 
-## Iteração 2 — Avisar no Telegram
+## Iteração 2 — Uma mensagem por limiar
 
-**a) Nó Code**, depois do trigger. Mode: `Run Once for Each Item`.
+Quatro limiares, quatro nós de Telegram. Se a entrega estoura temperatura **e**
+tampa ao mesmo tempo, saem duas mensagens — cada uma com o número que a disparou.
 
-`message` chega como texto — sem o `JSON.parse` os campos vêm `undefined`:
+**a) Nó Code**, depois do trigger. Deixe o Mode em `Run Once for All Items`: este nó
+recebe um evento e pode devolver vários itens.
 
 ```javascript
-const data = typeof $json.message === "string" ? JSON.parse($json.message) : $json.message;
 const num = (v, casas) => Number.isFinite(v) ? v.toFixed(casas) : "sem leitura";
-return {json: {...data, texto: `NexoLog | ${data.device}
-${data.estado}
-Temperatura: ${num(data.temp, 1)} °C
-Umidade: ${num(data.umid, 1)} %
-Distância: ${num(data.dist, 1)} cm
-Movimentação: ${num(data.movimentacao, 2)} m/s²
-${data.timestamp}`}};
+
+const mapa = {
+  "Temperatura alta":    {sensor: "temperatura",  linha: (d) => `Temperatura: ${num(d.temp, 1)} °C (limite 30)`},
+  "Umidade alta":        {sensor: "umidade",      linha: (d) => `Umidade: ${num(d.umid, 1)} % (limite 70)`},
+  "Tampa aberta":        {sensor: "distancia",    linha: (d) => `Distância: ${num(d.dist, 1)} cm (limite 25)`},
+  "Movimentação brusca": {sensor: "movimentacao", linha: (d) => `Movimentação: ${num(d.movimentacao, 2)} m/s² (limite 3)`},
+};
+
+const saida = [];
+
+for (const item of $input.all()) {
+  const d = typeof item.json.message === "string" ? JSON.parse(item.json.message) : item.json.message;
+  const motivos = d.motivos ?? [];
+
+  // Sem motivo: a entrega voltou ao normal. Uma mensagem só.
+  if (motivos.length === 0) {
+    saida.push({json: {...d, sensor: "normal",
+      texto: `NexoLog | ${d.device}\n${d.estado}\n${d.timestamp}`}});
+    continue;
+  }
+
+  // Um item por limiar ultrapassado: dois limiares, duas mensagens.
+  for (const motivo of motivos) {
+    const info = mapa[motivo] ?? {sensor: "outro", linha: () => motivo};
+    saida.push({json: {...d, sensor: info.sensor, motivo,
+      texto: `NexoLog | ${d.device}\n${motivo}\n${info.linha(d)}\n${d.timestamp}`}});
+  }
+}
+
+return saida;
 ```
 
-Execute o nó. O campo `texto` tem que sair pronto, com número em toda linha.
+`message` chega como texto — sem o `JSON.parse` os campos vêm `undefined`. E é o
+campo `motivos`, a lista que o Node-RED publica, que permite separar; o `estado` é
+só o texto grudado.
 
-**b) Nó Telegram**, action `Send a Text Message`.
+Execute o nó com a tampa aberta: tem que sair **um** item, com `sensor: "distancia"`.
+
+**b) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.sensor }}`,
+`is equal to`, uma saída por valor:
+
+| Saída | Valor | Rename output |
+|---|---|---|
+| 1 | `temperatura` | Temperatura |
+| 2 | `umidade` | Umidade |
+| 3 | `distancia` | Distância |
+| 4 | `movimentacao` | Movimentação |
+
+Em **Options**, acrescente `Fallback Output` = `Extra Output`. É a saída 5, por onde
+sai o "voltou ao normal".
+
+**c) Cinco nós Telegram**, um por saída, action `Send a Text Message`. Todos com o
+mesmo conteúdo — o texto já vem pronto do Code:
 
 | Campo | Valor |
 |---|---|
 | Credential | token do @BotFather |
 | Chat ID | o seu — mande um "oi" para o bot e pegue em `api.telegram.org/bot<TOKEN>/getUpdates` |
 | Text | `{{ $json.texto }}` (com o botão de expressão ligado) |
+
+Nomeie cada um pelo limiar: `Avisar: temperatura`, `Avisar: umidade`, `Avisar: tampa`,
+`Avisar: movimentação`, `Avisar: normalizado`.
 
 **Save** e **Active**.
 
@@ -76,19 +121,20 @@ Execute o nó. O campo `texto` tem que sair pronto, com número em toda linha.
 ```
 NexoLog | NexoLogEquipe01
 Tampa aberta
-Temperatura: 24.0 °C
-Umidade: 40.0 %
-Distância: 40.0 cm
-Movimentação: 0.03 m/s²
+Distância: 40.0 cm (limite 25)
 2026-09-11T13:20:05.412Z
 ```
 
-- [ ] Chega uma mensagem ao abrir, outra ao fechar
+- [ ] Uma mensagem ao abrir, outra ao fechar
+- [ ] Só o nó `Avisar: tampa` fica verde — os outros três não recebem nada
+- [ ] Suba a temperatura para 35 °C com a tampa aberta: chegam **duas** mensagens
 - [ ] Nenhum campo com "sem leitura" ou `undefined`
 
 | Deu errado | Onde olhar |
 |---|---|
 | `undefined` nos campos | faltou o `JSON.parse` do (a) |
+| Tudo cai na saída 5 | `motivos` não está no payload: veja a função "Estado da entrega" no Node-RED |
+| Uma mensagem só, com tudo junto | o Code está devolvendo um item por evento em vez de um por motivo |
 | `Bad Request: chat not found` | Chat ID errado, ou você nunca falou com o bot primeiro |
 | Manda o texto `{{ $json.texto }}` literal | o campo Text está em modo fixo, não expressão |
 | Uma enxurrada de mensagens | o nó "Somente mudança de estado" do Node-RED ficou de fora |
