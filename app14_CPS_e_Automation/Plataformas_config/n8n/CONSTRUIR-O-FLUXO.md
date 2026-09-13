@@ -55,7 +55,7 @@ de código e sem nó de separar: o evento já chega pronto, um motivo por mensag
 | **Only Message** | tira o envelope: o item passa a ser o próprio evento |
 
 Execute de novo. Onde antes vinha `{topic, message}`, agora vêm `device`, `sensor`,
-`texto`, `valor` e `limite`, no primeiro nível.
+`texto` e `valor`, no primeiro nível.
 
 **b) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.sensor }}`,
 `is equal to`. Compara a chave, nunca a prosa:
@@ -77,17 +77,17 @@ expressão ligado:
 ```
 NexoLog | {{ $json.device }}
 {{ $json.texto }}
-Distância: {{ $json.valor.toFixed(1) }} cm (limite {{ $json.limite }})
+Distância: {{ $json.valor.toFixed(1) }} cm
 ```
 
 Trocando a terceira linha em cada um:
 
 | Nó | Terceira linha |
 |---|---|
-| `Avisar: temperatura` | `Temperatura: {{ $json.valor.toFixed(1) }} °C (limite {{ $json.limite }})` |
-| `Avisar: umidade` | `Umidade: {{ $json.valor.toFixed(1) }} % (limite {{ $json.limite }})` |
-| `Avisar: tampa` | `Distância: {{ $json.valor.toFixed(1) }} cm (limite {{ $json.limite }})` |
-| `Avisar: movimentação` | `Movimentação: {{ $json.valor.toFixed(2) }} m/s² (limite {{ $json.limite }})` |
+| `Avisar: temperatura` | `Temperatura: {{ $json.valor.toFixed(1) }} °C` |
+| `Avisar: umidade` | `Umidade: {{ $json.valor.toFixed(1) }} %` |
+| `Avisar: tampa` | `Distância: {{ $json.valor.toFixed(1) }} cm` |
+| `Avisar: movimentação` | `Movimentação: {{ $json.valor.toFixed(2) }} m/s²` |
 | `Avisar: outro` | sem terceira linha |
 
 **Save** e **Active**.
@@ -103,7 +103,7 @@ Trocando a terceira linha em cada um:
 ```
 NexoLog | NexoLogEquipe01
 Tampa aberta
-Distância: 40.0 cm (limite 25)
+Distância: 40.0 cm
 ```
 
 - [ ] Chega uma execução a cada 2,5 s, sem parar
@@ -114,6 +114,7 @@ Distância: 40.0 cm (limite 25)
 | Deu errado | Onde olhar |
 |---|---|
 | Campos vazios | faltou `JSON Parse Body` ou `Only Message` no trigger |
+| O limite não aparece na mensagem | é de propósito: ele fica no nó de comentário do Node-RED, e no slide |
 | Tudo cai na saída 5 | a regra compara `sensor`, não o texto. Confira a chave no `motivo(...)` do Node-RED |
 | `valor.toFixed is not a function` | é o motivo `falha` ou `normal`, que não têm valor: eles saem pela saída 5 |
 | `Bad Request: chat not found` | Chat ID errado, ou você nunca falou com o bot primeiro |

@@ -138,7 +138,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nTemperatura: {{ $json.valor.toFixed(1) }} °C (limite {{ $json.limite }})",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nTemperatura: {{ $json.valor.toFixed(1) }} °C",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -154,7 +154,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nUmidade: {{ $json.valor.toFixed(1) }} % (limite {{ $json.limite }})",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nUmidade: {{ $json.valor.toFixed(1) }} %",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -170,7 +170,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nDistância: {{ $json.valor.toFixed(1) }} cm (limite {{ $json.limite }})",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nDistância: {{ $json.valor.toFixed(1) }} cm",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -186,7 +186,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nMovimentação: {{ $json.valor.toFixed(2) }} m/s² (limite {{ $json.limite }})",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nMovimentação: {{ $json.valor.toFixed(2) }} m/s²",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",

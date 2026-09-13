@@ -84,14 +84,14 @@ const LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:
 // caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.
 
 // Cada motivo sai inteiro: sensor e a chave que o n8n roteia, texto e o que o humano le.
-const motivo = (sensor, texto, valor, limite) => ({device: p.device, sensor, texto, valor, limite});
+const motivo = (sensor, texto, valor) => ({device: p.device, sensor, texto, valor});
 
 let motivos = [];
 if (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(motivo("falha", "Falha de sensor"));
-if (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(motivo("temperatura", "Temperatura alta", p.temp, LIMIAR_TEMP));
-if (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(motivo("umidade", "Umidade alta", p.umid, LIMIAR_UMID));
-if (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(motivo("tampa", "Tampa aberta", p.dist, LIMIAR_DIST));
-if (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(motivo("movimento", "Movimentação brusca", p.movimentacao, LIMIAR_MOVIMENTACAO));
+if (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(motivo("temperatura", "Temperatura alta", p.temp));
+if (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(motivo("umidade", "Umidade alta", p.umid));
+if (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(motivo("tampa", "Tampa aberta", p.dist));
+if (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(motivo("movimento", "Movimentação brusca", p.movimentacao));
 const alerta = motivos.length > 0;
 if (!alerta) motivos.push(motivo("normal", "Entrega em condição normal"));
 msg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(" / ")};
@@ -100,9 +100,14 @@ return msg;
 
 Ligue num **ui_text** (order 6, 12×1, label `Entrega`, Value format `{{msg.payload.estado}}`).
 
-Cada motivo sai inteiro e se explica sozinho: `sensor` é a **chave** que o n8n roteia,
-`texto` é a **prosa** que aparece na tela, e `valor`/`limite` são o número que estourou e
-o que ele deveria respeitar. Adaptar o projeto é reescrever o `texto` aqui, num lugar só.
+Cada motivo sai inteiro: `sensor` é a **chave** que o n8n roteia, `texto` é a **prosa**
+que aparece na tela, `valor` é o número que estourou. O limite **não** vai junto — ele
+mora só aqui, nas constantes `LIMIAR_*`. Quem recebe o aviso não precisa saber a regra,
+precisa saber o que aconteceu.
+
+Ponha ao lado um nó **comment** (aba common) com os quatro limiares no nome. Ele não liga
+em nada: é a legenda do canvas, para quem abre o fluxo achar os números sem entrar na
+função.
 
 `estado` junta as prosas para o `ui_text`. A lista nunca fica vazia: sem alerta, ela leva
 o motivo `normal`.

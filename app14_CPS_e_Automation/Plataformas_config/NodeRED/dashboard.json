@@ -223,11 +223,21 @@
         ]
     },
     {
+        "id": "c0de000000cd0003",
+        "type": "comment",
+        "z": "69e5326f76928c61",
+        "name": "Limiares: 30 °C · 70 % · 25 cm · 3 m/s²",
+        "info": "Limites desta aula, nao especificacao de conservacao de carga real.\n\n| Sensor | Limite | Motivo |\n|---|---|---|\n| Temperatura | > 30 °C | Temperatura alta |\n| Umidade | > 70 % | Umidade alta |\n| Distancia | > 25 cm | Tampa aberta |\n| Movimentacao | > 3 m/s² | Movimentacao brusca |\n| Leitura invalida | | Falha de sensor |\n\nOs numeros vivem so aqui, na funcao ao lado. O evento publicado leva o valor\nmedido e o texto do motivo, nunca o limite: quem decide e a plataforma.",
+        "x": 620,
+        "y": 480,
+        "wires": []
+    },
+    {
         "id": "06d8284feeb5833a",
         "type": "function",
         "z": "69e5326f76928c61",
         "name": "Estado da entrega",
-        "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\n// Cada motivo sai inteiro: sensor e a chave que o n8n roteia, texto e o que o humano le.\nconst motivo = (sensor, texto, valor, limite) => ({device: p.device, sensor, texto, valor, limite});\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(motivo(\"falha\", \"Falha de sensor\"));\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(motivo(\"temperatura\", \"Temperatura alta\", p.temp, LIMIAR_TEMP));\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(motivo(\"umidade\", \"Umidade alta\", p.umid, LIMIAR_UMID));\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(motivo(\"tampa\", \"Tampa aberta\", p.dist, LIMIAR_DIST));\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(motivo(\"movimento\", \"Movimentação brusca\", p.movimentacao, LIMIAR_MOVIMENTACAO));\nconst alerta = motivos.length > 0;\nif (!alerta) motivos.push(motivo(\"normal\", \"Entrega em condição normal\"));\nmsg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(\" / \")};\nreturn msg;",
+        "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\n// Cada motivo sai inteiro: sensor e a chave que o n8n roteia, texto e o que o humano le.\nconst motivo = (sensor, texto, valor) => ({device: p.device, sensor, texto, valor});\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(motivo(\"falha\", \"Falha de sensor\"));\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(motivo(\"temperatura\", \"Temperatura alta\", p.temp));\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(motivo(\"umidade\", \"Umidade alta\", p.umid));\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(motivo(\"tampa\", \"Tampa aberta\", p.dist));\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(motivo(\"movimento\", \"Movimentação brusca\", p.movimentacao));\nconst alerta = motivos.length > 0;\nif (!alerta) motivos.push(motivo(\"normal\", \"Entrega em condição normal\"));\nmsg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(\" / \")};\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
