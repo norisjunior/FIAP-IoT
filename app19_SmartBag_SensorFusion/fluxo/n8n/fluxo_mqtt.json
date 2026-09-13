@@ -1,0 +1,305 @@
+{
+  "name": "NexoLog app14 - eventos da entrega",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/nexolog/equipe01/eventos",
+        "options": {
+          "jsonParseBody": true,
+          "onlyMessage": true
+        }
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9aa1b2a3-3115-438f-9a29-4cf15edb67c0",
+      "name": "MQTT Trigger"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "motivos",
+        "include": "allOtherFields",
+        "options": {
+          "destinationFieldName": "motivo"
+        }
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "87ec6c6c-7ce4-4ff0-bf3d-7080cc604754",
+      "name": "Um item por motivo"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f34febec-e0c6-4f11-8c97-bf5f681e008e",
+                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "rightValue": "temperatura",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Temperatura"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1c57c5a1-0d82-477c-86aa-95bcf64401b9",
+                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "rightValue": "umidade",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Umidade"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "02e2ad0d-99c3-4842-8ba8-7cddfc887a87",
+                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "rightValue": "tampa",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Tampa"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1f60c2c6-cfad-4d23-b8ed-ec722e779195",
+                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "rightValue": "movimento",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Movimentação"
+            }
+          ]
+        },
+        "looseTypeValidation": false,
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Outro"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "b3108c44-b555-4a5f-8386-b2a4bcdaa02e",
+      "name": "Qual limiar?"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nTemperatura: {{ $json.temp }} °C (limite 30)\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        -300
+      ],
+      "id": "02546065-368b-441c-88f7-2cc2b687b29c",
+      "name": "Avisar: temperatura",
+      "webhookId": "68f4b03a-12ce-4b8f-88fc-c716e0d89f34"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nUmidade: {{ $json.umid }} % (limite 70)\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        -150
+      ],
+      "id": "f940ad53-b753-48b4-a8f8-186072ca1db8",
+      "name": "Avisar: umidade",
+      "webhookId": "7654b285-84ac-436f-9e4f-37edb4c55c02"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nDistância: {{ $json.dist }} cm (limite 25)\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "d3a3fde8-921e-4f69-b2fc-e5c9d1853ae7",
+      "name": "Avisar: tampa",
+      "webhookId": "d3f15d95-c039-4a6d-901f-b043fa5119b6"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nMovimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        150
+      ],
+      "id": "efb2d919-56dc-4b1a-859b-a2f26790dbc3",
+      "name": "Avisar: movimentação",
+      "webhookId": "f7d49131-3271-4819-88ba-2791d99156cb"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\n{{ $json.timestamp }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        300
+      ],
+      "id": "0dd52312-b3d5-4763-a79d-f0a0845b588b",
+      "name": "Avisar: outro",
+      "webhookId": "85eea7ca-bd68-4d9d-9643-13665f6abcda"
+    }
+  ],
+  "connections": {
+    "MQTT Trigger": {
+      "main": [
+        [
+          {
+            "node": "Um item por motivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Um item por motivo": {
+      "main": [
+        [
+          {
+            "node": "Qual limiar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qual limiar?": {
+      "main": [
+        [
+          {
+            "node": "Avisar: temperatura",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: umidade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: tampa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: movimentação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar: outro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
