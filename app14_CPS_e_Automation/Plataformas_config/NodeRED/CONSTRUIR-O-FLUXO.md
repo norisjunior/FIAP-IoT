@@ -83,6 +83,109 @@ const LIMIAR_DIST = 25;
 const LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:
 // caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.
 
+// Cada motivo sai inteiro: sensor e a chave que o n8n roteia, texto e o que o humano le.
+const motivo = (sensor, texto, valor, limite) => ({device: p.device, sensor, texto, valor, limite});
+
+let motivos = [];
+if (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(motivo("falha", "Falha de sensor"));
+if (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(motivo("temperatura", "Temperatura alta", p.temp, LIMIAR_TEMP));
+if (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(motivo("umidade", "Umidade alta", p.umid, LIMIAR_UMID));
+if (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(motivo("tampa", "Tampa aberta", p.dist, LIMIAR_DIST));
+if (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(motivo("movimento", "Movimentação brusca", p.movimentacao, LIMIAR_MOVIMENTACAO));
+const alerta = motivos.length > 0;
+if (!alerta) motivos.push(motivo("normal", "Entrega em condição normal"));
+msg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(" / ")};
+return msg;
+```
+
+Ligue num **ui_text** (order 6, 12×1, label `Entrega`, Value format `{{msg.payload.estado}}`).
+
+Cada motivo sai inteiro e se explica sozinho: `sensor` é a **chave** que o n8n roteia,
+`texto` é a **prosa** que aparece na tela, e `valor`/`limite` são o número que estourou e
+o que ele deveria respeitar. Adaptar o projeto é reescrever o `texto` aqui, num lugar só.
+
+`estado` junta as prosas para o `ui_text`. A lista nunca fica vazia: sem alerta, ela leva
+o motivo `normal`.
+
+**d) Um evento por motivo.** Dois nós de configurar, sem código:
+
+| Nó | Aba | Configuração |
+|---|---|---|
+| **change** | function | Set `msg.payload` **to** `msg.` `payload.motivos` |
+| **split** | sequence | tudo no padrão |
+
+O `change` joga fora o resto e deixa só a lista. O `split` transforma uma mensagem com
+três motivos em três mensagens de um motivo — e por isso o array nunca atravessa o MQTT:
+quem recebe lá na frente já pega um motivo por vez, pronto para rotear.
+
+Ligue `Estado da entrega → change → split →` **json** (`Object to JSON`) `→` **mqtt out**,
+tópico `FIAPIoT/nexolog/equipe01/eventos`.
+
+Publica a cada leitura, sem filtrar repetição: numa demonstração o fluxo tem que estar
+sempre vivo. Veja o aviso sobre o Telegram no [guia do n8n](../n8n/CONSTRUIR-O-FLUXO.md).
+
+**Deploy.**
+
+**Funcionou?** Na aba Debug, a cada 2,5 s:
+
+```
+payload: object
+  device: "NexoLogEquipe01"
+  temp: 24
+  umid: 40
+  dist: 10
+  movimentacao: 0.03
+```
+
+- [ ] O quadradinho sob o `mqtt in` diz **connected**
+- [ ] Chega um objeto, não um texto entre aspas
+
+| Deu errado | Onde olhar |
+|---|---|
+| `disconnected` | endereço do broker. Node-RED em Docker fala com `mosquitto`, não `localhost` |
+| `connected`, nada no Debug | tópico. Um caractere diferente e não chega nada — confira `equipe01` dos dois lados |
+| `payload: "{\"device\"..."` (com aspas) | faltou o nó **json** |
+
+---
+
+## Iteração 2 — Dashboard, estado e evento
+
+Continue do `json`.
+
+**a) Separar os valores.** Nó **function**, 4 saídas (aba Setup > Outputs):
+
+```javascript
+const p = msg.payload;
+let temp = {payload: p.temp, topic: "Temperatura"};
+let umid = {payload: p.umid};
+let dist = {payload: p.dist};
+let movimentacao = {payload: p.movimentacao};
+return [temp, umid, dist, movimentacao];
+```
+
+**b) Um widget por saída.** Crie o grupo uma vez, no primeiro widget (Group > Add > 12 de largura). Os quatro entram na mesma linha:
+
+| Saída | Nó | Order | Size | Ajustes |
+|---|---|---|---|---|
+| 1 | ui_gauge | 1 | 3×3 | label `°C`, 0–50 |
+| 2 | ui_gauge | 2 | 3×3 | label `%`, 0–100 |
+| 3 | ui_level | 3 | 3×3 | label `Tampa`, unit `cm`, 0–50, warn 20, high 25, layout vertical |
+| 4 | ui_gauge | 4 | 3×3 | label `m/s²`, 0–20, seg 1.5 e 3 |
+
+Ligue a saída 1 também num **ui_chart** (order 5, 12×4).
+
+> `ui_level` é o `node-red-contrib-ui-level`. Menu ≡ > Manage palette > Install.
+
+**c) Decidir o estado.** Nó **function**, ligado ao `json`:
+
+```javascript
+const p = msg.payload;
+const LIMIAR_TEMP = 30;
+const LIMIAR_UMID = 70;
+const LIMIAR_DIST = 25;
+const LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:
+// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.
+
 // sensor e a chave que o n8n roteia; texto e o que o humano le.
 let motivos = [];
 if (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push({sensor: "falha", texto: "Falha de sensor"});
@@ -128,14 +231,14 @@ Ligue em **json** (`Object to JSON`) → **mqtt out**, tópico `FIAPIoT/nexolog/
 - [ ] Quatro widgets numa linha só, com valor
 - [ ] Texto do estado: "Entrega em condição normal"
 - [ ] Sobe a distância no Wokwi de 10 para 40 cm → barra vermelha e "Tampa aberta"
-- [ ] Volta para 10 cm → normal. Só duas mensagens saíram no tópico `eventos`
+- [ ] No tópico `eventos` sai uma mensagem por motivo, a cada 2,5 s
 
 | Deu errado | Onde olhar |
 |---|---|
 | Widgets empilhados | somam mais de 12 de largura, ou estão em grupos diferentes |
 | Gauge vazio | a saída da function não bate com o nó, ou o campo mudou de nome no firmware |
 | Sempre "Falha de sensor" | o firmware está mandando `null` — volte para a iteração 1 do firmware |
-| Evento repetindo sem parar | o nó (d) ficou de fora |
+| Nada sai no tópico `eventos` | o `change` tem que apontar para `payload.motivos`, com o tipo **msg** |
 
 Pronto: [o histórico no InfluxDB](Fluxo_2_envio_InfluxDB.json) e [o aviso no n8n](../n8n/CONSTRUIR-O-FLUXO.md).
 

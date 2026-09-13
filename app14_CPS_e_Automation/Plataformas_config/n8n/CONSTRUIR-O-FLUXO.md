@@ -44,35 +44,20 @@ Clique em **Listen for test event**. No Wokwi, mude a distância de 10 para 40 c
 ## Iteração 2 — Uma mensagem por limiar
 
 Quatro limiares, quatro nós de Telegram. Se a entrega estoura temperatura **e**
-tampa ao mesmo tempo, saem duas mensagens. Sem nó de código: três nós de ligar
-e os avisos.
+tampa ao mesmo tempo, o Node-RED manda dois eventos e saem duas mensagens. Sem nó
+de código e sem nó de separar: o evento já chega pronto, um motivo por mensagem.
 
 **a) Volte no MQTT Trigger** e ligue duas opções (Add Option):
 
 | Opção | Por quê |
 |---|---|
 | **JSON Parse Body** | `message` chega como texto; assim vira objeto sozinho |
-| **Only Message** | tira o envelope: o item passa a ser o próprio payload |
+| **Only Message** | tira o envelope: o item passa a ser o próprio evento |
 
-Execute de novo. Onde antes vinha `{topic, message}`, agora vêm `device`, `temp`,
-`motivos` e o resto, no primeiro nível.
+Execute de novo. Onde antes vinha `{topic, message}`, agora vêm `device`, `sensor`,
+`texto`, `valor` e `limite`, no primeiro nível.
 
-**b) Nó Split Out**, chamado `Um item por motivo`:
-
-| Campo | Valor |
-|---|---|
-| Fields To Split Out | `motivos` |
-| Include | `All Other Fields` |
-| Destination Field Name | `motivo` |
-
-`motivos` é a lista que o Node-RED publica. O Split Out faz um item por elemento,
-carregando junto todos os outros campos — dois limiares estourados viram dois itens,
-cada um com as medições completas. É o laço, sem o laço.
-
-Cada item ganha o campo `motivo`, com as duas partes: `motivo.sensor` (a chave, para
-rotear) e `motivo.texto` (a prosa, para mostrar).
-
-**c) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.motivo.sensor }}`,
+**b) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.sensor }}`,
 `is equal to`. Compara a chave, nunca a prosa:
 
 | Saída | Valor | Rename output |
@@ -85,28 +70,33 @@ rotear) e `motivo.texto` (a prosa, para mostrar).
 Em **Options**, acrescente `Fallback Output` = `Extra Output`. É a saída 5, por onde
 saem as chaves `falha` e `normal`.
 
-**d) Cinco nós Telegram**, um por saída, action `Send a Text Message`. Credencial do
-@BotFather e o seu Chat ID em todos. Só o campo **Text** muda, e é onde mora o texto
-de cada sensor — com o botão de expressão ligado:
+**c) Cinco nós Telegram**, um por saída, action `Send a Text Message`. Credencial do
+@BotFather e o seu Chat ID em todos. Só o campo **Text** muda — com o botão de
+expressão ligado:
 
 ```
 NexoLog | {{ $json.device }}
-{{ $json.motivo.texto }}
-Temperatura: {{ $json.temp }} °C (limite 30)
-{{ $json.timestamp }}
+{{ $json.texto }}
+Distância: {{ $json.valor.toFixed(1) }} cm (limite {{ $json.limite }})
 ```
 
 Trocando a terceira linha em cada um:
 
 | Nó | Terceira linha |
 |---|---|
-| `Avisar: temperatura` | `Temperatura: {{ $json.temp }} °C (limite 30)` |
-| `Avisar: umidade` | `Umidade: {{ $json.umid }} % (limite 70)` |
-| `Avisar: tampa` | `Distância: {{ $json.dist }} cm (limite 25)` |
-| `Avisar: movimentação` | `Movimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)` |
+| `Avisar: temperatura` | `Temperatura: {{ $json.valor.toFixed(1) }} °C (limite {{ $json.limite }})` |
+| `Avisar: umidade` | `Umidade: {{ $json.valor.toFixed(1) }} % (limite {{ $json.limite }})` |
+| `Avisar: tampa` | `Distância: {{ $json.valor.toFixed(1) }} cm (limite {{ $json.limite }})` |
+| `Avisar: movimentação` | `Movimentação: {{ $json.valor.toFixed(2) }} m/s² (limite {{ $json.limite }})` |
 | `Avisar: outro` | sem terceira linha |
 
 **Save** e **Active**.
+
+> **Antes de ativar o Telegram.** O Node-RED publica a cada leitura, 2,5 s — de
+> propósito, para a demonstração ficar viva. O Telegram bloqueia com esse ritmo.
+> Para demonstrar o **fluxo**, deixe as credenciais do Telegram de fora e acompanhe
+> pelas execuções. Para demonstrar o **aviso**, aumente `INTERVALO_COLETA` no firmware
+> ou ponha um nó **delay** em `Rate Limit` antes do `mqtt out` no Node-RED.
 
 **Funcionou?** Abra a tampa no Wokwi:
 
@@ -114,22 +104,21 @@ Trocando a terceira linha em cada um:
 NexoLog | NexoLogEquipe01
 Tampa aberta
 Distância: 40.0 cm (limite 25)
-2026-09-11T13:20:05.412Z
 ```
 
-- [ ] Uma mensagem ao abrir, outra ao fechar
-- [ ] Só o nó `Avisar: tampa` fica verde — os outros três não recebem nada
-- [ ] Suba a temperatura para 35 °C com a tampa aberta: chegam **duas** mensagens
+- [ ] Chega uma execução a cada 2,5 s, sem parar
+- [ ] Com a caixa boa, só a saída 5 acende
+- [ ] Abrindo a tampa, só o `Avisar: tampa` acende
+- [ ] Tampa aberta **e** 35 °C: duas execuções, uma em cada saída
 
 | Deu errado | Onde olhar |
 |---|---|
-| Campos vazios no Telegram | faltou `JSON Parse Body` ou `Only Message` no trigger |
-| Tudo cai na saída 5 | a regra compara `motivo.sensor`, não o texto. Confira a chave no `motivos.push` do Node-RED |
-| Nenhum item sai do Split Out | `motivos` não está no payload: veja a função "Estado da entrega" |
-| Uma mensagem só, com tudo junto | o Split Out ficou de fora |
+| Campos vazios | faltou `JSON Parse Body` ou `Only Message` no trigger |
+| Tudo cai na saída 5 | a regra compara `sensor`, não o texto. Confira a chave no `motivo(...)` do Node-RED |
+| `valor.toFixed is not a function` | é o motivo `falha` ou `normal`, que não têm valor: eles saem pela saída 5 |
 | `Bad Request: chat not found` | Chat ID errado, ou você nunca falou com o bot primeiro |
 | Manda `{{ $json.device }}` literal | o campo Text está em modo fixo, não expressão |
-| Uma enxurrada de mensagens | o nó "Somente mudança de estado" do Node-RED ficou de fora |
+| Telegram parou de responder | a taxa: veja o aviso acima |
 
 O fluxo completo está em [fluxo_mqtt.json](fluxo_mqtt.json) — Import from File, para comparar com o seu.
 

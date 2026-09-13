@@ -20,23 +20,6 @@
     },
     {
       "parameters": {
-        "fieldToSplitOut": "motivos",
-        "include": "allOtherFields",
-        "options": {
-          "destinationFieldName": "motivo"
-        }
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        220,
-        0
-      ],
-      "id": "904d2b25-606a-43da-a537-94d965972446",
-      "name": "Um item por motivo"
-    },
-    {
-      "parameters": {
         "rules": {
           "values": [
             {
@@ -50,7 +33,7 @@
                 "conditions": [
                   {
                     "id": "8bc7ac7f-5e74-4610-858e-8353730e487f",
-                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "leftValue": "={{ $json.sensor }}",
                     "rightValue": "temperatura",
                     "operator": {
                       "type": "string",
@@ -74,7 +57,7 @@
                 "conditions": [
                   {
                     "id": "a2608998-194b-4b3a-937a-d3a697625c4c",
-                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "leftValue": "={{ $json.sensor }}",
                     "rightValue": "umidade",
                     "operator": {
                       "type": "string",
@@ -98,7 +81,7 @@
                 "conditions": [
                   {
                     "id": "f9a005ce-573a-4f4d-9e2e-0cd36a2f0c9d",
-                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "leftValue": "={{ $json.sensor }}",
                     "rightValue": "tampa",
                     "operator": {
                       "type": "string",
@@ -122,7 +105,7 @@
                 "conditions": [
                   {
                     "id": "2bb7591b-f185-4231-8c1e-15bd607b1384",
-                    "leftValue": "={{ $json.motivo.sensor }}",
+                    "leftValue": "={{ $json.sensor }}",
                     "rightValue": "movimento",
                     "operator": {
                       "type": "string",
@@ -146,7 +129,7 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        440,
+        240,
         0
       ],
       "id": "be356560-0e95-463d-bd47-c5f591282e80",
@@ -155,7 +138,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nTemperatura: {{ $json.temp }} °C (limite 30)\n{{ $json.timestamp }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nTemperatura: {{ $json.valor.toFixed(1) }} °C (limite {{ $json.limite }})",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -171,7 +154,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nUmidade: {{ $json.umid }} % (limite 70)\n{{ $json.timestamp }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nUmidade: {{ $json.valor.toFixed(1) }} % (limite {{ $json.limite }})",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -187,7 +170,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nDistância: {{ $json.dist }} cm (limite 25)\n{{ $json.timestamp }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nDistância: {{ $json.valor.toFixed(1) }} cm (limite {{ $json.limite }})",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -203,7 +186,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nMovimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)\n{{ $json.timestamp }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nMovimentação: {{ $json.valor.toFixed(2) }} m/s² (limite {{ $json.limite }})",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -219,7 +202,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\n{{ $json.timestamp }}",
+        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -235,17 +218,6 @@
   ],
   "connections": {
     "MQTT Trigger": {
-      "main": [
-        [
-          {
-            "node": "Um item por motivo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Um item por motivo": {
       "main": [
         [
           {
