@@ -1,5 +1,4 @@
 // INMP441 — microfone I2S.
-// Ligacao: VDD->3V3  GND->GND  L/R->GND  SCK->26  WS->25  SD->33
 //
 // Este arquivo faz pelo INMP441 o que o analogRead() faz por um sensor
 // analogico: esconde o barramento. Nao precisa ser digitado em aula.
@@ -12,8 +11,19 @@
 
 namespace INMP441 {
 
+// Ligacao comum as duas placas: VDD->3V3  GND->GND  L/R->GND
+#ifdef PLACA_S3
+  #define PINO_SCK 4    // ESP32-S3 Super Mini
+  #define PINO_WS  5
+  #define PINO_SD  6
+#else
+  #define PINO_SCK 26   // ESP32 DevKit v1
+  #define PINO_WS  25
+  #define PINO_SD  33
+#endif
+
 const uint32_t TAXA  = 16000;  // amostras por segundo
-const int      GANHO = 11;     // bits descartados do valor de 24 bits do sensor
+const int      GANHO = 12;     // bits descartados do valor de 24 bits do sensor
 
 inline void iniciar() {
   i2s_config_t cfg = {
@@ -32,10 +42,10 @@ inline void iniciar() {
 
   i2s_pin_config_t pinos = {
     .mck_io_num   = I2S_PIN_NO_CHANGE,
-    .bck_io_num   = 26,
-    .ws_io_num    = 25,
+    .bck_io_num   = PINO_SCK,
+    .ws_io_num    = PINO_WS,
     .data_out_num = I2S_PIN_NO_CHANGE,
-    .data_in_num  = 33
+    .data_in_num  = PINO_SD
   };
 
   i2s_driver_install(I2S_NUM_0, &cfg, 0, NULL);

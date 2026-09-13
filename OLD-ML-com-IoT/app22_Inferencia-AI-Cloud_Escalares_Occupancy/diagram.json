@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -42,
+      "left": 147.8,
+      "attrs": { "color": "red", "flip": "1" }
+    },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -143.7, "left": 33, "attrs": {} },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr1",
+      "top": 176,
+      "left": -258.4,
+      "attrs": {}
+    },
+    { "type": "wokwi-potentiometer", "id": "pot1", "top": -68.5, "left": -96.2, "attrs": {} },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot2",
+      "top": -129.4,
+      "left": -317.8,
+      "attrs": { "travelLength": "30" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text1",
+      "top": -124.8,
+      "left": -76.8,
+      "attrs": { "text": "CO2" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text2",
+      "top": -134.4,
+      "left": -259.2,
+      "attrs": { "text": "Humidity Ratio" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v19.2", "h-38.4" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h28.8" ] ],
+    [ "dht1:SDA", "esp:26", "green", [ "v28.8", "h-67.1", "v144" ] ],
+    [ "ldr1:VCC", "esp:3V3", "red", [ "h0", "v-144" ] ],
+    [ "ldr1:GND", "esp:GND.1", "black", [ "h19.2", "v-29.2" ] ],
+    [ "pot1:VCC", "esp:3V3", "red", [ "v48", "h56.65" ] ],
+    [ "pot1:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "pot1:SIG", "esp:34", "green", [ "v0" ] ],
+    [ "led1:A", "esp:21", "green", [ "v0" ] ],
+    [ "led1:C", "esp:GND.3", "black", [ "v105.6", "h-67.2" ] ],
+    [ "ldr1:AO", "esp:35", "green", [ "h28.8", "v-125.5" ] ],
+    [ "pot2:GND", "esp:GND.2", "black", [ "v-86.4", "h5.2" ] ],
+    [ "pot2:VCC", "esp:3V3", "red", [ "h-28.8", "v134.4", "h28.8" ] ],
+    [ "pot2:SIG", "esp:32", "green", [ "h-19.2", "v191.2" ] ]
+  ],
+  "dependencies": {}
+}

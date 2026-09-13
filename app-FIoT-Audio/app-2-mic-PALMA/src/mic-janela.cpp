@@ -8,7 +8,7 @@
 int16_t som[N];
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   INMP441::iniciar();
 }
 

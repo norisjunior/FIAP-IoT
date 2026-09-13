@@ -1,0 +1,172 @@
+{
+  "name": "Vaccine Sense - predicao na nuvem",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "fiap/iot/vaccinesense",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        300
+      ],
+      "id": "vs-trigger",
+      "name": "fiap/iot/vaccinesense",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "jsCode": "// A mensagem do MQTT pode vir como string JSON ou como objeto.\nconst msg = $json.message;\nconst dados = (typeof msg === 'string') ? JSON.parse(msg) : msg;\n\n// Monta o corpo que a API espera: apenas as seis medicoes.\nreturn {\n  json: {\n    device:      dados.device,\n    rodada:      dados.rodada,\n    tempInterna: dados.tempInterna,\n    tempExterna: dados.tempExterna,\n    umidade:     dados.umidade,\n    luz:         dados.luz,\n    criticidade: dados.criticidade,\n    distancia:   dados.distancia\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        300
+      ],
+      "id": "vs-code",
+      "name": "Monta o corpo da requisicao"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tempInterna: $json.tempInterna, tempExterna: $json.tempExterna, umidade: $json.umidade, luz: $json.luz, criticidade: $json.criticidade, distancia: $json.distancia }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "vs-http",
+      "name": "Predict Vaccine Sense"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.class }}",
+              "rightValue": "CARGA_EM_PERIGO"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "id": "vs-if",
+      "name": "Carga em perigo?"
+    },
+    {
+      "parameters": {
+        "topic": "fiap/iot/vaccinesense/cmd",
+        "message": "=CARGA_EM_PERIGO",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        700,
+        200
+      ],
+      "id": "vs-liga",
+      "name": "Liga o buzzer",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "topic": "fiap/iot/vaccinesense/cmd",
+        "message": "=TRANSPORTE_OK",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        700,
+        400
+      ],
+      "id": "vs-desliga",
+      "name": "Desliga o buzzer",
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "fiap/iot/vaccinesense": {
+      "main": [
+        [
+          {
+            "node": "Monta o corpo da requisicao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta o corpo da requisicao": {
+      "main": [
+        [
+          {
+            "node": "Predict Vaccine Sense",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict Vaccine Sense": {
+      "main": [
+        [
+          {
+            "node": "Carga em perigo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carga em perigo?": {
+      "main": [
+        [
+          {
+            "node": "Liga o buzzer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Desliga o buzzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

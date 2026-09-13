@@ -128,9 +128,13 @@ a comparação da etapa 1.
 | Wokwi | **não tem peça INMP441** | `diagram.json` e `wokwi.toml` saem de todas as etapas |
 | Partição | biblioteca do EI é grande | `board_build.partitions = huge_app.csv` nas etapas 4–6 |
 
-**Vazão da serial.** 16 kHz × 16 bits = 32 kB/s; a 115200 baud cabem ~11 kB/s de texto. Não dá
-para imprimir todas as amostras: a etapa 1 decima (1 a cada 32 → ~500 Hz no Teleplot) e as
-etapas 2–3 imprimem só o resultado da janela. Isso é matéria, não bug.
+**Vazão da serial.** Cada linha Teleplot tem ~12 bytes; a **921600** baud cabem ~7.700 linhas/s.
+A etapa 1 imprime 1 amostra a cada 8 → 2.000 pontos/s, que é onde o Teleplot começa a engasgar.
+A 115200 caberiam só ~960 linhas/s — pouco para a onda ondular na tela.
+
+**Duas placas, um código.** Cada etapa tem `platformio.ini` (DevKit v1, o da turma) e
+`platformio.ini.esp32s3`, que se renomeia para trocar de alvo. Os pinos ficam num
+`#ifdef PLACA_S3` no `INMP441.hpp`; o código em `src/` é idêntico nas duas.
 
 ---
 
@@ -143,13 +147,12 @@ dispositivo passa a acionar alguma coisa.**
 
 | # | Pasta | O que o aluno vê | Conceito novo |
 |---|---|---|---|
-| 0 | `app-0-mic-SOM` | sai número do microfone — mas picotado | microfone digital, escravo I2S, `<I2S.h>` |
-| 1 | `app-1-mic-RAW` | a onda inteira, sem buracos | leitura em bloco, DMA, ganho |
+| 1 | `app-1-mic-RAW` | a onda da voz reagindo ao vivo | o microfone entrega número pronto |
 | 2 | `app-2-mic-PALMA` | 16 000 números/s viram 31 | janela, média, RMS |
 | 3 | `app-3-mic-VOZ_FEATURES` | 4096 amostras viram 4 números | `calcMean`, `calcStd`, `calcPtP`, `calcZCR` |
 
-Cada etapa existe porque a anterior bateu num limite **visível na tela**: uma amostra por vez
-não acompanha 16 kHz → ler em bloco; a onda inteira não cabe numa decisão → resumir a janela;
+O bloco 1 é rampa, não conteúdo — a turma é de IA. Cada etapa existe porque a anterior bateu
+num limite visível na tela: a onda inteira não cabe numa decisão → resumir a janela;
 um número diz *quão alto* e nunca *o quê* → quatro features; as features não distinguem FIOT de
 EMERGÊNCIA → Edge Impulse.
 
@@ -388,7 +391,7 @@ MFCC) · **VERDE/VERMELHO** = detectado / não detectado.
 | C | Etapas 2 e 3 (+ `INMP441.hpp`) | **feito** — `pio run` ok |
 | D | `docs/coleta-edge-impulse.md` | **feito** — falta você gravar e treinar |
 | E | Etapa 4 (esqueleto; `lib/` do EI entra após o deploy) | a fazer |
-| F | `docs/slides-aula-25.1.md` no formato do `INSTRUÇÕES PARA POWERPOINT.md` | a fazer |
+| F | `docs/slides-aula-25.1.md` no formato do `INSTRUÇÕES PARA POWERPOINT.md` | **feito** — falta capturar os prints do Studio |
 | G | Etapa 5 (MQTT) | a fazer |
 | H | Etapa 6 (assistente estendido, extra) | a fazer |
 

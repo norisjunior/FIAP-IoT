@@ -4,7 +4,7 @@ Etapa 3. Janela de 4096 amostras (256 ms). Cada janela é descrita por quatro **
 
 ## Pinos
 
-INMP441 igual às etapas 0 e 1. Nenhum atuador.
+INMP441 igual à etapa 1. Nenhum atuador.
 
 ## O código
 

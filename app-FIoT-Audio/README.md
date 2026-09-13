@@ -34,8 +34,7 @@ Nada é acionado. O aluno olha o Teleplot e entende a onda.
 
 | # | Pasta | O que o aluno vê | Conceito novo |
 |---|---|---|---|
-| 0 | [app-0-mic-SOM](app-0-mic-SOM/) | sai número do microfone — mas picotado | microfone digital, escravo I2S |
-| 1 | [app-1-mic-RAW](app-1-mic-RAW/) | a onda inteira, sem buracos | leitura em bloco, DMA, ganho |
+| 1 | [app-1-mic-RAW](app-1-mic-RAW/) | a onda da voz reagindo ao vivo | o microfone entrega número pronto |
 | 2 | [app-2-mic-PALMA](app-2-mic-PALMA/) | 16 000 números/s viram 31 | janela, média, RMS |
 | 3 | [app-3-mic-VOZ_FEATURES](app-3-mic-VOZ_FEATURES/) | 4096 amostras viram 4 números | `calcMean`, `calcStd`, `calcPtP`, `calcZCR` |
 
@@ -59,11 +58,12 @@ A etapa 6 é extra, para demonstração — não entra no roteiro da turma.
 
 ## O arco
 
-Cada etapa do bloco 1 existe porque a anterior **bateu num limite que dá para ver na tela**:
+O bloco 1 é **rampa, não conteúdo**. Ele é curto de propósito: a turma é de IA, e o objetivo é
+chegar rápido no Edge Impulse. Cada etapa existe porque a anterior bateu num limite que dá para
+ver na tela:
 
 | Etapa | O que trava | O que a próxima faz |
 |---|---|---|
-| 0 | uma amostra por vez não acompanha 16 kHz — o sinal sai picotado | ler em bloco |
 | 1 | a onda inteira não cabe numa decisão | resumir a janela num número |
 | 2 | um número diz *quão alto*, nunca *o quê* | descrever a janela com quatro números |
 | 3 | as features não distinguem *FIOT* de *EMERGÊNCIA* | **Edge Impulse** |
@@ -71,6 +71,10 @@ Cada etapa do bloco 1 existe porque a anterior **bateu num limite que dá para v
 O último degrau é o ponto da trilha: as features dizem quanta energia existe, não quais
 frequências vieram em qual ordem. É isso que justifica o MFCC — em vez de a rede neural
 aparecer como mágica.
+
+> **Material de apoio, fora do roteiro:** [app-0-mic-SOM](app-0-mic-SOM/) mostra o microfone
+> lido com a biblioteca `<I2S.h>` crua. Só serve se alguém perguntar por que o app-1 precisa do
+> `INMP441.hpp`.
 
 > **Nas etapas 1 a 3 não há FFT, MFCC, filtro digital — nem atuador.** São observação pura, de
 > propósito. Ver [CLAUDE.md](CLAUDE.md).
@@ -95,10 +99,23 @@ O motor de vibração **nunca** vai direto no GPIO: transistor NPN + diodo de ro
 ```bash
 cd app-N-mic-XXX
 pio run -t upload
-pio device monitor -b 115200
+pio device monitor -b 921600
 ```
 
-As etapas 1 a 3 usam o **Teleplot** (extensão do VS Code) para o gráfico ao vivo.
+As etapas 1 a 3 usam o **Teleplot** (extensão do VS Code) para o gráfico ao vivo — configure-o
+também para **921600**.
+
+### Outra placa
+
+Cada etapa traz um `platformio.ini.esp32s3`. Para rodar no **ESP32-S3 Super Mini**, renomeie-o
+para `platformio.ini` (guarde o original como `platformio.ini.esp32dev`). **O código em `src/`
+não muda**: a flag `PLACA_S3` troca os pinos dentro do `INMP441.hpp`.
+
+| | DevKit v1 (turma) | S3 Super Mini |
+|---|---|---|
+| SCK | 26 | 4 |
+| WS | 25 | 5 |
+| SD | 33 | 6 |
 
 **Não há simulação no Wokwi**: o simulador não tem peça INMP441. Todas as etapas exigem
 hardware físico.

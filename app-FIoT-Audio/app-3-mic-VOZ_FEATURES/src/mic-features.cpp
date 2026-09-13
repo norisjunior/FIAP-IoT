@@ -42,7 +42,7 @@ float calcZCR(int16_t arr[], int n, float media) {
 
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   INMP441::iniciar();
 }
 

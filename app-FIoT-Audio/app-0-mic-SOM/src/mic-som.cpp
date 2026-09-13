@@ -7,7 +7,11 @@
 void setup() {
   Serial.begin(115200);
 
-  I2S.setAllPins(26, 25, 33, -1, 33);      // SCK, WS, SD
+#ifdef PLACA_S3
+  I2S.setAllPins(4, 5, 6, -1, 6);          // SCK, WS, SD — S3 Super Mini
+#else
+  I2S.setAllPins(26, 25, 33, -1, 33);      // SCK, WS, SD — DevKit v1
+#endif
   I2S.begin(I2S_PHILIPS_MODE, 16000, 32);  // 16000 amostras/s, 32 bits
 }
 

@@ -1,13 +1,13 @@
 # app-2-mic-PALMA — a janela vira um número
 
-Etapa 2. Depois de ver a onda inteira na etapa 1, junta 512 amostras (32 ms) e calcula o
+Etapa 2. Depois de ver a onda na etapa 1, junta 512 amostras (32 ms) e calcula o
 **RMS** dessa janela. 16 000 números por segundo viram 31.
 
 **Observação, não acionamento.** Nada acende, nada dispara.
 
 ## Pinos
 
-INMP441 igual às etapas 0 e 1. Nenhum atuador.
+INMP441 igual à etapa 1. Nenhum atuador.
 
 ## O código
 

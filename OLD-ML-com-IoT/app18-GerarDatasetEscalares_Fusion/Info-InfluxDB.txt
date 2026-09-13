@@ -1,0 +1,25 @@
+InfluxDB Cloud:
+URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
+ORG = "e044ac59f07be199"
+BUCKET = "IoTSensores"
+TOKEN = "KXTPf0peaYQU-QMGu-yJNWwVbBLNoUMmNwBBsrfcnK5GseDHLs_QZx7hNW4sToLnp1qeEXu5CwUq6rwf30FcXQ=="
+Tg1KYC6sbSaO_YMorJwEOEXTOYHjL9exDbkavgwD0cw5mfWXlkudjyhL3elfh6wjpti1Em0714nAHBcz8CqVqg==
+MEASUREMENT = "fiapiot_aula09_resumo_1minuto"
+
+
+
+InfluxDB Local:
+URL = "http://influxdb:8086"
+ORG = "fiapiot"
+BUCKET = "sensores"
+TOKEN = "TOKEN_SUPER_SECRETO_1234567890"
+MEASUREMENT = "fiapiot_aula09_nearedge"
+
+
+
+Flux Query:
+from(bucket: "sensores")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r._measurement == "fiapiot_aula09_nearedge")
+  |> filter(fn: (r) => r._field == "temperatura")
+  |> yield()

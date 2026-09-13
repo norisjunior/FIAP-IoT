@@ -88,16 +88,15 @@ hardware físico. Não recrie esses arquivos.
 
 O código que o professor digita tem que caber na cabeça de quem está vendo pela primeira vez.
 
-### Duas formas de ler o microfone, e cada uma tem seu lugar
+### O `app-0-mic-SOM` está fora do roteiro
 
-| Etapa | Como | Por quê |
-|---|---|---|
-| **0** | `<I2S.h>`, a lib do próprio core — `I2S.read()` | mostrar que sai número com o mínimo de código, sem cabeçalho nenhum |
-| **1 em diante** | `INMP441.hpp` (nosso) — `INMP441::ler(som, N)` | ler em bloco, com DMA, sem perder amostra |
+A trilha da aula começa no **app-1**. O `app-0` lê o microfone com a lib `<I2S.h>` crua e existe
+só como **material de apoio**, para o caso de alguém perguntar por que o app-1 precisa do
+`INMP441.hpp`.
 
-A etapa 0 **tem** que ficar limitada: `I2S.read()` uma amostra por vez não acompanha 16 kHz e o
-sinal sai picotado. Esse defeito é o que justifica o `INMP441.hpp` na etapa 1 — não conserte a
-etapa 0.
+Ele **tem** que continuar defeituoso: `I2S.read()` entrega uma amostra por chamada (sinal
+picotado) e a `<I2S.h>` não tem modo mono (metade das amostras é canal vazio). **Não conserte o
+app-0** — os dois defeitos são a resposta que ele existe para dar.
 
 **Não existe biblioteca específica do INMP441**, e não é omissão do ecossistema: o chip não tem
 registradores, não tem endereço e não aceita comando. A única configuração dele é o pino L/R, e
@@ -116,7 +115,32 @@ framework**; fazer o aluno ver a struct do I2S é como fazer ele ver a calibraç
 - Configuração em `#define` no topo do arquivo. O aluno mexe ali, não caça no meio do `loop()`.
 - Português do Brasil em comentários e mensagens. Identificadores em português.
 - **Teleplot** para gráfico ao vivo: `Serial.printf(">nome:%d\n", valor)`.
-- Serial a 115200 em todas as etapas.
+- Serial a **921600** nas etapas 1 a 3 (115200 não dá conta de plotar a onda: ver abaixo). O
+  Teleplot precisa ser configurado na mesma taxa.
+
+## Duas placas, um código
+
+A turma usa **ESP32 DevKit v1**; o professor tem um **ESP32-S3 Super Mini**. Não duplique
+projeto por causa disso.
+
+Cada etapa tem um `platformio.ini` (DevKit v1) e um `platformio.ini.esp32s3`, que se **renomeia**
+para trocar de alvo. O S3 exige `board = esp32-s3-devkitc-1`, `flash_size = 4MB`,
+`partitions = default.csv` e `-DARDUINO_USB_CDC_ON_BOOT=1` (sem essa flag o Monitor Serial fica
+mudo — a Super Mini usa USB nativo, não tem chip USB-serial).
+
+Os pinos ficam num `#ifdef PLACA_S3` no topo do `INMP441.hpp`, e a flag vem do `.ini`. **O
+código em `src/` é idêntico nas duas placas** — mantenha assim.
+
+No S3, **nunca** use GPIO 26–32 (flash interna), 33–37 (PSRAM), 19–20 (USB), 0/45/46
+(strapping), 43/44 (UART0) ou 48 (LED RGB).
+
+## Quanto dá para imprimir
+
+Cada linha `>som:-12345\n` tem ~12 bytes. A 921600 baud cabem ~7.700 linhas/s; a 115200, só
+~960. A etapa 1 imprime 1 amostra a cada 8 → **2.000 pontos/s**, que é onde o Teleplot começa a
+engasgar. Não adianta subir mais.
+
+No S3 o baud é decorativo (USB CDC nativo), mas mantenha 921600 para o código servir nas duas.
 
 ## Restrições didáticas — não "melhore" isto
 
