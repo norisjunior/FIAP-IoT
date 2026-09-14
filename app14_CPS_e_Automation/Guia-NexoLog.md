@@ -27,13 +27,13 @@ Os pinos ficam todos do lado direito da placa, para facilitar a montagem física
 
 Usamos FastIMU 1.3.0, como nos projetos de IMU da disciplina. Em `ESP32SensorsAccel.hpp`, selecione `MPU_TYPE`: `MPU6050` para o diagrama Wokwi ou `MPU6500` para essa placa física. O endereço I2C é `0x68`, com AD0 em GND.
 
-A biblioteca retorna aceleração em g; o módulo converte para m/s² antes da publicação. A movimentação é a magnitude da aceleração descontando a gravidade, em m/s²: caixa parada fica próxima de 0 e sobe conforme o chacoalho. Não há calibração automática nesta aula.
+A biblioteca retorna aceleração em g; o módulo converte para m/s² antes da publicação. A movimentação é a magnitude da aceleração descontando a gravidade, em m/s²: caixa parada fica próxima de 0 e sobe conforme o chacoalho. O firmware amostra o MPU a cada 50 ms e publica o **maior** valor do último segundo — uma leitura por envio deixaria o pico do sacolejo passar despercebido. Não há calibração automática nesta aula.
 
 ## Dados e comandos
 
 Os tópicos são iguais nas três etapas:
 
-- `FIAPIoT/nexolog/equipe01/dados`: leituras JSON, a cada 2,5 segundos. Node-RED e n8n assinam **os dois** este tópico.
+- `FIAPIoT/nexolog/equipe01/dados`: leituras JSON, a cada 1 segundo. Node-RED e n8n assinam **os dois** este tópico.
 - `FIAPIoT/nexolog/equipe01/cmd`: comandos em JSON para os LEDs, recebidos a partir do app15.
 
 O dispositivo usa `NexoLogEquipe01`. Troque a identificação e `equipe01` no firmware e nos fluxos para sua equipe. Não execute dois ESP32 com o mesmo Client ID.

@@ -1,10 +1,11 @@
 # Construir o firmware do app14, do zero
 
-Três iterações. Cada uma compila e roda.
+Quatro iterações. Cada uma compila e roda.
 
 1. Sensores no Serial.
 2. Os mesmos dados saindo por MQTT.
-3. O `loop()` limpo, igual ao arquivo pronto.
+3. O `loop()` limpo.
+4. Um relógio por sensor.
 
 Comece com `src/app14-NexoLog.ino` vazio. Os quatro `.hpp` já estão em `src/`.
 
@@ -256,8 +257,114 @@ void loop() {
 | `'enviarDadosColetados' was not declared in this scope` | faltou o protótipo do (a) |
 | `'amb' was not declared` | sobrou no `loop()` uma linha que era para ter ido junto |
 
+Compare com o `src/app14-NexoLog.ino`, tirando a iteração 4.
+
+---
+
+## Iteração 4 — Um relógio por sensor
+
+Até aqui tudo acontece junto, a cada 2,5 s: lê os três sensores e publica. O problema
+aparece quando você sacode o MPU. O acelerômetro é lido **uma vez** por envio, cerca
+de 1 ms a cada 2500 ms. Sacudir a caixa por dois segundos inteiros e ver `0.00` no
+Serial é o normal: a amostra caiu fora do movimento.
+
+Cada sensor tem um ritmo próprio, e nenhum deles é o ritmo do envio:
+
+| Sensor | Ritmo | Por quê |
+|---|---|---|
+| DHT22 | 2,1 s | o sensor não responde mais rápido — abaixo de 2 s ele devolve leitura inválida |
+| MPU | 50 ms | para pegar o pico do movimento, não um instante sorteado |
+| HC-SR04 | 1 s | junto do envio, a distância não muda em milissegundos |
+| Publicar | 1 s | é o que a plataforma vai mostrar |
+
+**a) Três relógios**, no lugar do bloco de intervalo:
+
+```cpp
+/* ---- Controle de intervalo ---- */
+const unsigned long INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
+const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
+const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
+const unsigned long INTERVALO_RECONEXAO = 5000;
+unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
+unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
+
+/* ---- Medicoes guardadas entre um envio e outro ---- */
+ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
+AccelData accel = {};
+float movimentacaoMax = NAN;
+```
+
+Como DHT e MPU passam a ser lidos fora da hora do envio, o valor deles precisa ficar
+guardado em algum lugar até a publicação — são essas três variáveis.
+
+**b) Duas caixas novas no `loop()`**, antes do bloco de envio:
+
+```cpp
+  // O DHT22 e lento: guardamos a ultima leitura boa e enviamos ela.
+  if (millis() - ultimoDHT >= INTERVALO_DHT) {
+    ultimoDHT = millis();
+    ESP32Sensors::Ambiente::AMBIENTE leitura = ESP32Sensors::Ambiente::medirAmbiente();
+    if (leitura.valido) ambiente = leitura;
+  }
+
+  // O MPU e rapido: 20 amostras por segundo, guardamos so a maior.
+  if (millis() - ultimoMPU >= INTERVALO_MPU) {
+    ultimoMPU = millis();
+    accel = ESP32Sensors::Accel::medirAccel();
+    movimentacaoMax = fmaxf(movimentacaoMax, ESP32Sensors::Accel::medirMovimentacao(accel));
+  }
+```
+
+`if (leitura.valido)` é o que faz o cache: leitura ruim é descartada e o último valor
+bom continua valendo. `fmaxf` é o máximo entre o que já tinha e o que acabou de medir
+— vinte comparações por segundo, e sobra o pico.
+
+**c) Zerar o pico depois de publicar**, senão o maior valor de hoje fica para sempre:
+
+```cpp
+  if (millis() - tempoAnterior >= INTERVALO_COLETA) {
+    tempoAnterior = millis();
+    enviarDadosColetados();
+    movimentacaoMax = NAN;   // recomeca a procurar o pico
+  }
+```
+
+**d) `enviarDadosColetados()` só lê o ultrassônico.** Apague as três primeiras linhas
+que mediam DHT e MPU, e troque `amb.` por `ambiente.` e `movimentacao` por
+`movimentacaoMax`:
+
+```cpp
+bool enviarDadosColetados() {
+  ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
+
+  Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
+                ambiente.temp, ambiente.umid, dist.cm, movimentacaoMax);
+```
+
+O resto da função não muda. O payload continua com os mesmos oito campos: `accel_x/y/z`
+passam a ser a última amostra do MPU, e `movimentacao` passa a ser o **pico do último
+segundo**.
+
+**Funcionou?**
+
+- [ ] O Serial passa a sair uma vez por segundo
+- [ ] Parado, `Movim` fica perto de 0,00 e a temperatura repete por dois envios seguidos
+- [ ] Sacuda o MPU: `Movim` sobe e o valor daquele segundo é o mais forte do sacolejo
+- [ ] Pare de sacudir: no envio seguinte já volta para perto de 0,00
+
+| Deu errado | Onde olhar |
+|---|---|
+| `Movim` cresce e nunca cai | faltou o `movimentacaoMax = NAN;` do (c) |
+| Temperatura sempre `nan` | `INTERVALO_DHT` abaixo de 2000: o sensor recusa e nunca preenche o cache |
+| `Movim` continua sorteado | o `medirAccel()` ficou dentro de `enviarDadosColetados()`, em vez do relógio do MPU |
+| Publica muito mais rápido que 1 s | tem dois `tempoAnterior = millis()` no `loop()` |
+
+Anote quanto marca com a caixa **parada**. O FastIMU está sem calibração, então um viés
+de fábrica vira um piso constante — e é a partir desse piso que você escolhe o limiar
+lá no n8n.
+
 Esse é o `src/app14-NexoLog.ino` pronto. Compare.
 
 ---
 
-Rodando as três: siga para [o fluxo no Node-RED](../Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md).
+Rodando as quatro: siga para [o fluxo no Node-RED](../Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md).

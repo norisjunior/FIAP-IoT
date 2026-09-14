@@ -30,11 +30,17 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Controle de intervalo ---- */
-const unsigned long INTERVALO_COLETA = 2500;
+const unsigned long INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
+const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
+const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
 const unsigned long INTERVALO_RECONEXAO = 5000;
-unsigned long tempoAnterior = 0;
-unsigned long ultimaTentativaWiFi = 0;
-unsigned long ultimaTentativaMQTT = 0;
+unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
+unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
+
+/* ---- Medicoes guardadas entre um envio e outro ---- */
+ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
+AccelData accel = {};
+float movimentacaoMax = NAN;
 
 /* ---- Protótipos ---- */
 void conectarWiFi();
@@ -57,9 +63,24 @@ void setup() {
 }
 
 void loop() {
+  // O DHT22 e lento: guardamos a ultima leitura boa e enviamos ela.
+  if (millis() - ultimoDHT >= INTERVALO_DHT) {
+    ultimoDHT = millis();
+    ESP32Sensors::Ambiente::AMBIENTE leitura = ESP32Sensors::Ambiente::medirAmbiente();
+    if (leitura.valido) ambiente = leitura;
+  }
+
+  // O MPU e rapido: 20 amostras por segundo, guardamos so a maior.
+  if (millis() - ultimoMPU >= INTERVALO_MPU) {
+    ultimoMPU = millis();
+    accel = ESP32Sensors::Accel::medirAccel();
+    movimentacaoMax = fmaxf(movimentacaoMax, ESP32Sensors::Accel::medirMovimentacao(accel));
+  }
+
   if (millis() - tempoAnterior >= INTERVALO_COLETA) {
     tempoAnterior = millis();
     enviarDadosColetados();
+    movimentacaoMax = NAN;   // recomeca a procurar o pico
   }
 
   if (WiFi.status() != WL_CONNECTED) {
@@ -93,23 +114,20 @@ void conectarMQTT() {
 }
 
 bool enviarDadosColetados() {
-  ESP32Sensors::Ambiente::AMBIENTE amb = ESP32Sensors::Ambiente::medirAmbiente();
   ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
-  AccelData accel = ESP32Sensors::Accel::medirAccel();
-  float movimentacao = ESP32Sensors::Accel::medirMovimentacao(accel);
 
   Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
-                amb.temp, amb.umid, dist.cm, movimentacao);
+                ambiente.temp, ambiente.umid, dist.cm, movimentacaoMax);
 
   JsonDocument doc;
   doc["device"] = MQTT_CLIENT_ID;
-  doc["temp"] = amb.temp;
-  doc["umid"] = amb.umid;
+  doc["temp"] = ambiente.temp;
+  doc["umid"] = ambiente.umid;
   doc["dist"] = dist.cm;
   doc["accel_x"] = accel.accelX;
   doc["accel_y"] = accel.accelY;
   doc["accel_z"] = accel.accelZ;
-  doc["movimentacao"] = movimentacao;
+  doc["movimentacao"] = movimentacaoMax;
 
   String payload;
   serializeJson(doc, payload);

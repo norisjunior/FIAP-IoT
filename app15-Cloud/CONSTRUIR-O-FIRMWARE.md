@@ -19,9 +19,9 @@ Três iterações. Cada uma compila e roda.
 
 ## Iteração 0 — A base
 
-Copie `app14_NexoLog` inteiro e renomeie. Ele precisa estar rodando as três
+Copie `app14_NexoLog` inteiro e renomeie. Ele precisa estar rodando as quatro
 iterações de [CONSTRUIR-O-FIRMWARE.md do app14](../app14_CPS_e_Automation/app14_NexoLog/CONSTRUIR-O-FIRMWARE.md)
-antes de continuar: publicando JSON a cada 2,5 s.
+antes de continuar: publicando JSON a cada 1 s.
 
 Nada do que sobe muda. **Paridade com o app14:**
 
@@ -29,7 +29,7 @@ Nada do que sobe muda. **Paridade com o app14:**
 |---|---|
 | Tópico de dados | `FIAPIoT/nexolog/equipe01/dados` |
 | Campos do JSON | os mesmos oito, sem acréscimo |
-| Intervalo | 2500 ms |
+| Intervalo de publicação | 1000 ms |
 | Client ID | `NexoLogEquipe01`, um por equipe |
 | `mqttClient.setKeepAlive(120)` | mantido |
 

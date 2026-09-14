@@ -26,7 +26,7 @@ Três nós, nesta ordem:
 
 Ligue `mqtt in → json → debug`. **Deploy.**
 
-**Funcionou?** Na aba Debug, a cada 2,5 s:
+**Funcionou?** Na aba Debug, uma vez por segundo:
 
 ```
 payload: object

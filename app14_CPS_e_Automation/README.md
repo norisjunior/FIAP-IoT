@@ -2,7 +2,7 @@
 
 Abra [app14_NexoLog](app14_NexoLog) no PlatformIO. Compile e inicie o Wokwi ou grave no ESP32.
 
-O firmware lê DHT22, ultrassônico e MPU a cada 2,5 segundos e publica JSON. Não recebe comandos. O LED fica apagado, reservado para a próxima etapa.
+O firmware publica JSON a cada 1 segundo, com um relógio por sensor: DHT22 a 2,1 s (cache), MPU a 50 ms guardando o pico do segundo, ultrassônico junto do envio. Não recebe comandos. O LED fica apagado, reservado para a próxima etapa.
 
 ## Aula
 
@@ -20,6 +20,6 @@ Depois, acrescente [InfluxDB](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.
 
 Em `src/ESP32SensorsAccel.hpp`, selecione `MPU_TYPE`: `MPU6050` para o diagrama Wokwi ou `MPU6500` para essa placa física. Endereço I2C: `0x68` (AD0 em GND). Sem calibração automática nesta aula.
 
-FastIMU retorna aceleração em g. O módulo converte para m/s² para preservar o payload. A movimentação é a magnitude da aceleração menos a gravidade, também em m/s²: caixa parada fica próxima de 0.
+FastIMU retorna aceleração em g. O módulo converte para m/s² para preservar o payload. A movimentação é a magnitude da aceleração menos a gravidade, também em m/s²: caixa parada fica próxima de 0. O campo publicado é o pico do último segundo, com amostragem a 50 ms.
 
 [Montagem e configuração comuns](Guia-NexoLog.md)

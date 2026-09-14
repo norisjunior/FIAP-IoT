@@ -28,7 +28,7 @@ Workflow novo. Um nó só: **MQTT Trigger**.
 
 Clique em **Listen for test event**.
 
-**Funcionou?** O nó verde, com um item a cada 2,5 s:
+**Funcionou?** O nó verde, com um item por segundo:
 
 ```json
 { "topic": "FIAPIoT/nexolog/equipe01/dados",
@@ -110,7 +110,7 @@ muda é o caminho até ele, não o envio.
 
 **Save** e **Active**.
 
-> **Antes de ativar.** O ESP32 publica a cada 2,5 s, e o aviso sai a cada leitura que
+> **Antes de ativar.** O ESP32 publica a cada 1 s, e o aviso sai a cada leitura que
 > passar do limite — o Telegram bloqueia com esse ritmo. Para demonstrar o **fluxo**,
 > deixe a credencial do Telegram de fora e acompanhe pelas execuções. Para demonstrar
 > o **aviso**, aumente `INTERVALO_COLETA` no firmware ou ponha um nó **Wait** antes do
