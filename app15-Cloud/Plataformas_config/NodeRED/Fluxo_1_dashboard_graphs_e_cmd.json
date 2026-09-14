@@ -68,7 +68,6 @@
       [
         "a9361d471ecc9e6f",
         "2accca3aa6722ee6",
-        "877edd3dabde1e28",
         "30eb40094bb00b2b"
       ]
     ],
@@ -501,138 +500,6 @@
     "wires": []
   },
   {
-    "id": "c0de000000cd1003",
-    "type": "comment",
-    "z": "efd1c69a09330861",
-    "name": "Limiares: 30 °C · 70 % · 25 cm · 3 m/s²",
-    "info": "Limites desta aula, nao especificacao de conservacao de carga real.\n\n| Sensor | Limite | Motivo |\n|---|---|---|\n| Temperatura | > 30 °C | Temperatura alta |\n| Umidade | > 70 % | Umidade alta |\n| Distancia | > 25 cm | Tampa aberta |\n| Movimentacao | > 3 m/s² | Movimentacao brusca |\n| Leitura invalida | | Falha de sensor |\n\nOs numeros vivem so aqui, na funcao ao lado. O evento publicado leva o valor\nmedido e o texto do motivo, nunca o limite: quem decide e a plataforma.",
-    "x": 620,
-    "y": 480,
-    "wires": []
-  },
-  {
-    "id": "877edd3dabde1e28",
-    "type": "function",
-    "z": "efd1c69a09330861",
-    "name": "Estado da entrega",
-    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\n// Cada motivo sai inteiro: sensor e a chave que o n8n roteia, texto e o que o humano le.\nconst motivo = (sensor, texto, valor) => ({device: p.device, sensor, texto, valor});\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(motivo(\"falha\", \"Falha de sensor\"));\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(motivo(\"temperatura\", \"Temperatura alta\", p.temp));\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(motivo(\"umidade\", \"Umidade alta\", p.umid));\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(motivo(\"tampa\", \"Tampa aberta\", p.dist));\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(motivo(\"movimento\", \"Movimentação brusca\", p.movimentacao));\nconst alerta = motivos.length > 0;\nif (!alerta) motivos.push(motivo(\"normal\", \"Entrega em condição normal\"));\nmsg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(\" / \")};\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 610,
-    "y": 540,
-    "wires": [
-      [
-        "4273671bb5661029",
-        "c0de000000cd1001"
-      ]
-    ]
-  },
-  {
-    "id": "c0de000000cd1001",
-    "type": "change",
-    "z": "efd1c69a09330861",
-    "name": "Só os motivos",
-    "rules": [
-      {
-        "t": "set",
-        "p": "payload",
-        "pt": "msg",
-        "to": "payload.motivos",
-        "tot": "msg"
-      }
-    ],
-    "action": "",
-    "property": "",
-    "from": "",
-    "to": "",
-    "reg": false,
-    "x": 930,
-    "y": 600,
-    "wires": [
-      [
-        "c0de000000cd1002"
-      ]
-    ]
-  },
-  {
-    "id": "c0de000000cd1002",
-    "type": "split",
-    "z": "efd1c69a09330861",
-    "name": "Um evento por motivo",
-    "splt": "\\n",
-    "spltType": "str",
-    "arraySplt": 1,
-    "arraySpltType": "len",
-    "stream": false,
-    "addname": "",
-    "x": 1150,
-    "y": 600,
-    "wires": [
-      [
-        "83a523307d837f8b"
-      ]
-    ]
-  },
-  {
-    "id": "4273671bb5661029",
-    "type": "ui_text",
-    "z": "efd1c69a09330861",
-    "group": "971cfe2ccd7a75ef",
-    "order": 6,
-    "width": 12,
-    "height": 1,
-    "name": "Estado da entrega",
-    "label": "Entrega",
-    "format": "{{msg.payload.estado}}",
-    "layout": "row-spread",
-    "className": "",
-    "style": false,
-    "font": "Arial",
-    "fontSize": 16,
-    "color": "#333333",
-    "x": 930,
-    "y": 520,
-    "wires": []
-  },
-  {
-    "id": "83a523307d837f8b",
-    "type": "json",
-    "z": "efd1c69a09330861",
-    "x": 1170,
-    "y": 600,
-    "wires": [
-      [
-        "0fdb63535bc6f9f0"
-      ]
-    ],
-    "name": "Objeto para JSON",
-    "property": "payload",
-    "action": "str",
-    "pretty": false
-  },
-  {
-    "id": "0fdb63535bc6f9f0",
-    "type": "mqtt out",
-    "z": "efd1c69a09330861",
-    "name": "Evento para n8n",
-    "topic": "FIAPIoT/nexolog/equipe01/eventos",
-    "qos": "0",
-    "retain": "false",
-    "respTopic": "",
-    "contentType": "",
-    "userProps": "",
-    "correl": "",
-    "expiry": "",
-    "broker": "6c9a71ebeeca9850",
-    "x": 1410,
-    "y": 600,
-    "wires": []
-  },
-  {
     "id": "30eb40094bb00b2b",
     "type": "trigger",
     "z": "efd1c69a09330861",
@@ -662,7 +529,7 @@
     "type": "ui_text",
     "z": "efd1c69a09330861",
     "group": "971cfe2ccd7a75ef",
-    "order": 7,
+    "order": 6,
     "width": 12,
     "height": 1,
     "name": "Conexão",

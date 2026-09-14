@@ -4,7 +4,7 @@ Uma empresa fictícia acompanha cargas sensíveis. A mesma caixa e os mesmos dad
 
 | Etapa | Firmware | Plataforma |
 |---|---|---|
-| [App14](README.md) | Projeto-base: coleta e publicação MQTT | Fluxos, Debug, gauges, gráficos e eventos |
+| [App14](README.md) | Projeto-base: coleta e publicação MQTT | Node-RED mostra; n8n decide e avisa |
 | [App15](../app15-Cloud/README.md) | Acrescentar somente callback e assinatura MQTT ao app14 | Regras enviam ON/OFF ao LED |
 | [App16](../app16-Edge/README.md) | Mesmo firmware preparado no app15 | Mesmos fluxos executados no Raspberry Pi |
 
@@ -33,9 +33,8 @@ A biblioteca retorna aceleração em g; o módulo converte para m/s² antes da p
 
 Os tópicos são iguais nas três etapas:
 
-- `FIAPIoT/nexolog/equipe01/dados`: leituras JSON, a cada 2,5 segundos.
-- `FIAPIoT/nexolog/equipe01/eventos`: mudanças de estado publicadas pelo Node-RED.
-- `FIAPIoT/nexolog/equipe01/cmd`: comandos ON/OFF, recebidos a partir do app15.
+- `FIAPIoT/nexolog/equipe01/dados`: leituras JSON, a cada 2,5 segundos. Node-RED e n8n assinam **os dois** este tópico.
+- `FIAPIoT/nexolog/equipe01/cmd`: comandos em JSON para os LEDs, recebidos a partir do app15.
 
 O dispositivo usa `NexoLogEquipe01`. Troque a identificação e `equipe01` no firmware e nos fluxos para sua equipe. Não execute dois ESP32 com o mesmo Client ID.
 
@@ -76,7 +75,7 @@ Como as etapas compartilham tópicos, desative o dashboard anterior ao ativar o 
 
 Depois do dashboard, importe `Fluxo_2_envio_InfluxDB.json`. Configure URL, organização, bucket e token. Os valores iniciais `fiapiot` e `sensores` seguem o `.env.exemplo` da plataforma. O measurement é `nexolog` e a tag é `device`. O horário registrado é o de recebimento no banco.
 
-No n8n, importe `fluxo_mqtt.json`, configure MQTT, Telegram e `SEU_CHAT_ID`, e ative o workflow. O Node-RED publica eventos na entrada em alerta, mudança do motivo e recuperação. A primeira leitura normal não gera aviso. Reiniciar o Node-RED reinicia essa memória de estado.
+No n8n, importe `fluxo_mqtt.json`, configure MQTT, Telegram e `SEU_CHAT_ID`, e ative o workflow. Ele assina `dados` direto do ESP32: um Switch compara as quatro variáveis com os limiares e cada saída monta a sua mensagem. O aviso sai a cada leitura que passar do limite, não só na mudança — veja a nota sobre a taxa do Telegram no guia do fluxo.
 
 Grafana pode consultar o mesmo banco e measurement, sem modificar o firmware. Não há dashboard Grafana exportado nesta versão.
 

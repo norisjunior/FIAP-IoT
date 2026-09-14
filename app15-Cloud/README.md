@@ -99,7 +99,7 @@ A assinatura acontece novamente em cada reconexão. O `mqttClient.loop()` já es
 2. Importe [Fluxo_1_dashboard_graphs_e_cmd.json](Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json) no Node-RED.
 3. Configure o broker e faça Deploy. Dois switches decidem, um por LED: `Tampa: dist > 25 cm` e `Movimentação > 3 m/s²`. Cada um tem saída 1 (passou do limite) e saída 2 (`otherwise`), e cada saída vai a um nó Change que monta o JSON do comando. A decisão fica visível no canvas, sem código.
 4. Para histórico, use [Fluxo_2_envio_InfluxDB.json](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json). Mantenha apenas uma cópia do fluxo de gravação ativa.
-5. Para notificações, importe [fluxo_mqtt.json](Plataformas_config/n8n/fluxo_mqtt.json) no n8n. Configure credenciais MQTT, Telegram e `SEU_CHAT_ID`. Ative apenas um workflow de eventos por equipe.
+5. Para notificações, importe [fluxo_mqtt.json](Plataformas_config/n8n/fluxo_mqtt.json) no n8n. Ele assina `dados` direto do ESP32, em paralelo com o Node-RED. Configure credenciais MQTT, Telegram e `SEU_CHAT_ID`. Ative apenas um workflow por equipe.
 
 O dashboard mostra a condição calculada pela plataforma. A confirmação física são os LEDs ou a Serial; este firmware não publica confirmação de atuação.
 
