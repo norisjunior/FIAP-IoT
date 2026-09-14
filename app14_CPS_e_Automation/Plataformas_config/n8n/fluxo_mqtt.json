@@ -5,8 +5,7 @@
       "parameters": {
         "topics": "FIAPIoT/nexolog/equipe01/eventos",
         "options": {
-          "jsonParseBody": true,
-          "onlyMessage": true
+          "jsonParseBody": true
         }
       },
       "type": "n8n-nodes-base.mqttTrigger",
@@ -33,7 +32,7 @@
                 "conditions": [
                   {
                     "id": "f34febec-e0c6-4f11-8c97-bf5f681e008e",
-                    "leftValue": "={{ $json.sensor }}",
+                    "leftValue": "={{ $json.message.sensor }}",
                     "rightValue": "temperatura",
                     "operator": {
                       "type": "string",
@@ -57,7 +56,7 @@
                 "conditions": [
                   {
                     "id": "1c57c5a1-0d82-477c-86aa-95bcf64401b9",
-                    "leftValue": "={{ $json.sensor }}",
+                    "leftValue": "={{ $json.message.sensor }}",
                     "rightValue": "umidade",
                     "operator": {
                       "type": "string",
@@ -81,7 +80,7 @@
                 "conditions": [
                   {
                     "id": "02e2ad0d-99c3-4842-8ba8-7cddfc887a87",
-                    "leftValue": "={{ $json.sensor }}",
+                    "leftValue": "={{ $json.message.sensor }}",
                     "rightValue": "tampa",
                     "operator": {
                       "type": "string",
@@ -105,7 +104,7 @@
                 "conditions": [
                   {
                     "id": "1f60c2c6-cfad-4d23-b8ed-ec722e779195",
-                    "leftValue": "={{ $json.sensor }}",
+                    "leftValue": "={{ $json.message.sensor }}",
                     "rightValue": "movimento",
                     "operator": {
                       "type": "string",
@@ -138,7 +137,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nTemperatura: {{ $json.valor.toFixed(1) }} °C",
+        "text": "=NexoLog | {{ $json.message.device }}\n{{ $json.message.texto }}\nTemperatura: {{ $json.message.valor.toFixed(1) }} °C",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -154,7 +153,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nUmidade: {{ $json.valor.toFixed(1) }} %",
+        "text": "=NexoLog | {{ $json.message.device }}\n{{ $json.message.texto }}\nUmidade: {{ $json.message.valor.toFixed(1) }} %",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -170,7 +169,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nDistância: {{ $json.valor.toFixed(1) }} cm",
+        "text": "=NexoLog | {{ $json.message.device }}\n{{ $json.message.texto }}\nDistância: {{ $json.message.valor.toFixed(1) }} cm",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -186,7 +185,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}\nMovimentação: {{ $json.valor.toFixed(2) }} m/s²",
+        "text": "=NexoLog | {{ $json.message.device }}\n{{ $json.message.texto }}\nMovimentação: {{ $json.message.valor.toFixed(2) }} m/s²",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -202,7 +201,7 @@
     {
       "parameters": {
         "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.texto }}",
+        "text": "=NexoLog | {{ $json.message.device }}\n{{ $json.message.texto }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",

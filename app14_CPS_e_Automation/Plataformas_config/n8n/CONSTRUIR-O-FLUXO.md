@@ -47,17 +47,19 @@ Quatro limiares, quatro nós de Telegram. Se a entrega estoura temperatura **e**
 tampa ao mesmo tempo, o Node-RED manda dois eventos e saem duas mensagens. Sem nó
 de código e sem nó de separar: o evento já chega pronto, um motivo por mensagem.
 
-**a) Volte no MQTT Trigger** e ligue duas opções (Add Option):
+**a) Volte no MQTT Trigger** e ligue **uma** opção (Add Option): **JSON Parse Body**.
+`message` chega como texto; assim vira objeto sozinho.
 
-| Opção | Por quê |
-|---|---|
-| **JSON Parse Body** | `message` chega como texto; assim vira objeto sozinho |
-| **Only Message** | tira o envelope: o item passa a ser o próprio evento |
+Execute de novo. O item fica `{topic, message}`, e dentro de `message` estão `device`,
+`sensor`, `texto` e `valor`. Por isso as expressões daqui para a frente começam com
+`$json.message`.
 
-Execute de novo. Onde antes vinha `{topic, message}`, agora vêm `device`, `sensor`,
-`texto` e `valor`, no primeiro nível.
+> **Não ligue `Only Message`.** Ela promete entregar só o evento, mas embrulha num array:
+> o item vira `[{...}]`, `{{ $json.message.sensor }}` fica `undefined`, tudo cai na saída 5 e as
+> mensagens saem vazias. Dá para reconhecer na aba Schema — aparece um nível `0` entre o
+> nó e os campos.
 
-**b) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.sensor }}`,
+**b) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.message.sensor }}`,
 `is equal to`. Compara a chave, nunca a prosa:
 
 | Saída | Valor | Rename output |
@@ -75,19 +77,19 @@ saem as chaves `falha` e `normal`.
 expressão ligado:
 
 ```
-NexoLog | {{ $json.device }}
-{{ $json.texto }}
-Distância: {{ $json.valor.toFixed(1) }} cm
+NexoLog | {{ $json.message.device }}
+{{ $json.message.texto }}
+Distância: {{ $json.message.valor.toFixed(1) }} cm
 ```
 
 Trocando a terceira linha em cada um:
 
 | Nó | Terceira linha |
 |---|---|
-| `Avisar: temperatura` | `Temperatura: {{ $json.valor.toFixed(1) }} °C` |
-| `Avisar: umidade` | `Umidade: {{ $json.valor.toFixed(1) }} %` |
-| `Avisar: tampa` | `Distância: {{ $json.valor.toFixed(1) }} cm` |
-| `Avisar: movimentação` | `Movimentação: {{ $json.valor.toFixed(2) }} m/s²` |
+| `Avisar: temperatura` | `Temperatura: {{ $json.message.valor.toFixed(1) }} °C` |
+| `Avisar: umidade` | `Umidade: {{ $json.message.valor.toFixed(1) }} %` |
+| `Avisar: tampa` | `Distância: {{ $json.message.valor.toFixed(1) }} cm` |
+| `Avisar: movimentação` | `Movimentação: {{ $json.message.valor.toFixed(2) }} m/s²` |
 | `Avisar: outro` | sem terceira linha |
 
 **Save** e **Active**.
@@ -113,12 +115,13 @@ Distância: 40.0 cm
 
 | Deu errado | Onde olhar |
 |---|---|
-| Campos vazios | faltou `JSON Parse Body` ou `Only Message` no trigger |
+| Campos vazios, e tudo na saída 5 | `Only Message` está ligada: desligue. O Schema mostra um nível `0` quando isso acontece |
+| Campos vazios | faltou `JSON Parse Body`, ou a expressão esqueceu o `message` |
 | O limite não aparece na mensagem | é de propósito: ele fica no nó de comentário do Node-RED, e no slide |
-| Tudo cai na saída 5 | a regra compara `sensor`, não o texto. Confira a chave no `motivo(...)` do Node-RED |
+| Tudo cai na saída 5 | a regra compara `message.sensor`, não o texto. Confira a chave no `motivo(...)` do Node-RED |
 | `valor.toFixed is not a function` | é o motivo `falha` ou `normal`, que não têm valor: eles saem pela saída 5 |
 | `Bad Request: chat not found` | Chat ID errado, ou você nunca falou com o bot primeiro |
-| Manda `{{ $json.device }}` literal | o campo Text está em modo fixo, não expressão |
+| Manda `{{ $json.message.device }}` literal | o campo Text está em modo fixo, não expressão |
 | Telegram parou de responder | a taxa: veja o aviso acima |
 
 O fluxo completo está em [fluxo_mqtt.json](fluxo_mqtt.json) — Import from File, para comparar com o seu.
