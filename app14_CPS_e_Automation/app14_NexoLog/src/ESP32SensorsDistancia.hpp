@@ -7,8 +7,7 @@ namespace ESP32Sensors {
     static uint8_t echoPin = 0;
 
     struct DISTANCIA {
-      float cm;
-      bool valido;
+      float cm;   // NAN quando nao volta eco
     };
 
     void inicializar(uint8_t tPin, uint8_t ePin) {
@@ -26,7 +25,7 @@ namespace ESP32Sensors {
       digitalWrite(trigPin, LOW);
 
       unsigned long duracao = pulseIn(echoPin, HIGH, 30000);
-      return {duracao ? duracao * 0.034f / 2 : NAN, duracao > 0};
+      return {duracao ? duracao * 0.034f / 2 : NAN};
     }
   }
 }

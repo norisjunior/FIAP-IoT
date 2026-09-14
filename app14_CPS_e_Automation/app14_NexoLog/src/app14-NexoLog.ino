@@ -39,6 +39,7 @@ unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 
 /* ---- Medicoes guardadas entre um envio e outro ---- */
 ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
+ESP32Sensors::Distancia::DISTANCIA distancia = {NAN};
 AccelData accel = {};
 float movimentacaoMax = NAN;
 
@@ -77,8 +78,10 @@ void loop() {
     movimentacaoMax = fmaxf(movimentacaoMax, ESP32Sensors::Accel::medirMovimentacao(accel));
   }
 
+  // O HC-SR04 e lido junto do envio: a distancia nao muda em milissegundos.
   if (millis() - tempoAnterior >= INTERVALO_COLETA) {
     tempoAnterior = millis();
+    distancia = ESP32Sensors::Distancia::medirDistancia();
     enviarDadosColetados();
     movimentacaoMax = NAN;   // recomeca a procurar o pico
   }
@@ -114,16 +117,14 @@ void conectarMQTT() {
 }
 
 bool enviarDadosColetados() {
-  ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
-
   Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
-                ambiente.temp, ambiente.umid, dist.cm, movimentacaoMax);
+                ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
 
   JsonDocument doc;
   doc["device"] = MQTT_CLIENT_ID;
   doc["temp"] = ambiente.temp;
   doc["umid"] = ambiente.umid;
-  doc["dist"] = dist.cm;
+  doc["dist"] = distancia.cm;
   doc["accel_x"] = accel.accelX;
   doc["accel_y"] = accel.accelY;
   doc["accel_z"] = accel.accelZ;

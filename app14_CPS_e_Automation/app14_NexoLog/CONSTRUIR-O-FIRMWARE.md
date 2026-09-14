@@ -290,12 +290,13 @@ unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 
 /* ---- Medicoes guardadas entre um envio e outro ---- */
 ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
+ESP32Sensors::Distancia::DISTANCIA distancia = {NAN};
 AccelData accel = {};
 float movimentacaoMax = NAN;
 ```
 
-Como DHT e MPU passam a ser lidos fora da hora do envio, o valor deles precisa ficar
-guardado em algum lugar até a publicação — são essas três variáveis.
+Agora os três sensores são lidos fora da função que publica, então o valor de cada um
+precisa ficar guardado até o envio — são essas quatro variáveis.
 
 **b) Duas caixas novas no `loop()`**, antes do bloco de envio:
 
@@ -319,27 +320,34 @@ guardado em algum lugar até a publicação — são essas três variáveis.
 bom continua valendo. `fmaxf` é o máximo entre o que já tinha e o que acabou de medir
 — vinte comparações por segundo, e sobra o pico.
 
-**c) Zerar o pico depois de publicar**, senão o maior valor de hoje fica para sempre:
+**c) O terceiro relógio** mede a distância e publica. E zera o pico, senão o maior valor
+de hoje fica para sempre:
 
 ```cpp
+  // O HC-SR04 e lido junto do envio: a distancia nao muda em milissegundos.
   if (millis() - tempoAnterior >= INTERVALO_COLETA) {
     tempoAnterior = millis();
+    distancia = ESP32Sensors::Distancia::medirDistancia();
     enviarDadosColetados();
     movimentacaoMax = NAN;   // recomeca a procurar o pico
   }
 ```
 
-**d) `enviarDadosColetados()` só lê o ultrassônico.** Apague as três primeiras linhas
-que mediam DHT e MPU, e troque `amb.` por `ambiente.` e `movimentacao` por
-`movimentacaoMax`:
+**d) `enviarDadosColetados()` não mede mais nada.** Apague as quatro primeiras linhas,
+que mediam os sensores, e troque `amb.` por `ambiente.`, `dist.` por `distancia.` e
+`movimentacao` por `movimentacaoMax`:
 
 ```cpp
 bool enviarDadosColetados() {
-  ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
-
   Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
-                ambiente.temp, ambiente.umid, dist.cm, movimentacaoMax);
+                ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
 ```
+
+Trocando também `doc["dist"] = dist.cm;` por `doc["dist"] = distancia.cm;`.
+
+Repare no que sobrou: a função virou **só formatar e publicar**. Medir é assunto dos
+três relógios do `loop()`, cada um no seu ritmo; a função pega o que eles deixaram
+guardado.
 
 O resto da função não muda. O payload continua com os mesmos oito campos: `accel_x/y/z`
 passam a ser a última amostra do MPU, e `movimentacao` passa a ser o **pico do último
@@ -358,6 +366,7 @@ segundo**.
 | Temperatura sempre `nan` | `INTERVALO_DHT` abaixo de 2000: o sensor recusa e nunca preenche o cache |
 | `Movim` continua sorteado | o `medirAccel()` ficou dentro de `enviarDadosColetados()`, em vez do relógio do MPU |
 | Publica muito mais rápido que 1 s | tem dois `tempoAnterior = millis()` no `loop()` |
+| `dist` sempre `nan` | o `medirDistancia()` ficou dentro da função de envio e some com a variável guardada |
 
 Anote quanto marca com a caixa **parada**. O FastIMU está sem calibração, então um viés
 de fábrica vira um piso constante — e é a partir desse piso que você escolhe o limiar
