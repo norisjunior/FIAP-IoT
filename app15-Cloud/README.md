@@ -88,6 +88,7 @@ A assinatura acontece novamente em cada reconexão. O `mqttClient.loop()` já es
 
 1. Desative o dashboard do app14 antes de ativar o do app15: ambos usam os mesmos tópicos.
 2. Importe [Fluxo_1_dashboard_graphs_e_cmd.json](Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json) no Node-RED.
+   Para montar em vez de importar: [CONSTRUIR-O-FLUXO.md](Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md), em duas iterações — a decisão com os dois switches, depois o LED no dashboard.
    O dashboard tem um widget **LED da caixa**, que acende junto com o LED do dispositivo. É o `node-red-contrib-ui-led` — instale pelo Manage palette, como o `ui-level`.
 3. Configure o broker e faça Deploy. Dois switches **em série** fazem o E: `A tampa está aberta?` só entrega ao `E está sacudindo?` o que passou de 25 cm; quem passa dos dois vai ao `Alerta ON`. As saídas `otherwise` dos dois caem no mesmo `Alerta OFF`. É uma condição composta desenhada no canvas, sem escrever código.
 4. Para histórico, use [Fluxo_2_envio_InfluxDB.json](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json). Mantenha apenas uma cópia do fluxo de gravação ativa.
