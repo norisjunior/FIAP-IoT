@@ -18,9 +18,9 @@ const uint8_t SDA_PIN = 22;
 const uint8_t LED_ALERTA = 21;
 
 /* ---- Config Wi-Fi e MQTT ---- */
-const char* WIFI_SSID = "NorisIoT";
-const char* WIFI_PASSWORD = "Secure10T";
-#define MQTT_SERVER "172.16.10.101"
+const char* WIFI_SSID = "Wokwi-GUEST";
+const char* WIFI_PASSWORD = "";
+#define MQTT_SERVER "host.wokwi.internal"
 #define MQTT_PORT 1883
 #define MQTT_CLIENT_ID "NexoLogEquipe01"
 #define MQTT_PUB_TOPIC "FIAPIoT/nexolog/equipe01/dados"
@@ -151,14 +151,11 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
   }
 
   const char* alerta = doc["alerta"];
-  const char* motivo = doc["motivo"];
   if (alerta == nullptr) {
     Serial.println("[CMD] Faltou o campo alerta");
     return;
   }
 
-  // A nuvem ja decidiu. Aqui so obedecemos e contamos o porque.
-  bool ligar = strcmp(alerta, "ON") == 0;
-  digitalWrite(LED_ALERTA, ligar ? HIGH : LOW);
-  Serial.printf("[CMD] %s: %s\r\n", alerta, motivo ? motivo : "sem motivo");
+  // A nuvem ja decidiu. Aqui so obedecemos.
+  digitalWrite(LED_ALERTA, strcmp(alerta, "ON") == 0 ? HIGH : LOW);
 }

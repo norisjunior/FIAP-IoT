@@ -49,19 +49,17 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
   }
 
   const char* alerta = doc["alerta"];
-  const char* motivo = doc["motivo"];
   if (alerta == nullptr) {
     Serial.println("[CMD] Faltou o campo alerta");
     return;
   }
 
-  bool ligar = strcmp(alerta, "ON") == 0;
-  digitalWrite(LED_ALERTA, ligar ? HIGH : LOW);
-  Serial.printf("[CMD] %s: %s\r\n", alerta, motivo ? motivo : "sem motivo");
+  // A nuvem ja decidiu. Aqui so obedecemos.
+  digitalWrite(LED_ALERTA, strcmp(alerta, "ON") == 0 ? HIGH : LOW);
 }
 ```
 
-O comando é `{"alerta":"ON","motivo":"Tampa aberta com movimentacao"}`. `conteudo` não termina em `\0`, por isso o `tamanho` vai junto. `strcmp` porque `alerta` é `const char*`: `alerta == "ON"` compara endereços, e `strcmp` devolve **0** quando os textos batem. Qualquer valor diferente de `ON` apaga.
+O comando é `{"alerta":"ON"}` — o dispositivo trata o JSON, extrai o valor e acende ou apaga. Nada além disso: quem decidiu foi a plataforma. `conteudo` não termina em `\0`, por isso o `tamanho` vai junto. `strcmp` porque `alerta` é `const char*`, e ele devolve **0** quando os textos batem. Qualquer valor diferente de `ON` apaga.
 
 ## 5. Registrar no setup
 
@@ -102,7 +100,7 @@ Com a caixa fechada e parada, o LED fica apagado.
 
 Levante a tampa — no Wokwi, mude a distância de 10 para 40 cm. **Nada acontece.** A tampa aberta sozinha não é alerta: uma entrega parada, sendo conferida, tem a tampa aberta.
 
-Agora sacuda o MPU com a tampa ainda aberta. **O LED acende**, e o Serial conta o motivo. Feche a tampa: apaga.
+Agora sacuda o MPU com a tampa ainda aberta. **O LED acende.** Feche a tampa: apaga. O Serial não diz nada — só o CSV das medições continua correndo, e a resposta ao comando é o próprio LED.
 
 O dispositivo não sabe o que é 25 cm, nem 3 m/s², nem que são duas condições. Ele mede, publica e obedece. Para fazer essa conta a bordo, ele precisaria guardar as duas medidas, conhecer os dois limites e ser recompilado a cada ajuste — na plataforma são dois nós ligados um no outro, e o limite muda com um duplo clique.
 

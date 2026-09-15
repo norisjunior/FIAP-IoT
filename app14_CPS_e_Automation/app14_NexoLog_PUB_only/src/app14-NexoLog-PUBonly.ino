@@ -17,9 +17,9 @@ const uint8_t SCL_PIN = 23;
 const uint8_t SDA_PIN = 22;
 
 /* ---- Config Wi-Fi e MQTT ---- */
-const char* WIFI_SSID = "NorisIoT";
-const char* WIFI_PASSWORD = "Secure10T";
-#define MQTT_SERVER "172.16.10.101"
+const char* WIFI_SSID = "Wokwi-GUEST";
+const char* WIFI_PASSWORD = "";
+#define MQTT_SERVER "host.wokwi.internal"
 #define MQTT_PORT 1883
 #define MQTT_CLIENT_ID "NexoLogEquipe01"
 #define MQTT_PUB_TOPIC "FIAPIoT/nexolog/equipe01/dados"

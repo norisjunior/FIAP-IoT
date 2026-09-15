@@ -7,37 +7,6 @@
     "info": "Equipe01. Ajuste os tópicos para sua equipe."
   },
   {
-    "id": "6c9a71ebeeca9850",
-    "type": "mqtt-broker",
-    "name": "Mosquitto - plataforma IoT",
-    "broker": "mosquitto",
-    "port": 1883,
-    "clientid": "",
-    "autoConnect": true,
-    "usetls": false,
-    "protocolVersion": 4,
-    "keepalive": 60,
-    "cleansession": true,
-    "autoUnsubscribe": true,
-    "birthTopic": "",
-    "birthQos": "0",
-    "birthRetain": "false",
-    "birthPayload": "",
-    "birthMsg": {},
-    "closeTopic": "",
-    "closeQos": "0",
-    "closeRetain": "false",
-    "closePayload": "",
-    "closeMsg": {},
-    "willTopic": "",
-    "willQos": "0",
-    "willRetain": "false",
-    "willPayload": "",
-    "willMsg": {},
-    "userProps": "",
-    "sessionExpiry": ""
-  },
-  {
     "id": "6766567e893b6d33",
     "type": "mqtt in",
     "z": "efd1c69a09330861",
@@ -50,7 +19,7 @@
     "rap": true,
     "rh": 0,
     "inputs": 0,
-    "x": 140,
+    "x": 100,
     "y": 80,
     "wires": [
       [
@@ -62,7 +31,11 @@
     "id": "4fb6617d790fe9ae",
     "type": "json",
     "z": "efd1c69a09330861",
-    "x": 360,
+    "name": "JSON para objeto",
+    "property": "payload",
+    "action": "obj",
+    "pretty": false,
+    "x": 310,
     "y": 80,
     "wires": [
       [
@@ -71,11 +44,7 @@
         "30eb40094bb00b2b",
         "840543c9aea542e5"
       ]
-    ],
-    "name": "JSON para objeto",
-    "property": "payload",
-    "action": "obj",
-    "pretty": false
+    ]
   },
   {
     "id": "a9361d471ecc9e6f",
@@ -89,27 +58,9 @@
     "complete": "payload",
     "statusVal": "",
     "statusType": "auto",
-    "x": 600,
+    "x": 580,
     "y": 40,
     "wires": []
-  },
-  {
-    "id": "dffa0fa8ea4d3ec5",
-    "type": "ui_tab",
-    "name": "NexoLog 15",
-    "icon": "dashboard",
-    "disabled": false,
-    "hidden": false
-  },
-  {
-    "id": "971cfe2ccd7a75ef",
-    "type": "ui_group",
-    "name": "Caixa equipe01",
-    "tab": "dffa0fa8ea4d3ec5",
-    "order": 1,
-    "disp": true,
-    "width": "12",
-    "collapse": false
   },
   {
     "id": "2accca3aa6722ee6",
@@ -124,7 +75,7 @@
     "finalize": "",
     "libs": [],
     "x": 610,
-    "y": 180,
+    "y": 160,
     "wires": [
       [
         "d4218674c01bb50f",
@@ -165,8 +116,8 @@
     "seg2": "30",
     "diff": false,
     "className": "",
-    "x": 920,
-    "y": 120,
+    "x": 870,
+    "y": 40,
     "wires": []
   },
   {
@@ -193,8 +144,8 @@
     "seg2": "70",
     "diff": false,
     "className": "",
-    "x": 920,
-    "y": 180,
+    "x": 860,
+    "y": 140,
     "wires": []
   },
   {
@@ -235,8 +186,8 @@
     "peakmode": false,
     "property": "payload",
     "peaktime": 3000,
-    "x": 920,
-    "y": 240,
+    "x": 890,
+    "y": 200,
     "wires": []
   },
   {
@@ -263,8 +214,8 @@
     "seg2": "3",
     "diff": false,
     "className": "",
-    "x": 920,
-    "y": 300,
+    "x": 880,
+    "y": 260,
     "wires": []
   },
   {
@@ -305,8 +256,8 @@
     "outputs": 1,
     "useDifferentColor": false,
     "className": "",
-    "x": 920,
-    "y": 380,
+    "x": 880,
+    "y": 80,
     "wires": [
       []
     ]
@@ -315,7 +266,7 @@
     "id": "840543c9aea542e5",
     "type": "switch",
     "z": "efd1c69a09330861",
-    "name": "A tampa esta aberta?",
+    "name": "Tampa aberta?",
     "property": "payload.dist",
     "propertyType": "msg",
     "rules": [
@@ -331,8 +282,8 @@
     "checkall": "true",
     "repair": false,
     "outputs": 2,
-    "x": 700,
-    "y": 700,
+    "x": 580,
+    "y": 360,
     "wires": [
       [
         "a1c0de0000ab2000"
@@ -346,7 +297,7 @@
     "id": "a1c0de0000ab2000",
     "type": "switch",
     "z": "efd1c69a09330861",
-    "name": "E esta sacudindo?",
+    "name": "Movimento brusco?",
     "property": "payload.movimentacao",
     "propertyType": "msg",
     "rules": [
@@ -362,12 +313,11 @@
     "checkall": "true",
     "repair": false,
     "outputs": 2,
-    "x": 920,
-    "y": 700,
+    "x": 890,
+    "y": 360,
     "wires": [
       [
-        "a1c0de0000ab1001",
-        "15867f465e5f117d"
+        "a1c0de0000ab1001"
       ],
       [
         "a1c0de0000ab1002"
@@ -384,7 +334,7 @@
         "t": "set",
         "p": "payload",
         "pt": "msg",
-        "to": "{\"alerta\": \"ON\", \"motivo\": \"Tampa aberta com movimentacao\"}",
+        "to": "{\"alerta\": \"ON\"}",
         "tot": "json"
       }
     ],
@@ -393,11 +343,12 @@
     "from": "",
     "to": "",
     "reg": false,
-    "x": 1160,
-    "y": 660,
+    "x": 1100,
+    "y": 360,
     "wires": [
       [
-        "948117e25c041dd8"
+        "948117e25c041dd8",
+        "15867f465e5f117d"
       ]
     ]
   },
@@ -411,7 +362,7 @@
         "t": "set",
         "p": "payload",
         "pt": "msg",
-        "to": "{\"alerta\": \"OFF\", \"motivo\": \"Sem alerta\"}",
+        "to": "{\"alerta\": \"OFF\"}",
         "tot": "json"
       }
     ],
@@ -420,8 +371,8 @@
     "from": "",
     "to": "",
     "reg": false,
-    "x": 1160,
-    "y": 760,
+    "x": 1110,
+    "y": 480,
     "wires": [
       [
         "948117e25c041dd8"
@@ -440,21 +391,14 @@
     "complete": "payload",
     "statusVal": "",
     "statusType": "auto",
-    "x": 1400,
-    "y": 820,
+    "x": 1320,
+    "y": 320,
     "wires": []
   },
   {
     "id": "30eb40094bb00b2b",
     "type": "trigger",
     "z": "efd1c69a09330861",
-    "x": 610,
-    "y": 680,
-    "wires": [
-      [
-        "70f1c7e56a984596"
-      ]
-    ],
     "name": "Sem dados por 10 s",
     "op1": "Recebendo dados",
     "op2": "Sem dados há 10 s",
@@ -467,7 +411,14 @@
     "reset": "",
     "bytopic": "all",
     "topic": "topic",
-    "outputs": 1
+    "outputs": 1,
+    "x": 600,
+    "y": 540,
+    "wires": [
+      [
+        "70f1c7e56a984596"
+      ]
+    ]
   },
   {
     "id": "70f1c7e56a984596",
@@ -486,8 +437,8 @@
     "font": "Arial",
     "fontSize": 16,
     "color": "#333333",
-    "x": 930,
-    "y": 680,
+    "x": 800,
+    "y": 540,
     "wires": []
   },
   {
@@ -504,158 +455,66 @@
     "correl": "",
     "expiry": "",
     "broker": "6c9a71ebeeca9850",
-    "x": 1420,
-    "y": 770,
+    "x": 1310,
+    "y": 360,
     "wires": []
   },
   {
-    "id": "933c60021eb994d4",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 180,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Normal",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
+    "id": "6c9a71ebeeca9850",
+    "type": "mqtt-broker",
+    "name": "Mosquitto - plataforma IoT",
+    "broker": "mosquitto",
+    "port": 1883,
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": 4,
+    "keepalive": 60,
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
   },
   {
-    "id": "01b595f130efd8b1",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 240,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Temperatura alta",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 35, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
+    "id": "971cfe2ccd7a75ef",
+    "type": "ui_group",
+    "name": "Caixa equipe01",
+    "tab": "dffa0fa8ea4d3ec5",
+    "order": 1,
+    "disp": true,
+    "width": "12",
+    "collapse": false
   },
   {
-    "id": "dbba821b51bd0dca",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 300,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Tampa aberta",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 40, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
+    "id": "dffa0fa8ea4d3ec5",
+    "type": "ui_tab",
+    "name": "NexoLog 15",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
   },
   {
-    "id": "c0de000000in1001",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 340,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Tampa aberta + sacudindo",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 40, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 6.2}",
-    "payloadType": "json"
-  },
-  {
-    "id": "57409907ca8ba33f",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 400,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Movimentação brusca",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 24.8, \"movimentacao\": 15}",
-    "payloadType": "json"
-  },
-  {
-    "id": "f6ead24591c9d96d",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 460,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Falha DHT",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": null, \"umid\": null, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
+    "id": "3670ef3346abb021",
+    "type": "global-config",
+    "env": [],
+    "modules": {
+      "node-red-dashboard": "3.6.6",
+      "node-red-contrib-ui-level": "0.1.46"
+    }
   }
 ]
