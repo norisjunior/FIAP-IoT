@@ -107,8 +107,61 @@ Cada leitura reinicia a contagem. Se o firmware parar, em 10 s o texto muda sozi
 | Gauge vazio | a saída da function não bate com o nó, ou o campo mudou de nome no firmware |
 | Conexão nunca muda | faltou marcar **extend delay** no trigger |
 
-Pronto: [o histórico no InfluxDB](Fluxo_2_envio_InfluxDB.json) e
-[o aviso no n8n](../n8n/CONSTRUIR-O-FLUXO.md).
-
 O fluxo completo está em [dashboard.json](dashboard.json) — ≡ > Import, para comparar
 com o seu.
+
+---
+
+## O segundo fluxo: guardar no InfluxDB
+
+O gráfico da tela mostra os últimos cinco minutos e começa do zero a cada F5. Para
+perguntar "como foi a entrega de ontem", o dado precisa estar num banco.
+
+Importe [Fluxo_2_envio_InfluxDB.json](Fluxo_2_envio_InfluxDB.json) numa **aba nova**.
+Ele assina o mesmo tópico `dados` — os dois fluxos rodam juntos, e nenhum atrapalha o
+outro. É a mesma ideia do n8n: um tópico MQTT entrega para todo mundo que assinar.
+
+Usamos o **InfluxDB Cloud**. Quatro campos para preencher, e nenhum vem pronto:
+
+| Onde | Campo | O que é |
+|---|---|---|
+| nó de configuração (lápis) | URL | `https://<sua-regiao>.aws.cloud2.influxdata.com` |
+| nó de configuração | Token | Load Data > API Tokens, no site do InfluxDB |
+| `Gravar leituras` | Organization | a sua |
+| `Gravar leituras` | Bucket | o seu |
+
+O **token nunca vem no arquivo**: o Node-RED guarda token como credencial e a
+exportação sempre remove. Isso é proposital — é o que permite compartilhar um fluxo
+sem vazar acesso ao seu banco.
+
+O nó `Campos e tags` monta o que o InfluxDB espera: `[campos, tags]`.
+
+```javascript
+const p = msg.payload;
+const campos = {};
+// Campo sem leitura chega como null e nao vai para o banco: fica um buraco na serie.
+for (const nome of ["temp", "umid", "dist", "accel_x", "accel_y", "accel_z", "movimentacao"]) {
+    if (typeof p[nome] === "number") campos[nome] = p[nome];
+}
+msg.payload = [campos, {device: p.device}];
+return msg;
+```
+
+`device` vai como **tag** e as sete medições como **fields**. Tag é para filtrar e
+agrupar (de qual caixa?), field é o número que você vai somar ou tirar média. Nada de
+limiar aqui: o banco guarda tudo, e a pergunta se faz depois.
+
+**Funcionou?** No InfluxDB, Data Explorer:
+
+- [ ] O bucket aparece com o measurement `nexolog`
+- [ ] Sete fields e a tag `device`
+- [ ] Um ponto por segundo, acompanhando o Wokwi
+
+| Deu errado | Onde olhar |
+|---|---|
+| `unauthorized` | token errado, ou colado com espaço no fim |
+| `bucket not found` | o bucket é o **seu**, não o do colega; confira a organização também |
+| `getaddrinfo ENOTFOUND` | a URL tem a região da sua conta, e não a do exemplo |
+| Grava, mas falta um campo | aquele sensor mandou `null` naquele instante — o buraco é proposital |
+
+Pronto: falta [o aviso no n8n](../n8n/CONSTRUIR-O-FLUXO.md).

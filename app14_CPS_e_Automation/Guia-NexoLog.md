@@ -73,7 +73,11 @@ Como as etapas compartilham tópicos, desative o dashboard anterior ao ativar o 
 
 ## InfluxDB, n8n e Grafana
 
-Depois do dashboard, importe `Fluxo_2_envio_InfluxDB.json`. Configure URL, organização, bucket e token. Os valores iniciais `fiapiot` e `sensores` seguem o `.env.exemplo` da plataforma. O measurement é `nexolog` e a tag é `device`. O horário registrado é o de recebimento no banco.
+Depois do dashboard, importe `Fluxo_2_envio_InfluxDB.json`. Ele assina o mesmo `dados` e grava as sete medições, sem regra nenhuma: o measurement é `nexolog`, `device` é a tag e o horário registrado é o de recebimento no banco.
+
+Usamos o **InfluxDB Cloud**, não o da plataforma. Cada um preenche quatro campos: URL da sua região e token no nó de configuração, organização e bucket no nó `Gravar leituras`. O token não vem no arquivo importado — o Node-RED guarda token como credencial e a exportação sempre remove.
+
+Dashboard e InfluxDB são dois fluxos independentes assinando o mesmo tópico. Rode os dois ao mesmo tempo: um mostra agora, o outro guarda para depois.
 
 No n8n, importe `fluxo_mqtt.json`, configure MQTT, Telegram e `SEU_CHAT_ID`, e ative o workflow. Ele assina `dados` direto do ESP32: um Switch compara as quatro variáveis com os limiares e cada saída monta a sua mensagem. O aviso sai a cada leitura que passar do limite, não só na mudança — veja a nota sobre a taxa do Telegram no guia do fluxo.
 

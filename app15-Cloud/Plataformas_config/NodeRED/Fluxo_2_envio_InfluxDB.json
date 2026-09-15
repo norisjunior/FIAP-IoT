@@ -1,13 +1,131 @@
 [
   {
-    "id": "938107cbdc5ce856",
+    "id": "172491b9e0590117",
     "type": "tab",
     "label": "NexoLog 15 - InfluxDB",
     "disabled": false,
-    "info": "Equipe01. Ajuste os tópicos para sua equipe."
+    "info": "Equipe01. Ajuste os topicos para sua equipe."
   },
   {
-    "id": "567b83733c943ac6",
+    "id": "f2b0000000000101",
+    "type": "mqtt in",
+    "z": "172491b9e0590117",
+    "name": "Dados da caixa",
+    "topic": "FIAPIoT/nexolog/equipe01/dados",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "6c9a71ebeeca9850",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 140,
+    "y": 120,
+    "wires": [
+      [
+        "f2b0000000000102"
+      ]
+    ]
+  },
+  {
+    "id": "f2b0000000000102",
+    "type": "json",
+    "z": "172491b9e0590117",
+    "name": "JSON para objeto",
+    "property": "payload",
+    "action": "obj",
+    "pretty": false,
+    "x": 360,
+    "y": 120,
+    "wires": [
+      [
+        "f2b0000000000103",
+        "f2b0000000000104"
+      ]
+    ]
+  },
+  {
+    "id": "f2b0000000000103",
+    "type": "debug",
+    "z": "172491b9e0590117",
+    "name": "Objeto recebido",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 610,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "f2b0000000000107",
+    "type": "comment",
+    "z": "172491b9e0590117",
+    "name": "Preencha URL, token, org e bucket antes do Deploy",
+    "info": "InfluxDB Cloud: preencha antes do Deploy\n\nNo no de configuracao (lapis do \"Gravar leituras\"):\n  URL   https://<sua-regiao>.aws.cloud2.influxdata.com\n  Token o seu, de Load Data > API Tokens\n\nNo no \"Gravar leituras\":\n  Organization  a sua\n  Bucket        o seu\n\nO token NAO vem no arquivo importado: o Node-RED guarda\ntoken como credencial e a exportacao sempre remove.\nCada aluno cola o dele.",
+    "x": 700,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "f2b0000000000104",
+    "type": "function",
+    "z": "172491b9e0590117",
+    "name": "Campos e tags",
+    "func": "const p = msg.payload;\nconst campos = {};\n// Campo sem leitura chega como null e nao vai para o banco: fica um buraco na serie.\nfor (const nome of [\"temp\", \"umid\", \"dist\", \"accel_x\", \"accel_y\", \"accel_z\", \"movimentacao\"]) {\n    if (typeof p[nome] === \"number\") campos[nome] = p[nome];\n}\nmsg.payload = [campos, {device: p.device}];\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 610,
+    "y": 180,
+    "wires": [
+      [
+        "f2b0000000000105"
+      ]
+    ]
+  },
+  {
+    "id": "f2b0000000000105",
+    "type": "influxdb out",
+    "z": "172491b9e0590117",
+    "influxdb": "f2b0000000000106",
+    "name": "Gravar leituras",
+    "measurement": "nexolog",
+    "precision": "",
+    "retentionPolicy": "",
+    "database": "database",
+    "precisionV18FluxV20": "ms",
+    "retentionPolicyV18Flux": "",
+    "org": "SUA_ORG",
+    "bucket": "SEU_BUCKET",
+    "x": 860,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "f2b0000000000106",
+    "type": "influxdb",
+    "hostname": "127.0.0.1",
+    "port": 8086,
+    "protocol": "http",
+    "database": "database",
+    "name": "InfluxDB Cloud",
+    "usetls": false,
+    "tls": "",
+    "influxdbVersion": "2.0",
+    "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+    "timeout": 10,
+    "rejectUnauthorized": true
+  },
+  {
+    "id": "6c9a71ebeeca9850",
     "type": "mqtt-broker",
     "name": "Mosquitto - plataforma IoT",
     "broker": "mosquitto",
@@ -36,132 +154,5 @@
     "willMsg": {},
     "userProps": "",
     "sessionExpiry": ""
-  },
-  {
-    "id": "062bbeae322e07c7",
-    "type": "mqtt in",
-    "z": "938107cbdc5ce856",
-    "name": "Dados da caixa",
-    "topic": "FIAPIoT/nexolog/equipe01/dados",
-    "qos": "0",
-    "datatype": "utf8",
-    "broker": "567b83733c943ac6",
-    "nl": false,
-    "rap": true,
-    "rh": 0,
-    "inputs": 0,
-    "x": 140,
-    "y": 80,
-    "wires": [
-      [
-        "a5445c78fec004a8"
-      ]
-    ]
-  },
-  {
-    "id": "a5445c78fec004a8",
-    "type": "json",
-    "z": "938107cbdc5ce856",
-    "x": 360,
-    "y": 80,
-    "wires": [
-      [
-        "ce5110b78a6783c0",
-        "f3178bf38062ba21"
-      ]
-    ],
-    "name": "JSON para objeto",
-    "property": "payload",
-    "action": "obj",
-    "pretty": false
-  },
-  {
-    "id": "ce5110b78a6783c0",
-    "type": "debug",
-    "z": "938107cbdc5ce856",
-    "name": "Objeto recebido",
-    "active": true,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "payload",
-    "statusVal": "",
-    "statusType": "auto",
-    "x": 600,
-    "y": 40,
-    "wires": []
-  },
-  {
-    "id": "f3178bf38062ba21",
-    "type": "function",
-    "z": "938107cbdc5ce856",
-    "name": "Condição da entrega",
-    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\n// Cada motivo sai inteiro: sensor e a chave que o n8n roteia, texto e o que o humano le.\nconst motivo = (sensor, texto, valor) => ({device: p.device, sensor, texto, valor});\n\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push(motivo(\"falha\", \"Falha de sensor\"));\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push(motivo(\"temperatura\", \"Temperatura alta\", p.temp));\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push(motivo(\"umidade\", \"Umidade alta\", p.umid));\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push(motivo(\"tampa\", \"Tampa aberta\", p.dist));\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push(motivo(\"movimento\", \"Movimentação brusca\", p.movimentacao));\nconst alerta = motivos.length > 0;\nif (!alerta) motivos.push(motivo(\"normal\", \"Entrega em condição normal\"));\nmsg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(\" / \")};\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 600,
-    "y": 160,
-    "wires": [
-      [
-        "959065fc18651076"
-      ]
-    ]
-  },
-  {
-    "id": "959065fc18651076",
-    "type": "function",
-    "z": "938107cbdc5ce856",
-    "name": "Campos e tags",
-    "func": "const p = msg.payload;\nlet campos = {alerta: p.alerta};\nfor (const nome of [\"temp\", \"umid\", \"dist\", \"movimentacao\", \"accel_x\", \"accel_y\", \"accel_z\"]) {\n    if (Number.isFinite(p[nome])) campos[nome] = p[nome];\n}\nmsg.payload = [campos, {device: p.device}];\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 850,
-    "y": 160,
-    "wires": [
-      [
-        "411bb8ef68f8f124"
-      ]
-    ]
-  },
-  {
-    "id": "0a7f7822d4ec300b",
-    "type": "influxdb",
-    "hostname": "127.0.0.1",
-    "port": 8086,
-    "protocol": "http",
-    "database": "database",
-    "name": "InfluxDB da plataforma",
-    "usetls": false,
-    "tls": "",
-    "influxdbVersion": "2.0",
-    "url": "http://influxdb:8086",
-    "timeout": 10,
-    "rejectUnauthorized": true
-  },
-  {
-    "id": "411bb8ef68f8f124",
-    "type": "influxdb out",
-    "z": "938107cbdc5ce856",
-    "influxdb": "0a7f7822d4ec300b",
-    "name": "Gravar leituras",
-    "measurement": "nexolog",
-    "precision": "",
-    "retentionPolicy": "",
-    "database": "database",
-    "precisionV18FluxV20": "ms",
-    "retentionPolicyV18Flux": "",
-    "org": "fiapiot",
-    "bucket": "sensores",
-    "x": 1120,
-    "y": 160,
-    "wires": []
   }
 ]
