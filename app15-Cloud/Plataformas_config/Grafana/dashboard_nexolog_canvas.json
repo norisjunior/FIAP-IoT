@@ -53,6 +53,70 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "temp"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 25
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "umid"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 60
+                    },
+                    {
+                      "color": "red",
+                      "value": 70
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "dist"
             },
             "properties": [
@@ -66,11 +130,19 @@
                       "value": null
                     },
                     {
+                      "color": "#EAB839",
+                      "value": 20
+                    },
+                    {
                       "color": "red",
                       "value": 25
                     }
                   ]
                 }
+              },
+              {
+                "id": "decimals",
+                "value": 1
               }
             ]
           },
@@ -90,11 +162,19 @@
                       "value": null
                     },
                     {
+                      "color": "#EAB839",
+                      "value": 1.5
+                    },
+                    {
                       "color": "red",
                       "value": 3
                     }
                   ]
                 }
+              },
+              {
+                "id": "decimals",
+                "value": 2
               }
             ]
           }
@@ -110,92 +190,13 @@
           "name": "Element 1",
           "elements": [
             {
-              "name": "Rotulo Tampa",
-              "type": "text",
-              "config": {
-                "align": "center",
-                "valign": "middle",
-                "color": {
-                  "fixed": "#E0E0E0"
-                },
-                "size": 13,
-                "text": {
-                  "fixed": "DISTÂNCIA ATÉ A TAMPA (cm)",
-                  "mode": "fixed"
-                }
-              },
-              "background": {
-                "color": {
-                  "fixed": "transparent"
-                }
-              },
-              "border": {
-                "color": {
-                  "fixed": "transparent"
-                },
-                "width": 0
-              },
-              "constraint": {
-                "horizontal": "left",
-                "vertical": "top"
-              },
-              "placement": {
-                "left": 70,
-                "top": 40,
-                "width": 150,
-                "height": 20,
-                "rotation": 0
-              },
-              "links": []
-            },
-            {
-              "name": "Tampa",
-              "type": "metric-value",
-              "config": {
-                "align": "center",
-                "valign": "middle",
-                "color": {
-                  "fixed": "#FFFFFF"
-                },
-                "size": 26,
-                "text": {
-                  "field": "dist",
-                  "fixed": "",
-                  "mode": "field"
-                }
-              },
-              "background": {
-                "color": {
-                  "fixed": "#00000099"
-                }
-              },
-              "border": {
-                "color": {
-                  "fixed": "red"
-                },
-                "width": 3
-              },
-              "constraint": {
-                "horizontal": "left",
-                "vertical": "top"
-              },
-              "placement": {
-                "left": 70,
-                "top": 62,
-                "width": 150,
-                "height": 56,
-                "rotation": 0
-              },
-              "links": []
-            },
-            {
               "name": "Rotulo Temperatura",
               "type": "text",
               "config": {
                 "align": "center",
                 "valign": "middle",
                 "color": {
-                  "fixed": "#E0E0E0"
+                  "fixed": "#E8E8E8"
                 },
                 "size": 13,
                 "text": {
@@ -219,13 +220,14 @@
                 "vertical": "top"
               },
               "placement": {
-                "left": 70,
-                "top": 190,
-                "width": 150,
-                "height": 20,
+                "left": 700,
+                "top": 88,
+                "width": 230,
+                "height": 22,
                 "rotation": 0
               },
-              "links": []
+              "links": [],
+              "connections": []
             },
             {
               "name": "Temperatura",
@@ -236,7 +238,7 @@
                 "color": {
                   "fixed": "#FFFFFF"
                 },
-                "size": 26,
+                "size": 30,
                 "text": {
                   "field": "temp",
                   "fixed": "",
@@ -245,12 +247,13 @@
               },
               "background": {
                 "color": {
-                  "fixed": "#00000099"
+                  "fixed": "#0D0D0DCC"
                 }
               },
               "border": {
                 "color": {
-                  "fixed": "blue"
+                  "field": "temp",
+                  "fixed": "#D9D9D9"
                 },
                 "width": 3
               },
@@ -259,13 +262,14 @@
                 "vertical": "top"
               },
               "placement": {
-                "left": 70,
-                "top": 212,
-                "width": 150,
-                "height": 56,
+                "left": 700,
+                "top": 110,
+                "width": 230,
+                "height": 62,
                 "rotation": 0
               },
-              "links": []
+              "links": [],
+              "connections": []
             },
             {
               "name": "Rotulo Umidade",
@@ -274,7 +278,7 @@
                 "align": "center",
                 "valign": "middle",
                 "color": {
-                  "fixed": "#E0E0E0"
+                  "fixed": "#E8E8E8"
                 },
                 "size": 13,
                 "text": {
@@ -298,13 +302,14 @@
                 "vertical": "top"
               },
               "placement": {
-                "left": 70,
-                "top": 320,
-                "width": 150,
-                "height": 20,
+                "left": 958,
+                "top": 108,
+                "width": 190,
+                "height": 22,
                 "rotation": 0
               },
-              "links": []
+              "links": [],
+              "connections": []
             },
             {
               "name": "Umidade",
@@ -315,7 +320,7 @@
                 "color": {
                   "fixed": "#FFFFFF"
                 },
-                "size": 26,
+                "size": 30,
                 "text": {
                   "field": "umid",
                   "fixed": "",
@@ -324,12 +329,13 @@
               },
               "background": {
                 "color": {
-                  "fixed": "#00000099"
+                  "fixed": "#0D0D0DCC"
                 }
               },
               "border": {
                 "color": {
-                  "fixed": "blue"
+                  "field": "umid",
+                  "fixed": "#D9D9D9"
                 },
                 "width": 3
               },
@@ -338,22 +344,105 @@
                 "vertical": "top"
               },
               "placement": {
-                "left": 70,
-                "top": 342,
-                "width": 150,
-                "height": 56,
+                "left": 958,
+                "top": 130,
+                "width": 190,
+                "height": 62,
                 "rotation": 0
               },
-              "links": []
+              "links": [],
+              "connections": []
             },
             {
-              "name": "Rotulo Movimentacao",
+              "name": "Rotulo Distância",
               "type": "text",
               "config": {
                 "align": "center",
                 "valign": "middle",
                 "color": {
-                  "fixed": "#E0E0E0"
+                  "fixed": "#E8E8E8"
+                },
+                "size": 13,
+                "text": {
+                  "fixed": "DISTÂNCIA ATÉ A TAMPA (cm)",
+                  "mode": "fixed"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "transparent"
+                },
+                "width": 0
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 1008,
+                "top": 275,
+                "width": 236,
+                "height": 22,
+                "rotation": 0
+              },
+              "links": [],
+              "connections": []
+            },
+            {
+              "name": "Distância",
+              "type": "metric-value",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "size": 30,
+                "text": {
+                  "field": "dist",
+                  "fixed": "",
+                  "mode": "field"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "#0D0D0DCC"
+                }
+              },
+              "border": {
+                "color": {
+                  "field": "dist",
+                  "fixed": "#D9D9D9"
+                },
+                "width": 3
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 1008,
+                "top": 297,
+                "width": 236,
+                "height": 62,
+                "rotation": 0
+              },
+              "links": [],
+              "connections": []
+            },
+            {
+              "name": "Rotulo Movimentação",
+              "type": "text",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#E8E8E8"
                 },
                 "size": 13,
                 "text": {
@@ -377,16 +466,17 @@
                 "vertical": "top"
               },
               "placement": {
-                "left": 70,
-                "top": 450,
-                "width": 150,
-                "height": 20,
+                "left": 1040,
+                "top": 440,
+                "width": 275,
+                "height": 22,
                 "rotation": 0
               },
-              "links": []
+              "links": [],
+              "connections": []
             },
             {
-              "name": "Movimentacao",
+              "name": "Movimentação",
               "type": "metric-value",
               "config": {
                 "align": "center",
@@ -394,7 +484,7 @@
                 "color": {
                   "fixed": "#FFFFFF"
                 },
-                "size": 26,
+                "size": 30,
                 "text": {
                   "field": "movimentacao",
                   "fixed": "",
@@ -403,12 +493,13 @@
               },
               "background": {
                 "color": {
-                  "fixed": "#00000099"
+                  "fixed": "#0D0D0DCC"
                 }
               },
               "border": {
                 "color": {
-                  "fixed": "orange"
+                  "field": "movimentacao",
+                  "fixed": "#D9D9D9"
                 },
                 "width": 3
               },
@@ -417,13 +508,200 @@
                 "vertical": "top"
               },
               "placement": {
-                "left": 70,
-                "top": 472,
-                "width": 150,
-                "height": 56,
+                "left": 1040,
+                "top": 462,
+                "width": 275,
+                "height": 62,
                 "rotation": 0
               },
-              "links": []
+              "links": [],
+              "connections": []
+            },
+            {
+              "name": "Ponto da tampa",
+              "type": "ellipse",
+              "config": {
+                "align": "center",
+                "valign": "middle"
+              },
+              "background": {
+                "color": {
+                  "field": "dist",
+                  "fixed": "#D9D9D9"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "width": 2
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 812,
+                "top": 232,
+                "width": 18,
+                "height": 18,
+                "rotation": 0
+              },
+              "links": [],
+              "connections": [
+                {
+                  "color": {
+                    "field": "dist",
+                    "fixed": "#D9D9D9"
+                  },
+                  "size": {
+                    "fixed": 3,
+                    "max": 10,
+                    "min": 1
+                  },
+                  "path": "straight",
+                  "source": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "target": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "targetName": "Distância"
+                }
+              ]
+            },
+            {
+              "name": "Ponto da base",
+              "type": "ellipse",
+              "config": {
+                "align": "center",
+                "valign": "middle"
+              },
+              "background": {
+                "color": {
+                  "field": "movimentacao",
+                  "fixed": "#D9D9D9"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "width": 2
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 812,
+                "top": 486,
+                "width": 18,
+                "height": 18,
+                "rotation": 0
+              },
+              "links": [],
+              "connections": [
+                {
+                  "color": {
+                    "field": "movimentacao",
+                    "fixed": "#D9D9D9"
+                  },
+                  "size": {
+                    "fixed": 3,
+                    "max": 10,
+                    "min": 1
+                  },
+                  "path": "straight",
+                  "source": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "target": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "targetName": "Movimentação"
+                }
+              ]
+            },
+            {
+              "name": "Ponto do ambiente",
+              "type": "ellipse",
+              "config": {
+                "align": "center",
+                "valign": "middle"
+              },
+              "background": {
+                "color": {
+                  "field": "temp",
+                  "fixed": "#D9D9D9"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "width": 2
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 360,
+                "top": 96,
+                "width": 18,
+                "height": 18,
+                "rotation": 0
+              },
+              "links": [],
+              "connections": [
+                {
+                  "color": {
+                    "field": "temp",
+                    "fixed": "#D9D9D9"
+                  },
+                  "size": {
+                    "fixed": 3,
+                    "max": 10,
+                    "min": 1
+                  },
+                  "path": "straight",
+                  "source": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "target": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "targetName": "Temperatura"
+                },
+                {
+                  "color": {
+                    "field": "umid",
+                    "fixed": "#D9D9D9"
+                  },
+                  "size": {
+                    "fixed": 3,
+                    "max": 10,
+                    "min": 1
+                  },
+                  "path": "straight",
+                  "source": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "target": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "targetName": "Umidade"
+                }
+              ]
             }
           ],
           "background": {
@@ -439,7 +717,7 @@
           },
           "border": {
             "color": {
-              "fixed": "dark-green"
+              "fixed": "transparent"
             }
           },
           "constraint": {

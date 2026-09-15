@@ -77,14 +77,38 @@ sudo cp bag.png /usr/share/grafana/public/img/
 Use uma foto da sua bag, de frente, fundo limpo. Sem a imagem o painel abre com fundo
 escuro e os valores flutuando — funciona, mas perde a graça.
 
-Os oito elementos são quatro pares de rótulo + valor. Para mover qualquer um:
-**Edit** no painel, clique no elemento, arraste. É edição no próprio canvas, sem JSON.
-Ajuste as posições à sua foto — as que vieram no arquivo são um ponto de partida, não
-vão cair certo em cima da sua imagem.
+São onze elementos: quatro pares de rótulo + valor, e três **pontos de origem** sobre a
+foto. De cada ponto sai uma **seta** até a medição correspondente:
 
-Cores: tampa e movimentação ficam vermelhas sozinhas quando passam de 25 cm e 3 m/s²,
-pelos thresholds do painel. Temperatura e umidade ficam brancas — são informação, não
-alarme.
+| Ponto | Onde fica | Puxa para |
+|---|---|---|
+| Ponto da tampa | no alto da bag | Distância |
+| Ponto da base | embaixo da bag | Movimentação |
+| Ponto do ambiente | no céu | Temperatura e Umidade |
+
+A posição conta a história. Tampa e movimentação são da bag — na prática os dois
+sensores estão na tampa, mas separar a origem deixa óbvio que são duas medidas
+diferentes. Temperatura e umidade saem do céu porque são do ambiente, não da caixa.
+
+**A seta muda de cor com o valor.** Verde dentro do limite, amarelo na faixa de
+atenção, vermelho fora — e a borda da caixa acompanha, porque as duas leem o mesmo
+campo. Abra a tampa no Wokwi e a seta que vai até "Distância" fica vermelha antes de
+você ler o número.
+
+| Campo | Verde | Amarelo | Vermelho |
+|---|---|---|---|
+| temp | < 25 °C | 25 a 30 | > 30 |
+| umid | < 60 % | 60 a 70 | > 70 |
+| dist | < 20 cm | 20 a 25 | > 25 |
+| movimentacao | < 1,5 m/s² | 1,5 a 3 | > 3 |
+
+Para mover qualquer elemento: **Edit** no painel, clique, arraste. A seta acompanha
+sozinha. As posições que vieram no arquivo são um ponto de partida — ajuste os três
+pontos à **sua** foto, que é onde a diferença aparece.
+
+> Depois de ajustar, **exporte de volta**: Dashboard settings > JSON Model, ou
+> Export > Save to file, e substitua o arquivo aqui. Senão o repositório fica com o
+> layout antigo.
 
 A consulta é uma só, com `pivot()` no fim. Sem o pivot, o Flux devolve uma linha por
 campo e o canvas não acha `temp` e `dist` na mesma tabela; com ele, os quatro viram
