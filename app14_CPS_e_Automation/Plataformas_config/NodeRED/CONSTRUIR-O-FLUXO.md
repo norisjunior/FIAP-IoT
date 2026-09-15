@@ -134,22 +134,25 @@ O **token nunca vem no arquivo**: o Node-RED guarda token como credencial e a
 exportação sempre remove. Isso é proposital — é o que permite compartilhar um fluxo
 sem vazar acesso ao seu banco.
 
-O nó `Campos e tags` monta o que o InfluxDB espera: `[campos, tags]`.
+O nó `Campos e tags` existe por **um** motivo: transformar o objeto em `[campos, tags]`,
+que é o formato em que o nó do InfluxDB separa uma coisa da outra.
 
 ```javascript
 const p = msg.payload;
-const campos = {};
-// Campo sem leitura chega como null e nao vai para o banco: fica um buraco na serie.
-for (const nome of ["temp", "umid", "dist", "accel_x", "accel_y", "accel_z", "movimentacao"]) {
-    if (typeof p[nome] === "number") campos[nome] = p[nome];
-}
-msg.payload = [campos, {device: p.device}];
+// [campos, tags] e o formato que o no do InfluxDB espera.
+// device vai como TAG: e por ela que se filtra. O resto vai como field.
+msg.payload = [p, {device: p.device}];
 return msg;
 ```
 
-`device` vai como **tag** e as sete medições como **fields**. Tag é para filtrar e
-agrupar (de qual caixa?), field é o número que você vai somar ou tirar média. Nada de
-limiar aqui: o banco guarda tudo, e a pergunta se faz depois.
+Sem essa linha, dava para ligar o `json` direto no InfluxDB — e funcionaria. Só que
+`device` entraria como **field**, um texto qualquer no meio dos números. Como **tag** ele
+é indexado: filtrar por caixa fica barato, e `group by device` passa a existir. É a
+única coisa que essa função faz.
+
+Repare no que ela **não** faz: não filtra, não arredonda, não decide nada. Leitura que
+falhou chega como `null` e segue assim. O banco guarda o que veio, e a pergunta se faz
+depois — dataset de verdade tem buraco, e lidar com isso é parte do trabalho.
 
 **Funcionou?** No InfluxDB, Data Explorer:
 
@@ -163,5 +166,12 @@ limiar aqui: o banco guarda tudo, e a pergunta se faz depois.
 | `bucket not found` | o bucket é o **seu**, não o do colega; confira a organização também |
 | `getaddrinfo ENOTFOUND` | a URL tem a região da sua conta, e não a do exemplo |
 | Grava, mas falta um campo | aquele sensor mandou `null` naquele instante — o buraco é proposital |
+| A escrita inteira falha com `null` | veja a nota abaixo: talvez precise voltar a filtrar |
+
+> **Confira na primeira aula.** Desligue o DHT no Wokwi e veja o que acontece com
+> `temp: null`. Se o ponto for gravado sem o campo `temp`, é exatamente o que
+> queremos: buraco numa coluna só. Se a escrita inteira for recusada, a linha toda
+> se perde — aí vale voltar a montar `campos` só com o que é número, como estava
+> antes, para o resto da leitura sobreviver.
 
 Pronto: falta [o aviso no n8n](../n8n/CONSTRUIR-O-FLUXO.md).

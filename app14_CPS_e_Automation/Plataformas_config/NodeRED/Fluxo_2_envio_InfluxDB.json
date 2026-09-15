@@ -76,7 +76,7 @@
     "type": "function",
     "z": "172491b9e0590116",
     "name": "Campos e tags",
-    "func": "const p = msg.payload;\nconst campos = {};\n// Campo sem leitura chega como null e nao vai para o banco: fica um buraco na serie.\nfor (const nome of [\"temp\", \"umid\", \"dist\", \"accel_x\", \"accel_y\", \"accel_z\", \"movimentacao\"]) {\n    if (typeof p[nome] === \"number\") campos[nome] = p[nome];\n}\nmsg.payload = [campos, {device: p.device}];\nreturn msg;",
+    "func": "const p = msg.payload;\n// [campos, tags] e o formato que o no do InfluxDB espera.\n// device vai como TAG: e por ela que se filtra. O resto vai como field.\nmsg.payload = [p, {device: p.device}];\nreturn msg;",
     "outputs": 1,
     "timeout": 0,
     "noerr": 0,

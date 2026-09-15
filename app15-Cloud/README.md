@@ -108,7 +108,13 @@ Agora sacuda o MPU com a tampa ainda aberta. **O LED acende**, no Wokwi e no das
 
 O dispositivo não sabe o que é 25 cm, nem 3 m/s², nem que são duas condições. Ele mede, publica e obedece. Para fazer essa conta a bordo, ele precisaria guardar as duas medidas, conhecer os dois limites e ser recompilado a cada ajuste — na plataforma são dois nós ligados um no outro, e o limite muda com um duplo clique.
 
-O LED do dashboard é um **princípio de gêmeo digital**: a tela mostra o estado do equipamento sem ter o equipamento na frente. Mas repare no limite — ele espelha o comando que a plataforma **mandou**, não o que o dispositivo **fez**. Se o ESP32 estiver desligado, o widget acende do mesmo jeito. Para o gêmeo dizer a verdade, o dispositivo teria que publicar de volta o que executou, e aí o dashboard leria essa confirmação em vez do comando.
+O LED do dashboard é um **princípio de gêmeo digital**: a tela mostra o estado do equipamento sem ter o equipamento na frente. Mas repare no limite — ele espelha o comando que a plataforma **mandou**, não o que o dispositivo **fez**. Se o ESP32 estiver desligado, o widget acende do mesmo jeito.
+
+### O que falta: confirmação do dispositivo
+
+Para o gêmeo dizer a verdade, faltaria um **acknowledgment**: depois de acender o LED, o ESP32 publicaria em `FIAPIoT/nexolog/equipe01/estado` algo como `{"led":"ON"}`, e o dashboard leria esse tópico em vez do comando. Aí o widget passaria a significar "o LED **está** aceso" em vez de "mandei acender".
+
+**Isso não está implementado nesta versão.** Seria um tópico a mais, um `publish` no fim da callback e um `mqtt in` no dashboard. Fica como exercício — e como a diferença entre ordenar e confirmar, que é onde gêmeo digital deixa de ser enfeite.
 
 Se a comunicação cair, o LED mantém o último comando que recebeu. O ESP32 continua coletando, mas não decide sobre alertas.
 
