@@ -40,7 +40,7 @@ Clique em **Listen for test event**.
 - [ ] `message` abre em campos, não é um texto entre aspas
 - [ ] Chega sozinho, sem você mexer em nada
 
-Os campos ficam **dentro** de `message`. Por isso toda expressão daqui para a frente
+Os campos ficam **dentro** de `message` — por isso toda expressão daqui para a frente
 começa com `$json.message`.
 
 > **Não ligue `Only Message`.** Ela promete entregar só o conteúdo, mas embrulha num
@@ -105,8 +105,8 @@ Trocando as duas últimas linhas em cada um:
 | Chat ID | o seu — mande um "oi" para o bot e pegue em `api.telegram.org/bot<TOKEN>/getUpdates` |
 | Text | `{{ $json.texto }}` (com o botão de expressão ligado) |
 
-Um nó só, uma credencial só, e ainda assim uma mensagem diferente por variável. O que
-muda é o caminho até ele, não o envio.
+Um nó só, uma credencial só, e ainda assim uma mensagem por variável: o que muda é o
+caminho até ele, não o envio.
 
 **Save** e **Active**.
 

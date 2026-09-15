@@ -114,12 +114,11 @@ com o seu.
 
 ## O segundo fluxo: guardar no InfluxDB
 
-O gráfico da tela mostra os últimos cinco minutos e começa do zero a cada F5. Para
-perguntar "como foi a entrega de ontem", o dado precisa estar num banco.
+O gráfico da tela guarda cinco minutos e zera no F5. Para perguntar "como foi a
+entrega de ontem", o dado precisa estar num banco.
 
 Importe [Fluxo_2_envio_InfluxDB.json](Fluxo_2_envio_InfluxDB.json) numa **aba nova**.
-Ele assina o mesmo tópico `dados` — os dois fluxos rodam juntos, e nenhum atrapalha o
-outro. É a mesma ideia do n8n: um tópico MQTT entrega para todo mundo que assinar.
+Ele assina o mesmo tópico `dados`: os dois fluxos rodam juntos e nenhum sabe do outro.
 
 Usamos o **InfluxDB Cloud**. Quatro campos para preencher, e nenhum vem pronto:
 

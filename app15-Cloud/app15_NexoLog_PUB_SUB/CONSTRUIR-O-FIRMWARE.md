@@ -1,20 +1,13 @@
 # Construir o firmware do app15
 
-**O app14 não assina nada.** Ele só publica: não tem `setCallback`, não tem
-`subscribe`, não tem tópico de comando. O `mqttClient.loop()` que já está lá serve
-para manter a conexão viva — é ele que vai entregar as mensagens à callback, mas
-sem assinatura nenhuma mensagem chega.
+**O app14 não assina nada** — não tem `setCallback`, `subscribe` nem tópico de comando,
+e por isso também não tem LED. Aqui entra o caminho de volta: a nuvem manda
+`{"alerta":"ON"}` e o dispositivo acende.
 
-Este firmware é o do app14 mais um caminho de volta. E o que volta é JSON, igual ao
-que sobe: a nuvem manda `{"alerta":"ON"}` e o dispositivo acende o LED.
-
-O app14 não tem LED — ele só mede e publica, e um LED ali seria enfeite. É aqui que o
-LED ganha função, porque agora existe alguém mandando acender.
-
-**Repare em quem decide.** O alerta só dispara quando a tampa está aberta **e** a caixa
-está sacudindo. Para o ESP32 fazer essa conta sozinho, ele precisaria guardar as duas
-medidas, conhecer os dois limites e ser recompilado a cada ajuste. Na plataforma, são
-dois nós ligados um no outro. O dispositivo recebe a conclusão pronta.
+**Repare em quem decide.** O alerta só dispara com a tampa aberta **e** a caixa
+sacudindo. Para o ESP32 fazer essa conta, precisaria guardar as duas medidas, conhecer
+os dois limites e ser recompilado a cada ajuste. Na plataforma são dois nós ligados um
+no outro, e o dispositivo recebe a conclusão pronta.
 
 Três iterações. Cada uma compila e roda.
 
@@ -49,8 +42,7 @@ apaga um widget lá.
 
 ## Iteração 1 — Um LED
 
-Um LED só, para uma decisão só. Duas linhas de `pinMode` e `digitalWrite` — não vale
-criar um módulo `.hpp` para isso, e o foco da aula é o JSON que chega.
+Um LED só, para uma decisão só. Não vale um módulo `.hpp` para duas linhas.
 
 **a) Um pino**, junto dos outros:
 
@@ -76,7 +68,7 @@ cátodo no GND. O `diagram.json` deste projeto já vem com ele.
 **Funcionou?**
 
 - [ ] Pisca uma vez ao ligar, meio segundo
-- [ ] Depois disso ficam apagados, e a publicação segue normal
+- [ ] Depois disso fica apagado, e a publicação segue normal
 
 | Deu errado | Onde olhar |
 |---|---|
@@ -96,8 +88,8 @@ a placa reiniciou.
 #define MQTT_SUB_TOPIC "FIAPIoT/nexolog/equipe01/cmd"
 ```
 
-Tópico diferente do de dados: o ESP32 publica em `dados` e escuta em `cmd`. Assinar
-o próprio tópico de publicação faz o dispositivo receber o que ele mesmo mandou.
+Tópico diferente do de dados: publica em `dados`, escuta em `cmd`. Assinar o próprio
+tópico de publicação faz o dispositivo receber o que ele mesmo mandou.
 
 **b) O protótipo**, junto dos demais:
 
@@ -126,6 +118,7 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
     return;
   }
 
+  // A acao entra na iteracao 3.
 }
 ```
 
@@ -199,10 +192,9 @@ o `== 0`.
 Qualquer `alerta` que não seja exatamente `ON` apaga. É uma escolha: em dúvida, o painel
 fica apagado em vez de mentir que está tudo bem.
 
-A callback inteira, pronta, cabe em quinze linhas. Repare no que **não** está nela:
-nenhum número, nenhum limite, nenhum `if` sobre distância ou movimentação. O firmware
-não sabe o que é 25 cm nem 3 m/s², e nem sabe que são duas condições. Ele recebe a
-conclusão e obedece.
+Repare no que **não** está na callback: nenhum número, nenhum limite, nenhum `if` sobre
+distância ou movimentação. O firmware não sabe o que é 25 cm nem 3 m/s², e nem sabe que
+são duas condições. Ele recebe a conclusão e obedece.
 
 **Funcionou?**
 

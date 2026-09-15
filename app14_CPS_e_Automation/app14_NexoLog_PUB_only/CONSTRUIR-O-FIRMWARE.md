@@ -64,12 +64,8 @@ temp,umid,dist,movimentacao
 24.0,40.1,10.0,0.01
 ```
 
-A linha de título sai uma vez, no `setup()`. Depois só números, na ordem dela — é assim
-que um arquivo de dados se parece, e é o que você abre numa planilha ou lê com pandas.
-
-O `Serial.println` do título já termina em `\r\n`; nos `printf` o `\r\n` vai escrito à
-mão. Windows espera esse par, e é ele que faz cada leitura virar uma linha de verdade
-no arquivo salvo.
+Título uma vez, no `setup()`; depois só números, na ordem dele. O `println` já termina
+em `\r\n`; nos `printf` o `\r\n` vai escrito à mão, que é o que o Windows espera.
 
 - [ ] Temperatura e umidade com número, não `nan`
 - [ ] Distância muda ao mexer no slider do HC-SR04 no Wokwi
@@ -204,7 +200,7 @@ O `loop()` está com duas responsabilidades misturadas: medir/publicar e cuidar 
 conexão. Nada de novo aqui — só mover código. Compile antes e depois: a saída no
 Serial tem que ser idêntica.
 
-**a) Um protótipo**, junto dos outros, antes do `setup()`:
+**a) Um protótipo**, antes do `setup()`:
 
 ```cpp
 bool enviarDadosColetados();
@@ -268,16 +264,14 @@ void loop() {
 | `'enviarDadosColetados' was not declared in this scope` | faltou o protótipo do (a) |
 | `'amb' was not declared` | sobrou no `loop()` uma linha que era para ter ido junto |
 
-Compare com o `src/app14-NexoLog.ino`, tirando a iteração 4.
+Compare com o `src/app14-NexoLog-PUBonly.ino`, tirando a iteração 4.
 
 ---
 
 ## Iteração 4 — Um relógio por sensor
 
-Até aqui tudo acontece junto, a cada 2,5 s: lê os três sensores e publica. O problema
-aparece quando você sacode o MPU. O acelerômetro é lido **uma vez** por envio, cerca
-de 1 ms a cada 2500 ms. Sacudir a caixa por dois segundos inteiros e ver `0.00` no
-Serial é o normal: a amostra caiu fora do movimento.
+Sacuda o MPU por dois segundos e veja `0.00` no Serial. É o normal: o acelerômetro é
+lido **uma vez** por envio, 1 ms a cada 2500 ms, e a amostra cai fora do movimento.
 
 Cada sensor tem um ritmo próprio, e nenhum deles é o ritmo do envio:
 
@@ -352,30 +346,41 @@ que mediam os sensores, e troque `amb.` por `ambiente.`, `dist.` por `distancia.
 bool enviarDadosColetados() {
   Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
                 ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
+
+  JsonDocument doc;
+  doc["device"] = MQTT_CLIENT_ID;
+  doc["temp"] = ambiente.temp;
+  doc["umid"] = ambiente.umid;
+  doc["dist"] = distancia.cm;
+  doc["accel_x"] = accel.accelX;
+  doc["accel_y"] = accel.accelY;
+  doc["accel_z"] = accel.accelZ;
+  doc["movimentacao"] = movimentacaoMax;
 ```
 
-Trocando também `doc["dist"] = dist.cm;` por `doc["dist"] = distancia.cm;`.
+São seis linhas trocadas: as quatro medições apagadas no topo, e `amb.`/`dist.`/
+`movimentacao` virando `ambiente.`/`distancia.`/`movimentacaoMax` no `printf` e no
+`doc[]`. O `accel` não muda de nome — virou global, mas continua se chamando `accel`.
 
-Repare no que sobrou: a função virou **só formatar e publicar**. Medir é assunto dos
-três relógios do `loop()`, cada um no seu ritmo; a função pega o que eles deixaram
-guardado.
+O resto da função não muda. Ela virou **só formatar e publicar** — medir é assunto dos
+três relógios. O payload continua com os mesmos oito campos, mas `movimentacao` passa a
+ser o **pico do último segundo**, e `accel_x/y/z` a última amostra do MPU.
 
-O resto da função não muda. O payload continua com os mesmos oito campos: `accel_x/y/z`
-passam a ser a última amostra do MPU, e `movimentacao` passa a ser o **pico do último
-segundo**.
+No arquivo pronto, `conectarWiFi()` e `conectarMQTT()` também aparecem declaradas no
+bloco de protótipos. É só arrumação — elas já estão definidas antes de quem as chama.
 
 **Funcionou?**
 
 - [ ] O Serial passa a sair uma vez por segundo
-- [ ] Parado, `Movim` fica perto de 0,00 e a temperatura repete por dois envios seguidos
-- [ ] Sacuda o MPU: `Movim` sobe e o valor daquele segundo é o mais forte do sacolejo
+- [ ] Parado, a última coluna fica perto de 0,00 e a temperatura repete por dois envios
+- [ ] Sacuda o MPU: a última coluna sobe e mostra o pico daquele segundo
 - [ ] Pare de sacudir: no envio seguinte já volta para perto de 0,00
 
 | Deu errado | Onde olhar |
 |---|---|
-| `Movim` cresce e nunca cai | faltou o `movimentacaoMax = NAN;` do (c) |
+| A última coluna cresce e nunca cai | faltou o `movimentacaoMax = NAN;` do (c) |
 | Temperatura sempre `nan` | `INTERVALO_DHT` abaixo de 2000: o sensor recusa e nunca preenche o cache |
-| `Movim` continua sorteado | o `medirAccel()` ficou dentro de `enviarDadosColetados()`, em vez do relógio do MPU |
+| A última coluna continua sorteada | o `medirAccel()` ficou dentro de `enviarDadosColetados()`, em vez do relógio do MPU |
 | Publica muito mais rápido que 1 s | tem dois `tempoAnterior = millis()` no `loop()` |
 | `dist` sempre `nan` | o `medirDistancia()` ficou dentro da função de envio e some com a variável guardada |
 
@@ -383,7 +388,7 @@ Anote quanto marca com a caixa **parada**. O FastIMU está sem calibração, ent
 de fábrica vira um piso constante — e é a partir desse piso que você escolhe o limiar
 lá no n8n.
 
-Esse é o `src/app14-NexoLog.ino` pronto. Compare.
+Esse é o `src/app14-NexoLog-PUBonly.ino` pronto. Compare.
 
 ---
 
