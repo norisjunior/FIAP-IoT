@@ -8,7 +8,7 @@ Duas iterações. Cada uma roda.
 Aqui o Node-RED só **mostra**. Quem decide se algo está errado e avisa é o
 [n8n](../n8n/CONSTRUIR-O-FLUXO.md), que assina o mesmo tópico.
 
-Comece com uma aba vazia. Firmware publicando: [CONSTRUIR-O-FIRMWARE.md](../../app14_NexoLog/CONSTRUIR-O-FIRMWARE.md).
+Comece com uma aba vazia. Firmware publicando: [CONSTRUIR-O-FIRMWARE.md](../../app14_NexoLog_PUB_only/CONSTRUIR-O-FIRMWARE.md).
 
 `http://localhost:1880`
 

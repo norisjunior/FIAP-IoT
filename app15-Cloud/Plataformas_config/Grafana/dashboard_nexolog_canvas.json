@@ -1,0 +1,505 @@
+{
+  "__inputs": [
+    {
+      "description": "",
+      "label": "InfluxDB",
+      "name": "DS_INFLUXDB",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB",
+      "type": "datasource"
+    }
+  ],
+  "__requires": [],
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "canvas",
+      "title": "A bag por dentro",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "gridPos": {
+        "h": 22,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dist"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 25
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "movimentacao"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "inlineEditing": true,
+        "showAdvancedTypes": true,
+        "panZoom": false,
+        "infinitePan": false,
+        "root": {
+          "type": "frame",
+          "name": "Element 1",
+          "elements": [
+            {
+              "name": "Rotulo Tampa",
+              "type": "text",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#E0E0E0"
+                },
+                "size": 13,
+                "text": {
+                  "fixed": "DISTÂNCIA ATÉ A TAMPA (cm)",
+                  "mode": "fixed"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "transparent"
+                },
+                "width": 0
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 40,
+                "width": 150,
+                "height": 20,
+                "rotation": 0
+              },
+              "links": []
+            },
+            {
+              "name": "Tampa",
+              "type": "metric-value",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "size": 26,
+                "text": {
+                  "field": "dist",
+                  "fixed": "",
+                  "mode": "field"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "#00000099"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "red"
+                },
+                "width": 3
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 62,
+                "width": 150,
+                "height": 56,
+                "rotation": 0
+              },
+              "links": []
+            },
+            {
+              "name": "Rotulo Temperatura",
+              "type": "text",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#E0E0E0"
+                },
+                "size": 13,
+                "text": {
+                  "fixed": "TEMPERATURA (°C)",
+                  "mode": "fixed"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "transparent"
+                },
+                "width": 0
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 190,
+                "width": 150,
+                "height": 20,
+                "rotation": 0
+              },
+              "links": []
+            },
+            {
+              "name": "Temperatura",
+              "type": "metric-value",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "size": 26,
+                "text": {
+                  "field": "temp",
+                  "fixed": "",
+                  "mode": "field"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "#00000099"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "blue"
+                },
+                "width": 3
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 212,
+                "width": 150,
+                "height": 56,
+                "rotation": 0
+              },
+              "links": []
+            },
+            {
+              "name": "Rotulo Umidade",
+              "type": "text",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#E0E0E0"
+                },
+                "size": 13,
+                "text": {
+                  "fixed": "UMIDADE (%)",
+                  "mode": "fixed"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "transparent"
+                },
+                "width": 0
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 320,
+                "width": 150,
+                "height": 20,
+                "rotation": 0
+              },
+              "links": []
+            },
+            {
+              "name": "Umidade",
+              "type": "metric-value",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "size": 26,
+                "text": {
+                  "field": "umid",
+                  "fixed": "",
+                  "mode": "field"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "#00000099"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "blue"
+                },
+                "width": 3
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 342,
+                "width": 150,
+                "height": 56,
+                "rotation": 0
+              },
+              "links": []
+            },
+            {
+              "name": "Rotulo Movimentacao",
+              "type": "text",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#E0E0E0"
+                },
+                "size": 13,
+                "text": {
+                  "fixed": "MOVIMENTAÇÃO (m/s²)",
+                  "mode": "fixed"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "transparent"
+                },
+                "width": 0
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 450,
+                "width": 150,
+                "height": 20,
+                "rotation": 0
+              },
+              "links": []
+            },
+            {
+              "name": "Movimentacao",
+              "type": "metric-value",
+              "config": {
+                "align": "center",
+                "valign": "middle",
+                "color": {
+                  "fixed": "#FFFFFF"
+                },
+                "size": 26,
+                "text": {
+                  "field": "movimentacao",
+                  "fixed": "",
+                  "mode": "field"
+                }
+              },
+              "background": {
+                "color": {
+                  "fixed": "#00000099"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "orange"
+                },
+                "width": 3
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "placement": {
+                "left": 70,
+                "top": 472,
+                "width": 150,
+                "height": 56,
+                "rotation": 0
+              },
+              "links": []
+            }
+          ],
+          "background": {
+            "color": {
+              "fixed": "#111217"
+            },
+            "image": {
+              "field": "",
+              "fixed": "/public/img/bag.png",
+              "mode": "fixed"
+            },
+            "size": "contain"
+          },
+          "border": {
+            "color": {
+              "fixed": "dark-green"
+            }
+          },
+          "constraint": {
+            "horizontal": "left",
+            "vertical": "top"
+          },
+          "placement": {
+            "height": 100,
+            "left": 0,
+            "top": 0,
+            "width": 100,
+            "rotation": 0
+          }
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\" or r[\"_field\"] == \"umid\"\n                    or r[\"_field\"] == \"dist\" or r[\"_field\"] == \"movimentacao\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": [
+    "nexolog",
+    "iot",
+    "canvas"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "SEU_BUCKET",
+          "value": "SEU_BUCKET"
+        },
+        "description": "O nome do seu bucket no InfluxDB Cloud.",
+        "label": "Bucket",
+        "name": "bucket",
+        "options": [],
+        "query": "SEU_BUCKET",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "NexoLog — A bag (canvas)",
+  "uid": "nexolog-canvas",
+  "version": 1,
+  "weekStart": ""
+}

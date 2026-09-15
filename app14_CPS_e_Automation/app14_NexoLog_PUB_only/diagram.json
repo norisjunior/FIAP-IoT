@@ -5,13 +5,6 @@
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 4.84, "attrs": {} },
     { "type": "wokwi-mpu6050", "id": "imu1", "top": 167.02, "left": 155.92, "attrs": {} },
-    {
-      "type": "wokwi-led",
-      "id": "led1",
-      "top": 54,
-      "left": 167.4,
-      "attrs": { "color": "red", "flip": "1" }
-    },
     { "type": "wokwi-dht22", "id": "dht1", "top": -143.7, "left": 33, "attrs": {} },
     {
       "type": "wokwi-hc-sr04",
@@ -19,13 +12,6 @@
       "top": -142.5,
       "left": 159.1,
       "attrs": { "distance": "10" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rled",
-      "top": 90.35,
-      "left": 115.2,
-      "attrs": { "value": "220" }
     }
   ],
   "connections": [
@@ -41,9 +27,6 @@
     [ "imu1:SCL", "esp:23", "orange", [ "v0" ] ],
     [ "ultrasonic1:TRIG", "esp:19", "cyan", [ "v0" ] ],
     [ "ultrasonic1:ECHO", "esp:18", "blue", [ "v0" ] ],
-    [ "led1:A", "rled:2", "magenta", [ "v0" ] ],
-    [ "rled:1", "esp:21", "magenta", [ "v0" ] ],
-    [ "led1:C", "esp:GND.3", "black", [ "v0" ] ],
     [ "dht1:SDA", "esp:4", "green", [ "v38.4", "h67.3", "v153.6" ] ]
   ],
   "dependencies": {}

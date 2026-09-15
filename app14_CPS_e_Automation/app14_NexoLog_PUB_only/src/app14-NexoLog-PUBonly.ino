@@ -7,7 +7,6 @@
 #include "ESP32SensorsAmbiente.hpp"
 #include "ESP32SensorsDistancia.hpp"
 #include "ESP32SensorsAccel.hpp"
-#include "ESP32SensorsLED.hpp"
 
 /* ---- Config Hardware ---- */
 const uint8_t DHT_PIN = 4;
@@ -16,7 +15,6 @@ const uint8_t TRIG_PIN = 19;
 const uint8_t ECHO_PIN = 18;
 const uint8_t SCL_PIN = 23;
 const uint8_t SDA_PIN = 22;
-const uint8_t LED_PIN = 21;
 
 /* ---- Config Wi-Fi e MQTT ---- */
 const char* WIFI_SSID = "NorisIoT";
@@ -53,7 +51,6 @@ void setup() {
   ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
   ESP32Sensors::Distancia::inicializar(TRIG_PIN, ECHO_PIN);
   ESP32Sensors::Accel::inicializar(SCL_PIN, SDA_PIN);
-  ESP32Sensors::LED::inicializar(LED_PIN);
 
   conectarWiFi();
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);

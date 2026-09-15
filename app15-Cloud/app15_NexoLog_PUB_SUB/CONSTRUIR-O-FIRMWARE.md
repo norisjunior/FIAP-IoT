@@ -9,6 +9,9 @@ Este firmware é o do app14 mais um caminho de volta. E o que volta é JSON, igu
 que sobe: a nuvem manda `{"alvo":"tampa","estado":"ON"}`, o dispositivo lê com
 ArduinoJson e acende o LED daquele alvo.
 
+O app14 não tem LED — ele só mede e publica, e um LED ali seria enfeite. É aqui que o
+LED ganha função, porque agora existe alguém mandando acender.
+
 Três iterações. Cada uma compila e roda.
 
 1. Dois LEDs, testados no `setup()`.
@@ -19,8 +22,9 @@ Três iterações. Cada uma compila e roda.
 
 ## Iteração 0 — A base
 
-Copie `app14_NexoLog` inteiro e renomeie. Ele precisa estar rodando as quatro
-iterações de [CONSTRUIR-O-FIRMWARE.md do app14](../app14_CPS_e_Automation/app14_NexoLog/CONSTRUIR-O-FIRMWARE.md)
+Copie `app14_NexoLog_PUB_only` inteiro e renomeie para `app15_NexoLog_PUB_SUB`. Ele
+precisa estar rodando as quatro iterações de
+[CONSTRUIR-O-FIRMWARE.md do app14](../../app14_CPS_e_Automation/app14_NexoLog_PUB_only/CONSTRUIR-O-FIRMWARE.md)
 antes de continuar: publicando JSON a cada 1 s.
 
 Nada do que sobe muda. **Paridade com o app14:**
@@ -40,24 +44,19 @@ apaga um widget lá.
 
 ## Iteração 1 — Dois LEDs
 
-O `ESP32SensorsLED.hpp` cuida de um LED só. Aqui são dois, e o foco da aula é o
-JSON — então saem o include e a chamada do módulo, e os LEDs ficam no `.ino`.
+Dois LEDs, um por causa: um diz "a tampa abriu", o outro diz "sacudiu demais". São
+duas linhas de `pinMode` e `digitalWrite` — não vale criar um módulo `.hpp` para isso,
+e o foco da aula é o JSON que chega.
 
-**a) Tire** do topo do arquivo:
-
-```cpp
-#include "ESP32SensorsLED.hpp"
-```
-
-**b) Troque** a linha do `LED_PIN` por dois pinos. GPIO 17 estava livre desde que
-o ultrassônico mudou de lugar, e fica do mesmo lado da placa:
+**a) Dois pinos**, junto dos outros. GPIO 21 e 17 estão livres e ficam do mesmo lado
+da placa:
 
 ```cpp
 const uint8_t LED_TAMPA = 21;
 const uint8_t LED_MOVIMENTO = 17;
 ```
 
-**c) No `setup()`**, no lugar de `ESP32Sensors::LED::inicializar(LED_PIN);`:
+**b) No `setup()`**, junto dos `inicializar` dos sensores:
 
 ```cpp
   pinMode(LED_TAMPA, OUTPUT);
@@ -73,8 +72,8 @@ const uint8_t LED_MOVIMENTO = 17;
   digitalWrite(LED_MOVIMENTO, LOW);
 ```
 
-No Wokwi, acrescente o segundo LED com resistor de 220 Ω: ânodo no resistor, o
-resistor no GPIO 17, cátodo no GND.
+No Wokwi, cada LED leva um resistor de 220 Ω: ânodo no resistor, resistor no GPIO
+(21 e 17), cátodo no GND. O `diagram.json` deste projeto já vem com os dois.
 
 **Funcionou?**
 
@@ -83,8 +82,8 @@ resistor no GPIO 17, cátodo no GND.
 
 | Deu errado | Onde olhar |
 |---|---|
-| `'LED_PIN' was not declared` | sobrou uma referência ao pino antigo no `setup()` |
-| `ESP32Sensors::LED has not been declared` | tirou o include mas deixou a chamada |
+| `'LED_TAMPA' was not declared` | os dois `const uint8_t` têm que vir antes do `setup()` |
+| `ESP32SensorsLED.hpp: No such file` | o módulo de LED não existe mais: apague o include herdado do app14 |
 | Um pisca, o outro não | LED invertido: perna longa (ânodo) é a do resistor |
 
 Tire o teste de bancada depois de conferir, ou deixe — ele é um bom sinal de que
@@ -225,5 +224,5 @@ O firmware não publica confirmação: quem confere é o LED ou a Serial. Este �
 firmware final do app15 — o app16 roda o mesmo, só muda onde a plataforma está.
 
 Agora a outra ponta: os dois switches do
-[fluxo](Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json) é que decidem
-e publicam esses JSON. Veja o [README](README.md).
+[fluxo](../Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json) é que decidem
+e publicam esses JSON. Veja o [README](../README.md).

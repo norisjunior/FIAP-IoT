@@ -1,8 +1,8 @@
 # App15 — Recebimento de comandos MQTT
 
-Parta de uma cópia do projeto [app14_NexoLog](../app14_CPS_e_Automation/app14_NexoLog). Mantenha sensores, coleta, JSON e tópicos de dados. Acrescente somente a recepção de comandos: a nuvem decide e manda JSON, o dispositivo acende o LED do alvo.
+Parta de uma cópia do projeto [app14_NexoLog](../app14_CPS_e_Automation/app14_NexoLog_PUB_only). Mantenha sensores, coleta, JSON e tópicos de dados. Acrescente somente a recepção de comandos: a nuvem decide e manda JSON, o dispositivo acende o LED do alvo.
 
-Para montar em três iterações que rodam: [CONSTRUIR-O-FIRMWARE.md](CONSTRUIR-O-FIRMWARE.md). O roteiro abaixo é o mesmo conteúdo em forma de referência.
+Para montar em três iterações que rodam: [CONSTRUIR-O-FIRMWARE.md](app15_NexoLog_PUB_SUB/CONSTRUIR-O-FIRMWARE.md). O roteiro abaixo é o mesmo conteúdo em forma de referência.
 
 ## 1. Dois LEDs
 
@@ -100,6 +100,7 @@ A assinatura acontece novamente em cada reconexão. O `mqttClient.loop()` já es
 3. Configure o broker e faça Deploy. Dois switches decidem, um por LED: `Tampa: dist > 25 cm` e `Movimentação > 3 m/s²`. Cada um tem saída 1 (passou do limite) e saída 2 (`otherwise`), e cada saída vai a um nó Change que monta o JSON do comando. A decisão fica visível no canvas, sem código.
 4. Para histórico, use [Fluxo_2_envio_InfluxDB.json](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json). Mantenha apenas uma cópia do fluxo de gravação ativa.
 5. Para notificações, importe [fluxo_mqtt.json](Plataformas_config/n8n/fluxo_mqtt.json) no n8n. Ele assina `dados` direto do ESP32, em paralelo com o Node-RED. Configure credenciais MQTT, Telegram e `SEU_CHAT_ID`. Ative apenas um workflow por equipe.
+6. Para o histórico em tela, os dois dashboards do [Grafana](Plataformas_config/Grafana/README.md). Grafana local lendo o InfluxDB Cloud: um com gauges e séries, outro em **canvas**, com as medições posicionadas sobre a foto da bag.
 
 O dashboard mostra a condição calculada pela plataforma. A confirmação física são os LEDs ou a Serial; este firmware não publica confirmação de atuação.
 
