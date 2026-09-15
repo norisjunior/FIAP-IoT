@@ -111,8 +111,8 @@ checklist e tabela de "deu errado":
 - **Dashboards exportados do Grafana** trazem a fonte de dados e o measurement da
   instalação de origem (`nexologteste1`), e perderam a variável de bucket. Quem importar
   precisa corrigir os dois.
-- **Comportamento com `null` no InfluxDB não testado.** Falta saber se o campo nulo é
-  ignorado ou se derruba a linha inteira.
+- ~~Comportamento com `null` no InfluxDB não testado.~~ **Testado em 15/09:** o campo
+  nulo é pulado e o resto da linha é gravado. Só recusa se não sobrar field nenhum.
 
 ## Validação
 
