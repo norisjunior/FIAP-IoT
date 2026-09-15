@@ -138,12 +138,16 @@ O nó `Campos e tags` existe por **um** motivo: transformar o objeto em `[campos
 que é o formato em que o nó do InfluxDB separa uma coisa da outra.
 
 ```javascript
-const p = msg.payload;
-// [campos, tags] e o formato que o no do InfluxDB espera.
-// device vai como TAG: e por ela que se filtra. O resto vai como field.
-msg.payload = [p, {device: p.device}];
+// device sai dos campos e vira tag. Mandar nos dois lugares e conflito de schema.
+const {device, ...campos} = msg.payload;
+msg.payload = [campos, {device}];
 return msg;
 ```
+
+A primeira linha separa o `device` do resto: ele sai do objeto e as outras sete chaves
+ficam em `campos`. **Não dá para mandar o mesmo nome nos dois lugares** — o InfluxDB
+guarda o tipo de cada coluna, e uma coluna não pode ser field numa linha e tag na
+outra. Se acontecer, a escrita inteira é recusada com `batch schema conflict`.
 
 Sem essa linha, dava para ligar o `json` direto no InfluxDB — e funcionaria. Só que
 `device` entraria como **field**, um texto qualquer no meio dos números. Como **tag** ele
@@ -165,6 +169,7 @@ depois — dataset de verdade tem buraco, e lidar com isso é parte do trabalho.
 | `unauthorized` | token errado, ou colado com espaço no fim |
 | `bucket not found` | o bucket é o **seu**, não o do colega; confira a organização também |
 | `getaddrinfo ENOTFOUND` | a URL tem a região da sua conta, e não a do exemplo |
+| `batch schema conflict ... 'device'` | `device` está indo como field e como tag: ele tem que sair de `campos` |
 | Grava, mas falta um campo | aquele sensor mandou `null` naquele instante — o buraco é proposital |
 | A escrita inteira falha com `null` | veja a nota abaixo: talvez precise voltar a filtrar |
 

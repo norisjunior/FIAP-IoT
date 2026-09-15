@@ -76,7 +76,7 @@
     "type": "function",
     "z": "172491b9e0590117",
     "name": "Campos e tags",
-    "func": "const p = msg.payload;\n// [campos, tags] e o formato que o no do InfluxDB espera.\n// device vai como TAG: e por ela que se filtra. O resto vai como field.\nmsg.payload = [p, {device: p.device}];\nreturn msg;",
+    "func": "// device sai dos campos e vira tag. Mandar nos dois lugares e conflito de schema.\nconst {device, ...campos} = msg.payload;\nmsg.payload = [campos, {device}];\nreturn msg;",
     "outputs": 1,
     "timeout": 0,
     "noerr": 0,
