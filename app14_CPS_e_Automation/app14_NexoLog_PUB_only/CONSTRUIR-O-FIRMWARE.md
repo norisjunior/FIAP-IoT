@@ -7,7 +7,9 @@ Quatro iterações. Cada uma compila e roda.
 3. O `loop()` limpo.
 4. Um relógio por sensor.
 
-Comece com `src/app14-NexoLog.ino` vazio. Os quatro `.hpp` já estão em `src/`.
+Comece com `src/app14-NexoLog-PUBonly.ino` vazio. Os três `.hpp` dos sensores já
+estão em `src/`. Este firmware só mede e publica — o LED entra no app15, quando
+houver alguém mandando acender.
 
 ---
 
@@ -18,7 +20,6 @@ Comece com `src/app14-NexoLog.ino` vazio. Os quatro `.hpp` já estão em `src/`.
 #include "ESP32SensorsAmbiente.hpp"
 #include "ESP32SensorsDistancia.hpp"
 #include "ESP32SensorsAccel.hpp"
-#include "ESP32SensorsLED.hpp"
 
 const uint8_t DHT_PIN = 4;
 const uint8_t DHT_MODEL = DHT22;
@@ -26,7 +27,6 @@ const uint8_t TRIG_PIN = 19;
 const uint8_t ECHO_PIN = 18;
 const uint8_t SCL_PIN = 23;
 const uint8_t SDA_PIN = 22;
-const uint8_t LED_PIN = 21;
 
 const unsigned long INTERVALO_COLETA = 2500;
 unsigned long tempoAnterior = 0;
@@ -36,7 +36,9 @@ void setup() {
   ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
   ESP32Sensors::Distancia::inicializar(TRIG_PIN, ECHO_PIN);
   ESP32Sensors::Accel::inicializar(SCL_PIN, SDA_PIN);
-  ESP32Sensors::LED::inicializar(LED_PIN);
+
+  // Linha de titulo do CSV. Serial.println ja termina em \r\n .
+  Serial.println("temp,umid,dist,movimentacao");
 }
 
 void loop() {
@@ -48,17 +50,26 @@ void loop() {
     AccelData accel = ESP32Sensors::Accel::medirAccel();
     float movimentacao = ESP32Sensors::Accel::medirMovimentacao(accel);
 
-    Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
+    Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
                   amb.temp, amb.umid, dist.cm, movimentacao);
   }
 }
 ```
 
-**Funcionou?** No monitor serial, a cada 2,5 s:
+**Funcionou?** No monitor serial, a cada 2,5 s, uma linha de CSV:
 
 ```
-Temp: 24.0 C | Umid: 40.0 % | Dist: 10.0 cm | Movim: 0.00 m/s2
+temp,umid,dist,movimentacao
+24.0,40.0,10.0,0.00
+24.0,40.1,10.0,0.01
 ```
+
+A linha de título sai uma vez, no `setup()`. Depois só números, na ordem dela — é assim
+que um arquivo de dados se parece, e é o que você abre numa planilha ou lê com pandas.
+
+O `Serial.println` do título já termina em `\r\n`; nos `printf` o `\r\n` vai escrito à
+mão. Windows espera esse par, e é ele que faz cada leitura virar uma linha de verdade
+no arquivo salvo.
 
 - [ ] Temperatura e umidade com número, não `nan`
 - [ ] Distância muda ao mexer no slider do HC-SR04 no Wokwi
@@ -117,7 +128,7 @@ void conectarMQTT() {
   if (mqttClient.connect(MQTT_CLIENT_ID)) {
     Serial.println("[MQTT] Conectado");
   } else {
-    Serial.printf("[MQTT] Falha: %d\n", mqttClient.state());
+    Serial.printf("[MQTT] Falha: %d\r\n", mqttClient.state());
   }
 }
 ```
@@ -210,7 +221,7 @@ bool enviarDadosColetados() {
   AccelData accel = ESP32Sensors::Accel::medirAccel();
   float movimentacao = ESP32Sensors::Accel::medirMovimentacao(accel);
 
-  Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
+  Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
                 amb.temp, amb.umid, dist.cm, movimentacao);
 
   JsonDocument doc;
@@ -339,7 +350,7 @@ que mediam os sensores, e troque `amb.` por `ambiente.`, `dist.` por `distancia.
 
 ```cpp
 bool enviarDadosColetados() {
-  Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
+  Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
                 ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
 ```
 

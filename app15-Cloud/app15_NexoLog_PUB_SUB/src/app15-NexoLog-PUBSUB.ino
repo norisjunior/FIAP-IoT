@@ -66,7 +66,8 @@ void setup() {
   mqttClient.setBufferSize(768);
   mqttClient.setKeepAlive(120);
 
-  Serial.println("NexoLog - monitoramento de entregas");
+  // Linha de titulo do CSV. Serial.println ja termina em \r\n .
+  Serial.println("temp,umid,dist,movimentacao");
 }
 
 void loop() {
@@ -118,12 +119,12 @@ void conectarMQTT() {
     Serial.println("[MQTT] Conectado");
     mqttClient.subscribe(MQTT_SUB_TOPIC);
   } else {
-    Serial.printf("[MQTT] Falha: %d\n", mqttClient.state());
+    Serial.printf("[MQTT] Falha: %d\r\n", mqttClient.state());
   }
 }
 
 bool enviarDadosColetados() {
-  Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
+  Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
                 ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
 
   JsonDocument doc;
@@ -148,7 +149,7 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
   JsonDocument doc;
   DeserializationError erro = deserializeJson(doc, (const char*)conteudo, tamanho);
   if (erro) {
-    Serial.printf("[CMD] JSON invalido: %s\n", erro.c_str());
+    Serial.printf("[CMD] JSON invalido: %s\r\n", erro.c_str());
     return;
   }
 
@@ -159,7 +160,7 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
     return;
   }
 
-  Serial.printf("[CMD] %s -> %s\n", alvo, estado);
+  Serial.printf("[CMD] %s -> %s\r\n", alvo, estado);
   bool ligar = strcmp(estado, "ON") == 0;
 
   if (strcmp(alvo, "tampa") == 0) {
@@ -167,6 +168,6 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
   } else if (strcmp(alvo, "movimento") == 0) {
     digitalWrite(LED_MOVIMENTO, ligar ? HIGH : LOW);
   } else {
-    Serial.printf("[CMD] Alvo desconhecido: %s\n", alvo);
+    Serial.printf("[CMD] Alvo desconhecido: %s\r\n", alvo);
   }
 }

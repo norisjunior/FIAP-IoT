@@ -57,7 +57,8 @@ void setup() {
   mqttClient.setBufferSize(768);
   mqttClient.setKeepAlive(120);
 
-  Serial.println("NexoLog - monitoramento de entregas");
+  // Linha de titulo do CSV. Serial.println ja termina em \r\n .
+  Serial.println("temp,umid,dist,movimentacao");
 }
 
 void loop() {
@@ -109,12 +110,12 @@ void conectarMQTT() {
     Serial.println("[MQTT] Conectado");
 
   } else {
-    Serial.printf("[MQTT] Falha: %d\n", mqttClient.state());
+    Serial.printf("[MQTT] Falha: %d\r\n", mqttClient.state());
   }
 }
 
 bool enviarDadosColetados() {
-  Serial.printf("Temp: %.1f C | Umid: %.1f %% | Dist: %.1f cm | Movim: %.2f m/s2\n",
+  Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
                 ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
 
   JsonDocument doc;

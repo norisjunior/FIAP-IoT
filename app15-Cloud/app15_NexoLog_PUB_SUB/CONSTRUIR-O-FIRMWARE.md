@@ -34,6 +34,7 @@ Nada do que sobe muda. **Paridade com o app14:**
 | Tópico de dados | `FIAPIoT/nexolog/equipe01/dados` |
 | Campos do JSON | os mesmos oito, sem acréscimo |
 | Intervalo de publicação | 1000 ms |
+| Saída no Serial | CSV com `\r\n`, título no `setup()` |
 | Client ID | `NexoLogEquipe01`, um por equipe |
 | `mqttClient.setKeepAlive(120)` | mantido |
 
@@ -116,7 +117,7 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
   JsonDocument doc;
   DeserializationError erro = deserializeJson(doc, (const char*)conteudo, tamanho);
   if (erro) {
-    Serial.printf("[CMD] JSON invalido: %s\n", erro.c_str());
+    Serial.printf("[CMD] JSON invalido: %s\r\n", erro.c_str());
     return;
   }
 
@@ -127,7 +128,7 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
     return;
   }
 
-  Serial.printf("[CMD] %s -> %s\n", alvo, estado);
+  Serial.printf("[CMD] %s -> %s\r\n", alvo, estado);
 }
 ```
 
@@ -192,7 +193,7 @@ Só o fim da callback muda. Depois do `Serial.printf`:
   } else if (strcmp(alvo, "movimento") == 0) {
     digitalWrite(LED_MOVIMENTO, ligar ? HIGH : LOW);
   } else {
-    Serial.printf("[CMD] Alvo desconhecido: %s\n", alvo);
+    Serial.printf("[CMD] Alvo desconhecido: %s\r\n", alvo);
   }
 ```
 
