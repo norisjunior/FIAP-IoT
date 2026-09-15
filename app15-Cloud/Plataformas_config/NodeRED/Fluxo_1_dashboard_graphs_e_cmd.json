@@ -68,7 +68,8 @@
       [
         "a9361d471ecc9e6f",
         "2accca3aa6722ee6",
-        "30eb40094bb00b2b"
+        "30eb40094bb00b2b",
+        "840543c9aea542e5"
       ]
     ],
     "name": "JSON para objeto",
@@ -133,12 +134,10 @@
         "6056a38bee430a81"
       ],
       [
-        "4f946f1e5a02fe38",
-        "840543c9aea542e5"
+        "4f946f1e5a02fe38"
       ],
       [
-        "90644ff70540edc2",
-        "a1c0de0000ab2000"
+        "90644ff70540edc2"
       ]
     ]
   },
@@ -316,8 +315,8 @@
     "id": "840543c9aea542e5",
     "type": "switch",
     "z": "efd1c69a09330861",
-    "name": "Tampa: dist > 25 cm",
-    "property": "payload",
+    "name": "A tampa esta aberta?",
+    "property": "payload.dist",
     "propertyType": "msg",
     "rules": [
       {
@@ -332,12 +331,11 @@
     "checkall": "true",
     "repair": false,
     "outputs": 2,
-    "x": 900,
-    "y": 690,
+    "x": 700,
+    "y": 700,
     "wires": [
       [
-        "a1c0de0000ab1001",
-        "15867f465e5f117d"
+        "a1c0de0000ab2000"
       ],
       [
         "a1c0de0000ab1002"
@@ -348,8 +346,8 @@
     "id": "a1c0de0000ab2000",
     "type": "switch",
     "z": "efd1c69a09330861",
-    "name": "Movimentação > 3 m/s²",
-    "property": "payload",
+    "name": "E esta sacudindo?",
+    "property": "payload.movimentacao",
     "propertyType": "msg",
     "rules": [
       {
@@ -364,68 +362,15 @@
     "checkall": "true",
     "repair": false,
     "outputs": 2,
-    "x": 900,
-    "y": 850,
+    "x": 920,
+    "y": 700,
     "wires": [
       [
-        "a1c0de0000ab2001"
+        "a1c0de0000ab1001",
+        "15867f465e5f117d"
       ],
       [
-        "a1c0de0000ab2002"
-      ]
-    ]
-  },
-  {
-    "id": "a1c0de0000ab2001",
-    "type": "change",
-    "z": "efd1c69a09330861",
-    "name": "Comando: movimento ON",
-    "rules": [
-      {
-        "t": "set",
-        "p": "payload",
-        "pt": "msg",
-        "to": "{\"alvo\": \"movimento\", \"estado\": \"ON\"}",
-        "tot": "json"
-      }
-    ],
-    "action": "",
-    "property": "",
-    "from": "",
-    "to": "",
-    "reg": false,
-    "x": 1150,
-    "y": 820,
-    "wires": [
-      [
-        "948117e25c041dd8"
-      ]
-    ]
-  },
-  {
-    "id": "a1c0de0000ab2002",
-    "type": "change",
-    "z": "efd1c69a09330861",
-    "name": "Comando: movimento OFF",
-    "rules": [
-      {
-        "t": "set",
-        "p": "payload",
-        "pt": "msg",
-        "to": "{\"alvo\": \"movimento\", \"estado\": \"OFF\"}",
-        "tot": "json"
-      }
-    ],
-    "action": "",
-    "property": "",
-    "from": "",
-    "to": "",
-    "reg": false,
-    "x": 1150,
-    "y": 880,
-    "wires": [
-      [
-        "948117e25c041dd8"
+        "a1c0de0000ab1002"
       ]
     ]
   },
@@ -433,13 +378,13 @@
     "id": "a1c0de0000ab1001",
     "type": "change",
     "z": "efd1c69a09330861",
-    "name": "Comando: tampa ON",
+    "name": "Alerta ON",
     "rules": [
       {
         "t": "set",
         "p": "payload",
         "pt": "msg",
-        "to": "{\"alvo\": \"tampa\", \"estado\": \"ON\"}",
+        "to": "{\"alerta\": \"ON\", \"motivo\": \"Tampa aberta com movimentacao\"}",
         "tot": "json"
       }
     ],
@@ -448,7 +393,7 @@
     "from": "",
     "to": "",
     "reg": false,
-    "x": 1150,
+    "x": 1160,
     "y": 660,
     "wires": [
       [
@@ -460,13 +405,13 @@
     "id": "a1c0de0000ab1002",
     "type": "change",
     "z": "efd1c69a09330861",
-    "name": "Comando: tampa OFF",
+    "name": "Alerta OFF",
     "rules": [
       {
         "t": "set",
         "p": "payload",
         "pt": "msg",
-        "to": "{\"alvo\": \"tampa\", \"estado\": \"OFF\"}",
+        "to": "{\"alerta\": \"OFF\", \"motivo\": \"Sem alerta\"}",
         "tot": "json"
       }
     ],
@@ -475,8 +420,8 @@
     "from": "",
     "to": "",
     "reg": false,
-    "x": 1150,
-    "y": 720,
+    "x": 1160,
+    "y": 760,
     "wires": [
       [
         "948117e25c041dd8"
@@ -487,7 +432,7 @@
     "id": "15867f465e5f117d",
     "type": "debug",
     "z": "efd1c69a09330861",
-    "name": "Tampa aberta",
+    "name": "Alerta disparado",
     "active": true,
     "tosidebar": true,
     "console": false,
@@ -496,7 +441,7 @@
     "statusVal": "",
     "statusType": "auto",
     "x": 1400,
-    "y": 600,
+    "y": 820,
     "wires": []
   },
   {
@@ -639,11 +584,36 @@
     "payloadType": "json"
   },
   {
+    "id": "c0de000000in1001",
+    "type": "inject",
+    "z": "efd1c69a09330861",
+    "x": 150,
+    "y": 340,
+    "wires": [
+      [
+        "4fb6617d790fe9ae"
+      ]
+    ],
+    "name": "Simular: Tampa aberta + sacudindo",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 40, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 6.2}",
+    "payloadType": "json"
+  },
+  {
     "id": "57409907ca8ba33f",
     "type": "inject",
     "z": "efd1c69a09330861",
     "x": 150,
-    "y": 360,
+    "y": 400,
     "wires": [
       [
         "4fb6617d790fe9ae"
@@ -668,7 +638,7 @@
     "type": "inject",
     "z": "efd1c69a09330861",
     "x": 150,
-    "y": 420,
+    "y": 460,
     "wires": [
       [
         "4fb6617d790fe9ae"

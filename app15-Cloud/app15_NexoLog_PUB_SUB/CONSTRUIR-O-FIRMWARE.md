@@ -6,17 +6,22 @@ para manter a conexão viva — é ele que vai entregar as mensagens à callback
 sem assinatura nenhuma mensagem chega.
 
 Este firmware é o do app14 mais um caminho de volta. E o que volta é JSON, igual ao
-que sobe: a nuvem manda `{"alvo":"tampa","estado":"ON"}`, o dispositivo lê com
-ArduinoJson e acende o LED daquele alvo.
+que sobe: a nuvem manda `{"alerta":"ON","motivo":"Tampa aberta com movimentacao"}`, e
+o dispositivo acende o LED e conta no Serial por quê.
 
 O app14 não tem LED — ele só mede e publica, e um LED ali seria enfeite. É aqui que o
 LED ganha função, porque agora existe alguém mandando acender.
 
+**Repare em quem decide.** O alerta só dispara quando a tampa está aberta **e** a caixa
+está sacudindo. Para o ESP32 fazer essa conta sozinho, ele precisaria guardar as duas
+medidas, conhecer os dois limites e ser recompilado a cada ajuste. Na plataforma, são
+dois nós ligados um no outro. O dispositivo recebe a conclusão pronta.
+
 Três iterações. Cada uma compila e roda.
 
-1. Dois LEDs, testados no `setup()`.
+1. Um LED, testado no `setup()`.
 2. O JSON do comando chegando no Serial.
-3. Cada alvo acendendo o seu LED.
+3. O alerta acendendo o LED.
 
 ---
 
@@ -43,49 +48,41 @@ apaga um widget lá.
 
 ---
 
-## Iteração 1 — Dois LEDs
+## Iteração 1 — Um LED
 
-Dois LEDs, um por causa: um diz "a tampa abriu", o outro diz "sacudiu demais". São
-duas linhas de `pinMode` e `digitalWrite` — não vale criar um módulo `.hpp` para isso,
-e o foco da aula é o JSON que chega.
+Um LED só, para uma decisão só. Duas linhas de `pinMode` e `digitalWrite` — não vale
+criar um módulo `.hpp` para isso, e o foco da aula é o JSON que chega.
 
-**a) Dois pinos**, junto dos outros. GPIO 21 e 17 estão livres e ficam do mesmo lado
-da placa:
+**a) Um pino**, junto dos outros:
 
 ```cpp
-const uint8_t LED_TAMPA = 21;
-const uint8_t LED_MOVIMENTO = 17;
+const uint8_t LED_ALERTA = 21;
 ```
 
 **b) No `setup()`**, junto dos `inicializar` dos sensores:
 
 ```cpp
-  pinMode(LED_TAMPA, OUTPUT);
-  pinMode(LED_MOVIMENTO, OUTPUT);
-  digitalWrite(LED_TAMPA, LOW);
-  digitalWrite(LED_MOVIMENTO, LOW);
+  pinMode(LED_ALERTA, OUTPUT);
+  digitalWrite(LED_ALERTA, LOW);
 
-  // Teste de bancada: pisca os dois uma vez.
-  digitalWrite(LED_TAMPA, HIGH);
-  digitalWrite(LED_MOVIMENTO, HIGH);
+  // Teste de bancada: pisca uma vez.
+  digitalWrite(LED_ALERTA, HIGH);
   delay(500);
-  digitalWrite(LED_TAMPA, LOW);
-  digitalWrite(LED_MOVIMENTO, LOW);
+  digitalWrite(LED_ALERTA, LOW);
 ```
 
-No Wokwi, cada LED leva um resistor de 220 Ω: ânodo no resistor, resistor no GPIO
-(21 e 17), cátodo no GND. O `diagram.json` deste projeto já vem com os dois.
+No Wokwi o LED leva um resistor de 220 Ω: ânodo no resistor, resistor no GPIO 21,
+cátodo no GND. O `diagram.json` deste projeto já vem com ele.
 
 **Funcionou?**
 
-- [ ] Os dois piscam juntos ao ligar, meio segundo
+- [ ] Pisca uma vez ao ligar, meio segundo
 - [ ] Depois disso ficam apagados, e a publicação segue normal
 
 | Deu errado | Onde olhar |
 |---|---|
-| `'LED_TAMPA' was not declared` | os dois `const uint8_t` têm que vir antes do `setup()` |
+| `'LED_ALERTA' was not declared` | o `const uint8_t` tem que vir antes do `setup()` |
 | `ESP32SensorsLED.hpp: No such file` | o módulo de LED não existe mais: apague o include herdado do app14 |
-| Um pisca, o outro não | LED invertido: perna longa (ânodo) é a do resistor |
 
 Tire o teste de bancada depois de conferir, ou deixe — ele é um bom sinal de que
 a placa reiniciou.
@@ -121,14 +118,14 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
     return;
   }
 
-  const char* alvo = doc["alvo"];
-  const char* estado = doc["estado"];
-  if (alvo == nullptr || estado == nullptr) {
-    Serial.println("[CMD] Faltou alvo ou estado");
+  const char* alerta = doc["alerta"];
+  const char* motivo = doc["motivo"];
+  if (alerta == nullptr) {
+    Serial.println("[CMD] Faltou o campo alerta");
     return;
   }
 
-  Serial.printf("[CMD] %s -> %s\r\n", alvo, estado);
+  Serial.printf("[CMD] %s: %s\r\n", alerta, motivo ? motivo : "sem motivo");
 }
 ```
 
@@ -138,8 +135,8 @@ Três coisas para reparar:
   lê além da mensagem.
 - `deserializeJson` devolve erro em vez de travar. JSON quebrado no meio da aula é
   comum; a callback avisa e volta.
-- `doc["alvo"]` num campo ausente devolve `nullptr`, não string vazia. Por isso a
-  checagem antes de usar.
+- `doc["alerta"]` num campo ausente devolve `nullptr`, não string vazia. Por isso a
+  checagem antes de usar. O `motivo` pode faltar sem problema — o `?:` cobre.
 
 **d) Registrar**, no `setup()`, depois do `setServer`:
 
@@ -159,16 +156,16 @@ a cada reconexão.
 **Funcionou?** Com o firmware rodando:
 
 ```
-mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alvo":"tampa","estado":"ON"}'
+mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alerta":"ON","motivo":"teste"}'
 mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m 'ON'
 ```
 
 ```
-[CMD] tampa -> ON
+[CMD] ON: teste
 [CMD] JSON invalido: InvalidInput
 ```
 
-- [ ] O JSON bom aparece com alvo e estado
+- [ ] O JSON bom aparece com o alerta e o motivo
 - [ ] O `ON` solto é recusado sem travar o firmware
 - [ ] Continua publicando os dados normalmente entre um comando e outro
 
@@ -181,45 +178,42 @@ mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m 'ON'
 
 ---
 
-## Iteração 3 — Cada alvo no seu LED
+## Iteração 3 — O alerta acendendo o LED
 
-Só o fim da callback muda. Depois do `Serial.printf`:
+Duas linhas no fim da callback, depois do `Serial.printf`:
 
 ```cpp
-  bool ligar = strcmp(estado, "ON") == 0;
-
-  if (strcmp(alvo, "tampa") == 0) {
-    digitalWrite(LED_TAMPA, ligar ? HIGH : LOW);
-  } else if (strcmp(alvo, "movimento") == 0) {
-    digitalWrite(LED_MOVIMENTO, ligar ? HIGH : LOW);
-  } else {
-    Serial.printf("[CMD] Alvo desconhecido: %s\r\n", alvo);
-  }
+  bool ligar = strcmp(alerta, "ON") == 0;
+  digitalWrite(LED_ALERTA, ligar ? HIGH : LOW);
 ```
 
-`strcmp` porque `alvo` é `const char*`, não `String`: `alvo == "tampa"` compara
-endereços e dá sempre falso.
+`strcmp` porque `alerta` é `const char*`, não `String`: `alerta == "ON"` compara
+endereços e dá sempre falso. E `strcmp` devolve **0** quando os textos são iguais — daí
+o `== 0`.
 
-Qualquer `estado` que não seja exatamente `ON` apaga o LED. É uma escolha: em
-dúvida, o painel fica apagado em vez de mentir que está tudo bem.
+Qualquer `alerta` que não seja exatamente `ON` apaga. É uma escolha: em dúvida, o painel
+fica apagado em vez de mentir que está tudo bem.
+
+Repare no que **não** está aqui: nenhum número, nenhum limite, nenhum `if` sobre
+distância ou movimentação. O firmware não sabe o que é 25 cm nem 3 m/s², e nem sabe que
+são duas condições. Ele recebe a conclusão e obedece.
 
 **Funcionou?**
 
 ```
-mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alvo":"tampa","estado":"ON"}'
-mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alvo":"movimento","estado":"ON"}'
-mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alvo":"tampa","estado":"OFF"}'
+mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alerta":"ON","motivo":"Tampa aberta com movimentacao"}'
+mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alerta":"OFF","motivo":"Sem alerta"}'
 ```
 
-- [ ] Acende o da tampa, depois o de movimento, depois só o de movimento fica aceso
-- [ ] Os dois são independentes: um comando não mexe no outro LED
-- [ ] `{"alvo":"buzina","estado":"ON"}` só reclama no Serial
+- [ ] Acende e apaga, e o Serial conta o motivo de cada um
+- [ ] `{"alerta":"on"}` minúsculo não acende — é o esperado
+- [ ] `{"motivo":"teste"}` sem o `alerta` só reclama no Serial
 
 | Deu errado | Onde olhar |
 |---|---|
 | Serial mostra o comando, LED parado | `pinMode` no `setup()`, ou pino trocado |
-| Um comando apaga o outro LED | `else if`, não dois `if` com o mesmo `digitalWrite` |
 | Sempre apaga, mesmo com `ON` | `strcmp` devolve **0** quando é igual — repare no `== 0` |
+| Acende e apaga sozinho o tempo todo | normal: a plataforma reavalia a cada leitura |
 
 O firmware não publica confirmação: quem confere é o LED ou a Serial. Este é o
 firmware final do app15 — o app16 roda o mesmo, só muda onde a plataforma está.

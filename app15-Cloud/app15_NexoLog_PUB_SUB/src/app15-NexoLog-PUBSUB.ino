@@ -15,8 +15,7 @@ const uint8_t TRIG_PIN = 19;
 const uint8_t ECHO_PIN = 18;
 const uint8_t SCL_PIN = 23;
 const uint8_t SDA_PIN = 22;
-const uint8_t LED_TAMPA = 21;
-const uint8_t LED_MOVIMENTO = 17;
+const uint8_t LED_ALERTA = 21;
 
 /* ---- Config Wi-Fi e MQTT ---- */
 const char* WIFI_SSID = "NorisIoT";
@@ -55,10 +54,8 @@ void setup() {
   ESP32Sensors::Ambiente::inicializar(DHT_PIN, DHT_MODEL);
   ESP32Sensors::Distancia::inicializar(TRIG_PIN, ECHO_PIN);
   ESP32Sensors::Accel::inicializar(SCL_PIN, SDA_PIN);
-  pinMode(LED_TAMPA, OUTPUT);
-  pinMode(LED_MOVIMENTO, OUTPUT);
-  digitalWrite(LED_TAMPA, LOW);
-  digitalWrite(LED_MOVIMENTO, LOW);
+  pinMode(LED_ALERTA, OUTPUT);
+  digitalWrite(LED_ALERTA, LOW);
 
   conectarWiFi();
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
@@ -153,21 +150,15 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
     return;
   }
 
-  const char* alvo = doc["alvo"];
-  const char* estado = doc["estado"];
-  if (alvo == nullptr || estado == nullptr) {
-    Serial.println("[CMD] Faltou alvo ou estado");
+  const char* alerta = doc["alerta"];
+  const char* motivo = doc["motivo"];
+  if (alerta == nullptr) {
+    Serial.println("[CMD] Faltou o campo alerta");
     return;
   }
 
-  Serial.printf("[CMD] %s -> %s\r\n", alvo, estado);
-  bool ligar = strcmp(estado, "ON") == 0;
-
-  if (strcmp(alvo, "tampa") == 0) {
-    digitalWrite(LED_TAMPA, ligar ? HIGH : LOW);
-  } else if (strcmp(alvo, "movimento") == 0) {
-    digitalWrite(LED_MOVIMENTO, ligar ? HIGH : LOW);
-  } else {
-    Serial.printf("[CMD] Alvo desconhecido: %s\r\n", alvo);
-  }
+  // A nuvem ja decidiu. Aqui so obedecemos e contamos o porque.
+  bool ligar = strcmp(alerta, "ON") == 0;
+  digitalWrite(LED_ALERTA, ligar ? HIGH : LOW);
+  Serial.printf("[CMD] %s: %s\r\n", alerta, motivo ? motivo : "sem motivo");
 }

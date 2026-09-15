@@ -26,20 +26,6 @@
       "top": 90.35,
       "left": 115.2,
       "attrs": { "value": "220" }
-    },
-    {
-      "type": "wokwi-led",
-      "id": "led2",
-      "top": 150,
-      "left": 167.4,
-      "attrs": { "color": "yellow", "flip": "1" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rled2",
-      "top": 186.35,
-      "left": 115.2,
-      "attrs": { "value": "220" }
     }
   ],
   "connections": [
@@ -58,9 +44,6 @@
     [ "led1:A", "rled:2", "magenta", [ "v0" ] ],
     [ "rled:1", "esp:21", "magenta", [ "v0" ] ],
     [ "led1:C", "esp:GND.3", "black", [ "v0" ] ],
-    [ "led2:A", "rled2:2", "gold", [ "v0" ] ],
-    [ "rled2:1", "esp:17", "gold", [ "v0" ] ],
-    [ "led2:C", "esp:GND.3", "black", [ "v0" ] ],
     [ "dht1:SDA", "esp:4", "green", [ "v38.4", "h67.3", "v153.6" ] ]
   ],
   "dependencies": {}
