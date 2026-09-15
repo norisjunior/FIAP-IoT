@@ -9,6 +9,7 @@ O Node-RED e o n8n olham o dado passando. O Grafana olha o dado guardado.
 |---|---|
 | [dashboard_nexolog.json](dashboard_nexolog.json) | gauges, nível e séries. O de todo dia |
 | [dashboard_nexolog_canvas.json](dashboard_nexolog_canvas.json) | a foto da bag com as medições em cima |
+| [CONSTRUIR-O-DASHBOARD.md](CONSTRUIR-O-DASHBOARD.md) | montar os dois do zero, em vez de importar |
 
 ---
 
@@ -61,39 +62,22 @@ tempo. Mude o intervalo no topo para 24 horas e veja a entrega inteira.
 
 ## 4. O dashboard canvas
 
-**Antes de importar, coloque a imagem no lugar.** O canvas aponta para
-`/public/img/bag.png`, que é como o Grafana serve qualquer arquivo da pasta
-`public/img/`:
+A foto de fundo já vem resolvida: o painel aponta para a
+[SmartDeliveryBag.png](SmartDeliveryBag.png) deste repositório, pela URL raw do
+GitHub. Nada para copiar, nada para instalar. Para usar a sua própria foto, suba num
+lugar que o navegador alcance e troque a URL em **Background > Image**.
 
-```bash
-# Grafana em Docker
-docker cp bag.png grafana:/usr/share/grafana/public/img/bag.png
-docker restart grafana
+Dez elementos sobre a foto:
 
-# Grafana instalado na máquina (Linux)
-sudo cp bag.png /usr/share/grafana/public/img/
-```
-
-Use uma foto da sua bag, de frente, fundo limpo. Sem a imagem o painel abre com fundo
-escuro e os valores flutuando — funciona, mas perde a graça.
-
-São onze elementos: quatro pares de rótulo + valor, e três **pontos de origem** sobre a
-foto. De cada ponto sai uma **seta** até a medição correspondente:
-
-| Ponto | Onde fica | Puxa para |
-|---|---|---|
-| Ponto da tampa | no alto da bag | Distância |
-| Ponto da base | embaixo da bag | Movimentação |
-| Ponto do ambiente | no céu | Temperatura e Umidade |
-
-A posição conta a história. Tampa e movimentação são da bag — na prática os dois
-sensores estão na tampa, mas separar a origem deixa óbvio que são duas medidas
-diferentes. Temperatura e umidade saem do céu porque são do ambiente, não da caixa.
+| Elemento | O que é |
+|---|---|
+| Temperatura, Umidade | valor + ícone, no céu — são do ambiente, não da bag |
+| Distância, Movimentação | rótulo + valor, com **seta** saindo da bag |
+| Duas elipses | os pontos de origem: tampa em cima, movimentação na base |
 
 **A seta muda de cor com o valor.** Verde dentro do limite, amarelo na faixa de
 atenção, vermelho fora — e a borda da caixa acompanha, porque as duas leem o mesmo
-campo. Abra a tampa no Wokwi e a seta que vai até "Distância" fica vermelha antes de
-você ler o número.
+campo. Abra a tampa no Wokwi e a seta fica vermelha antes de você ler o número.
 
 | Campo | Verde | Amarelo | Vermelho |
 |---|---|---|---|
@@ -102,17 +86,11 @@ você ler o número.
 | dist | < 20 cm | 20 a 25 | > 25 |
 | movimentacao | < 1,5 m/s² | 1,5 a 3 | > 3 |
 
-Para mover qualquer elemento: **Edit** no painel, clique, arraste. A seta acompanha
-sozinha. As posições que vieram no arquivo são um ponto de partida — ajuste os três
-pontos à **sua** foto, que é onde a diferença aparece.
+Para mover qualquer elemento: **Edit** no painel, clique, arraste — a seta acompanha
+sozinha. Depois de ajustar, **exporte de volta** e substitua o arquivo aqui.
 
-> Depois de ajustar, **exporte de volta**: Dashboard settings > JSON Model, ou
-> Export > Save to file, e substitua o arquivo aqui. Senão o repositório fica com o
-> layout antigo.
-
-A consulta é uma só, com `pivot()` no fim. Sem o pivot, o Flux devolve uma linha por
-campo e o canvas não acha `temp` e `dist` na mesma tabela; com ele, os quatro viram
-colunas de uma linha só, que é o que cada elemento procura pelo nome.
+A consulta é uma só, com `pivot()` no fim. Sem ele o Flux devolve uma linha por campo
+e cada elemento enxerga só um; com ele os quatro viram colunas de uma linha só.
 
 ## Deu errado
 
@@ -121,6 +99,6 @@ colunas de uma linha só, que é o que cada elemento procura pelo nome.
 | Painel vazio, sem erro | a caixa **Bucket** no topo ainda está com `SEU_BUCKET` |
 | `unauthorized` | o token da fonte de dados, ou a organização |
 | Gauge com "No data" e a série cheia | o `last()` olha os últimos 5 minutos: o ESP32 parou de publicar |
-| Canvas com fundo escuro | a imagem não está em `public/img/`, ou o Grafana não foi reiniciado |
+| Canvas com fundo escuro | a URL da imagem em **Background > Image**, no frame de fora |
 | Canvas mostra o rótulo e não o número | o elemento está em Fixed em vez de Field, ou o nome do campo não bate |
 | Tudo "No data" | confira antes no InfluxDB, Data Explorer. Se não tem lá, o problema é o Node-RED |
