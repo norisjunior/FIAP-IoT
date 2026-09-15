@@ -170,12 +170,23 @@ depois — dataset de verdade tem buraco, e lidar com isso é parte do trabalho.
 | `getaddrinfo ENOTFOUND` | a URL tem a região da sua conta, e não a do exemplo |
 | `batch schema conflict ... 'device'` | `device` está indo como field e como tag: ele tem que sair de `campos` |
 | Grava, mas falta um campo | aquele sensor mandou `null` naquele instante — o buraco é proposital |
-| A escrita inteira falha com `null` | veja a nota abaixo: talvez precise voltar a filtrar |
+| Ponto sem field nenhum | todos os sensores falharam no mesmo segundo: aí o InfluxDB recusa, porque ponto precisa de pelo menos um field |
 
-> **Confira na primeira aula.** Desligue o DHT no Wokwi e veja o que acontece com
-> `temp: null`. Se o ponto for gravado sem o campo `temp`, é exatamente o que
-> queremos: buraco numa coluna só. Se a escrita inteira for recusada, a linha toda
-> se perde — aí vale voltar a montar `campos` só com o que é número, como estava
-> antes, para o resto da leitura sobreviver.
+**E se um sensor falhar?** Testado: o campo nulo é simplesmente pulado, e o resto da
+linha é gravado. Um DHT quebrado deixa `temp` vazio naquele instante, sem derrubar a
+distância e a movimentação do mesmo segundo.
+
+Dá para conferir sem mexer em nada, publicando à mão no tópico que o fluxo assina:
+
+```bash
+mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/dados' \
+  -m '{"device":"TESTE_NULO","temp":null,"umid":55.0,"dist":10.0,"accel_x":0,"accel_y":0,"accel_z":9.81,"movimentacao":0.03}'
+```
+
+No Data Explorer, filtrando `device = TESTE_NULO`, o ponto aparece com tudo menos
+`temp`. O `device` diferente serve para isolar o teste dos dados reais — ele é tag.
+
+Buraco na série é o comportamento certo: dataset de verdade tem falha de sensor, e
+aprender a lidar com isso faz parte.
 
 Pronto: falta [o aviso no n8n](../n8n/CONSTRUIR-O-FLUXO.md).
