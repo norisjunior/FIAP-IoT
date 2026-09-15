@@ -1,67 +1,97 @@
 # Ajustes nos slides
 
-Referência: texto dos dois PPTX e inspeção das imagens incorporadas de dashboard, fluxos e notificações. Os PowerPoints permanecem intactos. Números correspondem à ordem dos slides no arquivo, incluindo capas e apêndices.
+Referência: texto dos dois PPTX e inspeção das imagens incorporadas. Os PowerPoints
+permanecem intactos — este arquivo só descreve o que mudar.
+
+O projeto vive em `FIAP-IoT-eval/app14_CPS_e_Automation`, `app15-Cloud` e `app16-Edge`.
+As cópias `_v2` deste diretório foram removidas em 15/09/2026; elas estavam paradas na
+versão de 09/09 e divergiam do que está em aula.
+
+## O que mudou desde a versão anterior deste arquivo
+
+Vale conferir antes de reaproveitar qualquer texto antigo:
+
+| Antes | Agora |
+|---|---|
+| `inclinacao`, em graus | `movimentacao`, em m/s² — pico do último segundo |
+| Publicação a cada 2,5 s | 1 s, com um relógio por sensor |
+| DHT 26 · TRIG/ECHO 17/16 · MPU 18/19 · LED 27 | DHT 4 · TRIG/ECHO 19/18 · MPU 22/23 · LED 21 |
+| Node-RED decide e publica em `/eventos` | Node-RED só mostra; n8n assina `/dados` e decide |
+| Aviso só na mudança de estado | Aviso a cada leitura fora do limite |
+| Comando `ON` / `OFF` em texto | `{"alvo":"tampa","estado":"ON"}`, dois LEDs |
+| InfluxDB da plataforma | InfluxDB Cloud |
+
+---
 
 ## Aula 07 — Node-RED
 
-Cinco alterações, sem acrescentar slides.
+Arquivo: `IoT - Aula 07 - Node-RED.pptx`, **34 slides**.
+
+Cinco alterações, sem acrescentar slides — mais a **seção nova de InfluxDB**, que
+acrescenta três (ver `PromptSlides-Aula07-InfluxDB.md`).
 
 ### 1. Slide 4 — Objetivo
 
-Substituir a lista por:
+Trocar o quarto marcador, "Criar alertas inteligentes baseados em condições", por:
 
-- Entender o percurso de uma mensagem no Node-RED.
-- Receber dados do ESP32 via MQTT e JSON.
-- Construir gráficos e gauges para acompanhar uma entrega.
-- Integrar DHT22, HC-SR04 e MPU6050/MPU6500 (FastIMU).
+- Guardar o histórico da entrega num banco de série temporal.
+
+O alerta saiu do Node-RED nesta versão: quem decide e avisa é o n8n, na Aula 08.
 
 ### 2. Slide 9 — Arquitetura de um CPS para IoT
 
-Atualizar a camada física para “DHT22, HC-SR04, MPU6050/MPU6500 (FastIMU) e LED”.
+Camada Física: "DHT22, HC-SR04, MPU6050/MPU6500 (FastIMU) e LED".
 
-Texto de apoio: “O ESP32 mede as condições da caixa. O Node-RED recebe os dados e apresenta o estado da entrega.”
+Camada de Decisão: hoje diz "Regras e alertas automáticos". Trocar por "Regras e
+alertas — no n8n, a partir do mesmo tópico MQTT".
 
-Nota de fala: no app14 o LED fica reservado. No app15 ele recebe ON/OFF por MQTT. No app16 o mesmo firmware recebe comandos da plataforma no Raspberry Pi. Essa distinção prepara a evolução sem antecipar código.
+Nota de fala: no app14 o LED fica reservado. No app15 ele recebe comandos em JSON. No
+app16 a mesma plataforma roda no Raspberry Pi.
 
-### 3. Slide 21 — Aplicação IoT: NexoLog
+### 3. Slide 21 — Aplicação IoT White Label: NexoLog
 
-Substituir o infográfico do Sentinela por uma caixa de carga com os sensores identificados. Manter o fundo e a tipografia do deck.
-
-Texto:
-
-“A equipe precisa acompanhar uma entrega de carga sensível.”
+O slide tem só o título. Acrescentar a caixa de carga com os sensores identificados,
+feita com formas:
 
 - DHT22: temperatura e umidade dentro da caixa.
-- Ultrassônico: distância até a tampa.
-- MPU6050/MPU6500 (FastIMU): inclinação da caixa.
+- HC-SR04: distância até a tampa.
+- MPU6050/MPU6500: movimentação da caixa, em m/s².
 
-Pergunta: “A caixa chegou nas mesmas condições em que saiu?”
+Pergunta: "A caixa chegou nas mesmas condições em que saiu?"
 
-Rodapé: “Limites e incidentes simulados para a aula.”
+Rodapé: "Limites e incidentes simulados para a aula."
 
-### 4. Slide 25 — Aplicação: app14
+Nota de fala: white label é o ponto. A mesma caixa vira bag de entregador, e aí "tampa
+aberta" é indício de fraude. Só muda o texto do aviso.
 
-Trocar a referência da aplicação por `app14_CPS_e_Automation_v2/app14_NexoLog`.
+### 4. Slide 24 — Aplicação: app14
 
-Usar este payload para acompanhar o percurso no editor:
+O payload de hoje, para acompanhar o percurso no editor:
 
 ```json
-{"device":"NexoLogEquipe01","temp":24,"umid":55,"dist":10,"inclinacao":0}
+{"device":"NexoLogEquipe01","temp":24,"umid":55,"dist":10,
+ "accel_x":0,"accel_y":0,"accel_z":9.81,"movimentacao":0.03}
 ```
 
-É um recorte dos campos usados na aula; o firmware também publica `accel_x`, `accel_y` e `accel_z`.
+Roteiro: MQTT-in, JSON, Debug, Function e Gauge. Abrir `separarDadosSensores` e
+observar que cada saída leva uma mensagem com um valor em `payload`.
 
-Roteiro de demonstração: MQTT-in, JSON, Debug, Function e Gauge. Abrir `separarDadosSensores` e observar que cada saída contém uma mensagem com um valor em `payload`.
+Nota de fala: `movimentacao` é o **maior** valor do último segundo, não a leitura do
+instante. O firmware amostra o MPU a 50 ms justamente porque uma leitura por envio
+deixa o pico do sacolejo passar.
 
-### 5. Slide 28 — Dashboard da entrega
+### 5. Slide 27 — Dashboard da entrega
 
-Substituir a captura com “Índice de Calor / Presença” por uma captura do novo dashboard.
+Substituir a captura por uma do dashboard atual: temperatura, umidade, tampa
+(`ui_level` vertical), movimentação e o gráfico.
 
-Mostrar temperatura, umidade, distância, inclinação e estado da entrega. Ao lado, apenas a pergunta: “O que muda quando levantamos a tampa?”
+Ao lado, só a pergunta: "O que muda quando levantamos a tampa?"
 
-Nota de fala: usar `Simular: Normal` e `Simular: Tampa aberta`. Depois demonstrar no Wokwi. O gráfico na tela não substitui um banco de histórico.
+Nota de fala: demonstrar no Wokwi mudando a distância de 10 para 40 cm. Não há mais
+nós `Simular` — o dado vem do dispositivo. O gráfico na tela guarda cinco minutos e
+zera no F5: é o gancho para os slides de InfluxDB que vêm a seguir.
 
-Para respeitar o limite de cinco alterações, as capturas antigas dos slides 29 e 32 ficam como exemplos anteriores de notificações. Identificar isso oralmente; suas mensagens de presença não descrevem a NexoLog. No slide 32, aproveitar a repetição das mensagens para discutir por que a versão nova avisa apenas na mudança de estado.
+---
 
 ## Aula 08 — Node-RED e n8n
 
@@ -71,59 +101,70 @@ Cinco alterações, sem acrescentar slides.
 
 Texto:
 
-“Notificar o responsável quando as condições da entrega mudarem.”
+"Avisar o responsável quando a entrega sair das condições combinadas."
 
-- Receber eventos da NexoLog via MQTT.
-- Preparar uma mensagem no n8n.
+- Assinar o mesmo tópico do dispositivo, no n8n.
+- Decidir com um nó Switch, sem escrever código.
 - Enviar o aviso ao Telegram.
 
 ### 2. Slide 6 — Automação com n8n
 
 Substituir o texto informal e a afirmação de que n8n local não permite webhooks por:
 
-“O Node-RED acompanha os sensores e identifica mudanças. O n8n recebe o evento e comunica o responsável.”
+"O Node-RED mostra o que está acontecendo. O n8n decide se aquilo é um problema e
+comunica o responsável. Os dois assinam o mesmo tópico e nenhum sabe do outro."
 
-“Nesta prática, o gatilho é MQTT. O n8n local conecta-se ao broker e envia a mensagem ao Telegram. Não precisamos expor um webhook público.”
+"Nesta prática o gatilho é MQTT. Não precisamos expor um webhook público."
 
-Nota de fala: um webhook local atende clientes que conseguem alcançá-lo na rede. Receber chamadas externas exige um endereço acessível a esses clientes.
+Nota de fala: esse é o argumento do MQTT numa tela só — publicar uma vez, entregar a
+quantos assinarem.
 
 ### 3. Slide 11 — Avisos da entrega
 
-Substituir a imagem com alertas de sala/PIR por dois exemplos de mensagem:
+Substituir a imagem de alertas de sala/PIR por dois exemplos reais:
 
 ```text
 NexoLog | NexoLogEquipe01
 Tampa aberta
-Distância: 40 cm
+Distância: 40.0 cm
 ```
 
 ```text
 NexoLog | NexoLogEquipe01
-Entrega em condição normal
-Distância: 10 cm
+Movimentação brusca
+Movimentação: 4.87 m/s²
 ```
 
-Nota de fala: o workflow inclui também temperatura, umidade, inclinação e horário. Nenhuma mensagem precisa ser enviada repetidamente a cada leitura.
+Nota de fala: o limite não vai na mensagem. O aviso conta o que aconteceu e com que
+número; a regra é assunto de quem decide. Caixa em condição normal não gera mensagem
+nenhuma.
 
 ### 4. Slide 12 — Workflow da entrega
 
-Substituir a captura da lista de workflows por uma captura do fluxo importado de `Plataformas_config/n8n/fluxo_mqtt.json`.
+Captura do fluxo de `Plataformas_config/n8n/fluxo_mqtt.json`. Sete nós, nenhum de
+código:
 
-Destacar os três nós: `MQTT Trigger`, `Preparar mensagem`, `Avisar responsável`.
+`MQTT Trigger` → `Passou de algum limiar?` → quatro `Edit Fields` → um `Telegram`.
 
-Texto: “Tópico de entrada: FIAPIoT/nexolog/equipe01/eventos”.
+Texto: "Tópico de entrada: `FIAPIoT/nexolog/equipe01/dados` — o mesmo do Node-RED".
 
-Nota de fala: comparar `/dados` com `/eventos`. A regra e a detecção de mudança já aconteceram no Node-RED. No n8n, configurar as credenciais e o Chat ID antes de ativar o workflow.
+Nota de fala: dois detalhes do Switch decidem o comportamento. **Send data to all
+matching outputs**, senão a caixa quente *e* aberta avisa só a temperatura. E **sem
+Fallback Output**, porque quando nada passa do limite nada deve sair. Um nó de Telegram
+só, uma credencial só, e ainda assim uma mensagem por variável — o que muda é o caminho
+até ele.
 
 ### 5. Slide 14 — Hands on: a mesma caixa nas próximas etapas
 
-Texto:
+1. Caixa normal: dashboard vivo, Telegram em silêncio.
+2. Levantar a tampa: chega o aviso da tampa.
+3. Aquecer com a tampa aberta: chegam **dois** avisos, um por variável.
+4. Fechar e esfriar: para sozinho.
 
-1. Caixa normal: observar o dashboard.
-2. Levantar a tampa: verificar um aviso.
-3. Manter aberta: observar que o aviso não se repete.
-4. Fechar a tampa: verificar a recuperação.
+Fechamento oral: "No app15 a plataforma manda o comando de volta, em JSON, e acende o
+LED daquela causa. No app16 essa mesma plataforma fica no Raspberry Pi. O que continua
+funcionando quando a internet cai, mas a rede local permanece?"
 
-Fechamento oral: “No app15 a central enviará o comando para acender o LED. No app16 essa mesma plataforma ficará no Raspberry Pi. O que continua funcionando quando a internet cai, mas a rede local permanece?”
-
-O slide 13 mantém sua função de mostrar o histórico de execuções. O nome antigo do workflow na captura é apenas referência visual do editor.
+Aviso para a demonstração: o dispositivo publica a cada 1 s, e o aviso sai a cada
+leitura fora do limite. O Telegram bloqueia nesse ritmo. Para demonstrar o fluxo, deixe
+a credencial de fora e acompanhe pelas execuções.
