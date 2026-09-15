@@ -50,13 +50,17 @@ Um LED só, para uma decisão só. Não vale um módulo `.hpp` para duas linhas.
 const uint8_t LED_ALERTA = 21;
 ```
 
-**b) No `setup()`**, junto dos `inicializar` dos sensores:
+**b) No `setup()`**, junto dos `inicializar` dos sensores — estas duas linhas ficam:
 
 ```cpp
   pinMode(LED_ALERTA, OUTPUT);
   digitalWrite(LED_ALERTA, LOW);
+```
 
-  // Teste de bancada: pisca uma vez.
+**c) Para conferir a ligação**, acrescente logo abaixo — e apague depois. O arquivo
+pronto não tem este trecho:
+
+```cpp
   digitalWrite(LED_ALERTA, HIGH);
   delay(500);
   digitalWrite(LED_ALERTA, LOW);
@@ -74,9 +78,7 @@ cátodo no GND. O `diagram.json` deste projeto já vem com ele.
 |---|---|
 | `'LED_ALERTA' was not declared` | o `const uint8_t` tem que vir antes do `setup()` |
 | `ESP32SensorsLED.hpp: No such file` | o módulo de LED não existe mais: apague o include herdado do app14 |
-
-Tire o teste de bancada depois de conferir, ou deixe — ele é um bom sinal de que
-a placa reiniciou.
+| LED aceso o tempo todo | faltou o `digitalWrite(LED_ALERTA, LOW)` depois do `delay` |
 
 ---
 

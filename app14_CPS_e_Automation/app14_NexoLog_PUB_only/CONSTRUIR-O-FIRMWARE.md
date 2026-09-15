@@ -129,7 +129,7 @@ void conectarMQTT() {
 }
 ```
 
-**No fim do `setup()`:**
+**No `setup()`**, entre os `inicializar` e a linha de título do CSV:
 
 ```cpp
   conectarWiFi();
