@@ -143,6 +143,9 @@ bool enviarDadosColetados() {
 }
 
 void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
+  // %.*s imprime so os primeiros "tamanho" caracteres: conteudo nao termina em \0.
+  Serial.printf("[MQTT] Recebido: %.*s\r\n", tamanho, (const char*)conteudo);
+
   JsonDocument doc;
   DeserializationError erro = deserializeJson(doc, (const char*)conteudo, tamanho);
   if (erro) {

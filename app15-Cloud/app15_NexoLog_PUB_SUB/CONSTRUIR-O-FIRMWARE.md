@@ -110,6 +110,9 @@ mesmo que monta o JSON que sobe:
 
 ```cpp
 void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
+  // %.*s imprime so os primeiros "tamanho" caracteres: conteudo nao termina em \0.
+  Serial.printf("[MQTT] Recebido: %.*s\r\n", tamanho, (const char*)conteudo);
+
   JsonDocument doc;
   DeserializationError erro = deserializeJson(doc, (const char*)conteudo, tamanho);
   if (erro) {
@@ -123,21 +126,21 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
     return;
   }
 
-  Serial.printf("[CMD] %s\r\n", alerta);   // sai na iteracao 3
 }
 ```
 
 Três coisas para reparar:
 
 - `conteudo` não termina em `\0`. Por isso o `tamanho` vai junto — sem ele o parser
-  lê além da mensagem.
+  lê além da mensagem. É também por isso que o print usa `%.*s`, que recebe o tamanho
+  antes do texto: um `%s` comum sairia lendo memória até achar um zero por acaso.
 - `deserializeJson` devolve erro em vez de travar. JSON quebrado no meio da aula é
   comum; a callback avisa e volta.
 - `doc["alerta"]` num campo ausente devolve `nullptr`, não string vazia. Por isso a
   checagem antes de usar.
 
-O `printf` do fim é andaime: serve para você ver a mensagem chegando antes de haver
-LED. Na próxima iteração ele sai.
+O `[MQTT] Recebido` faz par com o `[MQTT] Publicado` do envio: um diz o que saiu, o
+outro diz o que chegou. Juntos, o Serial conta a conversa inteira.
 
 **d) Registrar**, no `setup()`, depois do `setServer`:
 
@@ -162,11 +165,12 @@ mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m 'ON'
 ```
 
 ```
-[CMD] ON
+[MQTT] Recebido: {"alerta":"ON"}
+[MQTT] Recebido: ON
 [CMD] JSON invalido: InvalidInput
 ```
 
-- [ ] O JSON bom aparece com o alerta
+- [ ] O JSON bom aparece inteiro, entre chaves
 - [ ] O `ON` solto é recusado sem travar o firmware
 - [ ] Continua publicando os dados normalmente entre um comando e outro
 
@@ -181,7 +185,7 @@ mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m 'ON'
 
 ## Iteração 3 — O alerta acendendo o LED
 
-Troque o `printf` de andaime por uma linha:
+Uma linha no fim da callback:
 
 ```cpp
   // A nuvem ja decidiu. Aqui so obedecemos.
@@ -195,9 +199,6 @@ o `== 0`.
 Qualquer `alerta` que não seja exatamente `ON` apaga. É uma escolha: em dúvida, o painel
 fica apagado em vez de mentir que está tudo bem.
 
-O andaime sai porque o LED passa a ser a resposta — e porque o Serial daqui é um CSV:
-cada linha de log no meio dele estraga a captura.
-
 A callback inteira, pronta, cabe em quinze linhas. Repare no que **não** está nela:
 nenhum número, nenhum limite, nenhum `if` sobre distância ou movimentação. O firmware
 não sabe o que é 25 cm nem 3 m/s², e nem sabe que são duas condições. Ele recebe a
@@ -210,13 +211,13 @@ mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alerta":"ON"}
 mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m '{"alerta":"OFF"}'
 ```
 
-- [ ] Acende e apaga, e o Serial não diz nada — só o CSV continua correndo
+- [ ] Acende e apaga, e o `[MQTT] Recebido` mostra o JSON de cada comando
 - [ ] `{"alerta":"on"}` minúsculo não acende
 - [ ] `{}` sem o campo só reclama no Serial
 
 | Deu errado | Onde olhar |
 |---|---|
-| Nada acontece e nada aparece | o LED é a única resposta agora: confira `pinMode` e o pino |
+| `[MQTT] Recebido` aparece, LED parado | `pinMode` no `setup()`, ou pino trocado |
 | Sempre apaga, mesmo com `ON` | `strcmp` devolve **0** quando é igual — repare no `== 0` |
 | Acende e apaga sozinho o tempo todo | normal: a plataforma reavalia a cada leitura |
 

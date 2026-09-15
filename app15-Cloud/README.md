@@ -41,6 +41,9 @@ Acrescente a função ao final do arquivo. O comando chega em JSON, tratado com 
 
 ```cpp
 void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
+  // %.*s imprime so os primeiros "tamanho" caracteres: conteudo nao termina em \0.
+  Serial.printf("[MQTT] Recebido: %.*s\r\n", tamanho, (const char*)conteudo);
+
   JsonDocument doc;
   DeserializationError erro = deserializeJson(doc, (const char*)conteudo, tamanho);
   if (erro) {
@@ -85,6 +88,7 @@ A assinatura acontece novamente em cada reconexão. O `mqttClient.loop()` já es
 
 1. Desative o dashboard do app14 antes de ativar o do app15: ambos usam os mesmos tópicos.
 2. Importe [Fluxo_1_dashboard_graphs_e_cmd.json](Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json) no Node-RED.
+   O dashboard tem um widget **LED da caixa**, que acende junto com o LED do dispositivo. É o `node-red-contrib-ui-led` — instale pelo Manage palette, como o `ui-level`.
 3. Configure o broker e faça Deploy. Dois switches **em série** fazem o E: `A tampa está aberta?` só entrega ao `E está sacudindo?` o que passou de 25 cm; quem passa dos dois vai ao `Alerta ON`. As saídas `otherwise` dos dois caem no mesmo `Alerta OFF`. É uma condição composta desenhada no canvas, sem escrever código.
 4. Para histórico, use [Fluxo_2_envio_InfluxDB.json](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json). Mantenha apenas uma cópia do fluxo de gravação ativa.
 5. Para notificações, importe [fluxo_mqtt.json](Plataformas_config/n8n/fluxo_mqtt.json) no n8n. Ele assina `dados` direto do ESP32, em paralelo com o Node-RED. Configure credenciais MQTT, Telegram e `SEU_CHAT_ID`. Ative apenas um workflow por equipe.
@@ -100,9 +104,11 @@ Com a caixa fechada e parada, o LED fica apagado.
 
 Levante a tampa — no Wokwi, mude a distância de 10 para 40 cm. **Nada acontece.** A tampa aberta sozinha não é alerta: uma entrega parada, sendo conferida, tem a tampa aberta.
 
-Agora sacuda o MPU com a tampa ainda aberta. **O LED acende.** Feche a tampa: apaga. O Serial não diz nada — só o CSV das medições continua correndo, e a resposta ao comando é o próprio LED.
+Agora sacuda o MPU com a tampa ainda aberta. **O LED acende**, no Wokwi e no dashboard. Feche a tampa: apaga. No Serial, `[MQTT] Recebido` mostra o JSON que chegou, fazendo par com o `[MQTT] Publicado` de cada leitura.
 
 O dispositivo não sabe o que é 25 cm, nem 3 m/s², nem que são duas condições. Ele mede, publica e obedece. Para fazer essa conta a bordo, ele precisaria guardar as duas medidas, conhecer os dois limites e ser recompilado a cada ajuste — na plataforma são dois nós ligados um no outro, e o limite muda com um duplo clique.
+
+O LED do dashboard é um **princípio de gêmeo digital**: a tela mostra o estado do equipamento sem ter o equipamento na frente. Mas repare no limite — ele espelha o comando que a plataforma **mandou**, não o que o dispositivo **fez**. Se o ESP32 estiver desligado, o widget acende do mesmo jeito. Para o gêmeo dizer a verdade, o dispositivo teria que publicar de volta o que executou, e aí o dashboard leria essa confirmação em vez do comando.
 
 Se a comunicação cair, o LED mantém o último comando que recebeu. O ESP32 continua coletando, mas não decide sobre alertas.
 

@@ -348,7 +348,8 @@
     "wires": [
       [
         "948117e25c041dd8",
-        "15867f465e5f117d"
+        "15867f465e5f117d",
+        "c0de000000espe01"
       ]
     ]
   },
@@ -375,9 +376,68 @@
     "y": 480,
     "wires": [
       [
-        "948117e25c041dd8"
+        "948117e25c041dd8",
+        "c0de000000espe01"
       ]
     ]
+  },
+  {
+    "id": "c0de000000espe01",
+    "type": "change",
+    "z": "efd1c69a09330861",
+    "name": "Só o alerta",
+    "rules": [
+      {
+        "t": "set",
+        "p": "payload",
+        "pt": "msg",
+        "to": "payload.alerta",
+        "tot": "msg"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 1340,
+    "y": 420,
+    "wires": [
+      [
+        "c0de000000espe02"
+      ]
+    ]
+  },
+  {
+    "id": "c0de000000espe02",
+    "type": "ui_led",
+    "z": "efd1c69a09330861",
+    "order": 6,
+    "group": "971cfe2ccd7a75ef",
+    "width": 3,
+    "height": 3,
+    "label": "LED da caixa",
+    "labelPlacement": "left",
+    "labelAlignment": "center",
+    "colorForValue": [
+      {
+        "color": "#5b5b5b",
+        "value": "OFF",
+        "valueType": "str"
+      },
+      {
+        "color": "#ff0000",
+        "value": "ON",
+        "valueType": "str"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "name": "Espelho do LED",
+    "x": 1560,
+    "y": 420,
+    "wires": []
   },
   {
     "id": "15867f465e5f117d",
@@ -425,7 +485,7 @@
     "type": "ui_text",
     "z": "efd1c69a09330861",
     "group": "971cfe2ccd7a75ef",
-    "order": 6,
+    "order": 7,
     "width": 12,
     "height": 1,
     "name": "Conexão",
@@ -514,7 +574,8 @@
     "env": [],
     "modules": {
       "node-red-dashboard": "3.6.6",
-      "node-red-contrib-ui-level": "0.1.46"
+      "node-red-contrib-ui-level": "0.1.46",
+      "node-red-contrib-ui-led": "0.4.11"
     }
   }
 ]
