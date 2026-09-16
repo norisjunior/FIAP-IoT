@@ -1,6 +1,6 @@
 # App15 — Recebimento de comandos MQTT
 
-Parta de uma cópia do projeto [app14_NexoLog](../app14_CPS_e_Automation/app14_NexoLog_PUB_only). Mantenha sensores, coleta, JSON e tópicos de dados. Acrescente somente a recepção de comandos: a nuvem decide e manda JSON, o dispositivo acende o LED.
+Parta de uma cópia do projeto `app14_NexoLog_PUB_only`. Mantenha sensores, coleta, JSON e tópicos de dados. Acrescente somente a recepção de comandos: a nuvem decide e manda JSON, o dispositivo acende o LED.
 
 Para montar em três iterações que rodam: [CONSTRUIR-O-FIRMWARE.md](app15_NexoLog_PUB_SUB/CONSTRUIR-O-FIRMWARE.md). O roteiro abaixo é o mesmo conteúdo em forma de referência.
 
@@ -121,4 +121,4 @@ Se a comunicação cair, o LED mantém o último comando que recebeu. O ESP32 co
 
 Nesta etapa, a plataforma pode representar uma central em nuvem. Para executá-la remotamente, ajuste o endereço do broker e a conectividade. Um serviço executado localmente continua local.
 
-[Montagem e configuração comuns](../app14_CPS_e_Automation/Guia-NexoLog.md)
+Montagem e configuração comuns: `Guia-NexoLog.md`, na pasta do app14.

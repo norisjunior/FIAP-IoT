@@ -8,8 +8,8 @@ Duas iterações. Cada uma roda.
 No app14 o Node-RED só mostra. Aqui ele **decide e responde**: lê as medições, combina
 duas delas e manda um comando de volta.
 
-Comece do fluxo do app14 já funcionando —
-[CONSTRUIR-O-FLUXO.md do app14](../../../app14_CPS_e_Automation/Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md).
+Comece do fluxo do app14 já funcionando — o `CONSTRUIR-O-FLUXO.md` do Node-RED, na
+pasta do app14.
 Firmware do app15 gravado, assinando `cmd`:
 [CONSTRUIR-O-FIRMWARE.md](../../app15_NexoLog_PUB_SUB/CONSTRUIR-O-FIRMWARE.md).
 

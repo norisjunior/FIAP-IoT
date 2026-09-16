@@ -5,8 +5,8 @@ Uma empresa fictícia acompanha cargas sensíveis. A mesma caixa e os mesmos dad
 | Etapa | Firmware | Plataforma |
 |---|---|---|
 | [App14](README.md) | Projeto-base: coleta e publicação MQTT | Node-RED mostra; n8n decide e avisa |
-| [App15](../app15-Cloud/README.md) | Acrescentar somente callback e assinatura MQTT ao app14 | Regras enviam ON/OFF ao LED |
-| [App16](../app16-Edge/README.md) | Mesmo firmware preparado no app15 | Mesmos fluxos executados no Raspberry Pi |
+| App15 | Acrescentar somente callback e assinatura MQTT ao app14 | Regras enviam ON/OFF ao LED |
+| App16 | Mesmo firmware preparado no app15 | Mesmos fluxos executados no Raspberry Pi |
 
 O projeto embarcado está em `app14_CPS_e_Automation/app14_NexoLog_PUB_only`. Para montar do zero, em duas iterações que rodam: [firmware](app14_NexoLog_PUB_only/CONSTRUIR-O-FIRMWARE.md), [Node-RED](Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md) e [n8n](Plataformas_config/n8n/CONSTRUIR-O-FLUXO.md). O app15 contém o roteiro das alterações e as configurações da plataforma. O app16 contém somente a orientação de implantação no Raspberry.
 

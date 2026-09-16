@@ -20,8 +20,7 @@ Três iterações. Cada uma compila e roda.
 ## Iteração 0 — A base
 
 Copie `app14_NexoLog_PUB_only` inteiro e renomeie para `app15_NexoLog_PUB_SUB`. Ele
-precisa estar rodando as quatro iterações de
-[CONSTRUIR-O-FIRMWARE.md do app14](../../app14_CPS_e_Automation/app14_NexoLog_PUB_only/CONSTRUIR-O-FIRMWARE.md)
+precisa estar rodando as quatro iterações do `CONSTRUIR-O-FIRMWARE.md` do app14
 antes de continuar: publicando JSON a cada 1 s.
 
 Nada do que sobe muda. **Paridade com o app14:**

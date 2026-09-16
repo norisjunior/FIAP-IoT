@@ -56,4 +56,4 @@ cru. Nivelado, `mean_az` fica perto de `1.0`; inclinado 25°, parte da gravidade
 
 [`colab/treinamento_multiclasse.ipynb`](colab/treinamento_multiclasse.ipynb) lê estas janelas do
 InfluxDB (measurement `vibracao_multiclasse`) e gera o `modelo_motor_multiclasse.pkl`, que a
-[Aplicação 25](../../app25-Inferencia-AI-API_Sinais-MultiClass_IMU/) carrega para responder no MQTT.
+**app seguinte de inferência usando IMU** carrega para responder no MQTT.
