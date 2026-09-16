@@ -19,19 +19,12 @@ Connections > Add new connection > **InfluxDB**.
 
 | Campo | Valor |
 |---|---|
-| **Product** | **InfluxDB Cloud Serverless** |
+| Query language | **Flux** |
 | URL | `https://<sua-regiao>.aws.cloud2.influxdata.com` |
-| **Query language** | **SQL** |
-| Database | o seu bucket |
+| Auth | tudo desligado |
+| Organization | a sua |
 | Token | o mesmo do Node-RED |
-
-**Product vem antes de tudo.** As opções de *Query language* dependem dele: SQL só
-aparece em produtos InfluxDB 3. Se o Product ficar em `InfluxDB OSS 2.x` ou
-`InfluxDB Cloud (TSM)`, o Grafana oferece Flux e InfluxQL, mostra campos de
-*Organization* e *Default Bucket*, e não há SQL em lugar nenhum.
-
-`Database` é o nome do **bucket** — mudou o nome do campo, é a mesma coisa.
-A URL é a mesma de sempre: o SQL usa Flight (gRPC) no mesmo endereço, não outra porta.
+| Default Bucket | o seu |
 
 **Save & test** tem que responder *datasource is working*.
 
@@ -43,8 +36,8 @@ não o ESP32.
 Dashboards > New > **Import** > Upload JSON file.
 
 Na tela de import, o Grafana pergunta qual é a fonte de dados InfluxDB — escolha a que
-você acabou de criar. Não há caixa de **Bucket** no topo: em SQL o database mora na
-fonte de dados, não na consulta.
+você acabou de criar. Depois de abrir, no topo tem a caixa **Bucket**: escreva o nome
+do seu bucket e dê Enter. Todos os painéis usam essa caixa, então é um lugar só.
 
 ## 3. O dashboard de medições
 
@@ -60,10 +53,9 @@ Sete painéis, com os mesmos limites do n8n:
 | Movimentação | série temporal | — |
 | Distância até a tampa | série temporal | — |
 
-Os quatro de cima terminam em `ORDER BY time DESC LIMIT 1`: o valor mais recente. As
-séries usam `$__dateBin(time)`, que agrupa os pontos conforme o zoom — é o que deixa um
-mês de dados abrir rápido — e `$__timeFilter(time)`, que é o que faz elas obedecerem ao
-seletor de tempo do topo.
+Os quatro de cima usam `last()`: o valor mais recente. As séries usam
+`aggregateWindow`, que agrupa os pontos conforme o zoom — é o que deixa um mês de
+dados abrir rápido.
 
 Repare que é o mesmo painel do Node-RED, com uma diferença: aqui você pode voltar no
 tempo. Mude o intervalo no topo para 24 horas e veja a entrega inteira.
@@ -97,19 +89,16 @@ campo. Abra a tampa no Wokwi e a seta fica vermelha antes de você ler o número
 Para mover qualquer elemento: **Edit** no painel, clique, arraste — a seta acompanha
 sozinha. Depois de ajustar, **exporte de volta** e substitua o arquivo aqui.
 
-A consulta do canvas é uma só, em SQL, com os quatro campos no `SELECT` e
-`ORDER BY time DESC LIMIT 1`: uma linha, quatro colunas, que é o que cada elemento
-procura pelo nome. (No Flux isso exigia um `pivot()` no fim; em SQL cada field já é
-coluna.)
+A consulta é uma só, com `pivot()` no fim. Sem ele o Flux devolve uma linha por campo
+e cada elemento enxerga só um; com ele os quatro viram colunas de uma linha só.
 
 ## Deu errado
 
 | Sintoma | Onde olhar |
 |---|---|
-| Painel vazio, com `Data outside time range` | o intervalo da consulta não é o do seletor de tempo |
-| `unauthorized` | o token da fonte de dados |
-| Só tem Flux e InfluxQL, sem SQL | o **Product** da fonte de dados não é um InfluxDB 3 |
-| Gauge com "No data" e a série cheia | a consulta do gauge olha os últimos 5 minutos: o ESP32 parou de publicar |
+| Painel vazio, sem erro | a caixa **Bucket** no topo ainda está com `SEU_BUCKET` |
+| `unauthorized` | o token da fonte de dados, ou a organização |
+| Gauge com "No data" e a série cheia | o `last()` olha os últimos 5 minutos: o ESP32 parou de publicar |
 | Canvas com fundo escuro | a URL da imagem em **Background > Image**, no frame de fora |
 | Canvas mostra o rótulo e não o número | o elemento está em Fixed em vez de Field, ou o nome do campo não bate |
 | Tudo "No data" | confira antes no InfluxDB, Data Explorer. Se não tem lá, o problema é o Node-RED |
