@@ -108,6 +108,13 @@ Token o seu, de **Load Data > API Tokens**.
 O token **não vem no arquivo importado** — o Node-RED guarda token como credencial e a
 exportação sempre remove. Cada aluno cola o dele.
 
+> **É o InfluxDB Cloud, não o da IoT-platform.** A plataforma sobe um `influxdb:2.7`
+> local, e ele serve muito bem para dashboard — mas o Colab de coleta consulta com
+> **SQL**, pelo `InfluxDBClient3`, e essa API só existe no InfluxDB v3 (Cloud). Apontar
+> este nó para `influxdb:8086` grava normalmente e só quebra lá na frente, no Colab, com
+> um erro que não menciona versão nenhuma. Da IoT-platform, o app19 usa o Mosquitto e o
+> Node-RED.
+
 Deploy e colete de novo.
 
 - [ ] O nó `Gravar amostras` fica verde, sem mensagem de erro

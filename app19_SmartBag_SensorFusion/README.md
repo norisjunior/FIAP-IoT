@@ -42,7 +42,9 @@ nenhuma comparação diria nada.
 3. Importe `NodeRED/Fluxo_2_envio_InfluxDB.json` e configure broker, URL, organização,
    bucket e token. Para montar em vez de importar:
    [CONSTRUIR-O-FLUXO.md](NodeRED/CONSTRUIR-O-FLUXO.md). Measurement:
-   `smartbag_raw_adc_2026`.
+   `smartbag_raw_adc_2026`. O destino é o **InfluxDB Cloud**, não o `influxdb:2.7` da
+   IoT-platform: o Colab consulta com SQL, que só existe no v3. Da plataforma, este app
+   usa o Mosquitto e o Node-RED.
 4. Inicie o Wokwi. Começa na rodada 1; o baseline é calculado ao iniciar a primeira
    coleta da rodada, com a bag fechada e parada.
 5. Os dois botões:
