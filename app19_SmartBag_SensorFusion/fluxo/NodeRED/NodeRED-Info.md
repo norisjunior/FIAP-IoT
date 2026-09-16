@@ -1,7 +1,5 @@
-# NexoLog v2
+# SmartBag — Node-RED
 
-Fluxos desta versão: veja o README da aplicação.
+Importe somente `Fluxo_2_envio_InfluxDB.json`. Configuração em [CONSTRUIR-O-FLUXO.md](CONSTRUIR-O-FLUXO.md).
 
-Para montar do zero, em duas iterações: [CONSTRUIR-O-FLUXO.md](CONSTRUIR-O-FLUXO.md).
-
-Os demais arquivos auxiliares copiados são referências do projeto anterior.
+Os demais arquivos copiados são referências do projeto anterior.
