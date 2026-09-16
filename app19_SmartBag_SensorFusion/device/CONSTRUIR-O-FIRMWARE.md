@@ -21,9 +21,9 @@ Quatro iterações. Cada uma compila e roda.
 ## Iteração 0 — A base
 
 Copie `app15_NexoLog_PUB_SUB` inteiro e renomeie a pasta para `device`. Renomeie o
-`.ino` para `app19-SmartBag.ino`. Ele precisa estar rodando as três iterações de
-[CONSTRUIR-O-FIRMWARE.md do app15](../../app15-Cloud/app15_NexoLog_PUB_SUB/CONSTRUIR-O-FIRMWARE.md)
-antes de continuar.
+`.ino` para `app19-SmartBag.ino`. Ele precisa estar rodando as três iterações do guia de
+firmware do app15 antes de continuar: publicando JSON a cada 1 s e obedecendo ao comando
+que chega em `cmd`.
 
 **Paridade com o app15** — o que não muda:
 

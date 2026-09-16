@@ -113,13 +113,9 @@ ESP32, `rodada` volta a 1: não misture execuções no mesmo CSV.
 
 ## Referências
 
-Firmware e plataforma vêm do [app15](../app15-Cloud/README.md). O protocolo de botões,
-rodada e split por grupo vem do
-[app17-7](../app17-GerarDatasetSinais_IMU/app17-7-MultiClassAccFeaturesInflux/README.md);
-o padrão de API e pinagem de versões, do
-[app18](../app18-Inferencia-AI-API_Sinais-MultiClass_IMU/README.md). Como extensão, o
-[app30](../app30-AIoT-EdgeAI-RF-Occupancy_micromlgen/README.md) traz RF embarcada com
-scaler e o [app31](../app31-TinyML-TensorFlowLite/) traz MicroTFLite.
+Firmware e plataforma vêm do app15. O protocolo de botões, rodada e split por grupo vem
+do app17-7; o padrão de API e a pinagem de versões, do app18. Como extensão, o app30 traz
+RF embarcada com scaler e o app31 traz MicroTFLite.
 
 LDR lido direto com `analogRead()`, inclusive nos extremos 0 e 4095. O controle do
 [componente Wokwi](https://docs.wokwi.com/parts/wokwi-photoresistor-sensor) continua em
