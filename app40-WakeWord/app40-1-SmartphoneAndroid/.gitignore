@@ -1,0 +1,19 @@
+# Saida bruta do Edge Impulse.
+# O conteudo ja esta em app/android/app/src/main/cpp/ — aqui seria copia.
+# O .zip fica versionado como registro do que foi baixado.
+WakeWordEIFIOT/extracted/
+
+# APKs gerados
+*.apk
+*.aab
+
+# Sistema
+Thumbs.db
+desktop.ini
+
+# SDK do Edge Impulse: extraido do .zip acima.
+# Veja "Preparar a biblioteca nativa" no README.md.
+app/android/app/src/main/cpp/edge-impulse-sdk/
+app/android/app/src/main/cpp/model-parameters/
+app/android/app/src/main/cpp/tflite-model/
+app/android/app/src/main/cpp/README.txt
