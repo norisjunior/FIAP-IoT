@@ -1,6 +1,7 @@
 /* ---- Includes ---- */
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiClient.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "ESP32SensorsAmbiente.hpp"
@@ -73,13 +74,18 @@ void setup() {
   ESP32Sensors::Accel::inicializar(SCL_PIN, SDA_PIN);
   ESP32Sensors::LDR::inicializar(LDR_PIN);
   ESP32Sensors::LED::inicializar(LED_PIN);
+
   conectarWiFi();
-  situacao = SITUACOES[0];
-  Serial.println("Rodada 1: feche a bag antes de iniciar a coleta.");
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setBufferSize(1024);
-  mqttClient.setSocketTimeout(1);
+  mqttClient.setKeepAlive(120);
+
+  situacao = SITUACOES[0];
+  Serial.println("Rodada 1: feche a bag antes de iniciar a coleta.");
   Serial.println("COLETA: inicia/para. SITUACAO: avanca com a coleta parada.");
+
+  // Linha de titulo do CSV. Serial.println ja termina em \r\n .
+  Serial.println("rodada,situacao,temperatura,umidade,delta_distancia,luz,mov_max,incl_max");
 }
 
 void loop() {
@@ -95,7 +101,7 @@ void loop() {
     coletando = !coletando;
     if (coletando) ESP32Sensors::LED::on();
     else ESP32Sensors::LED::off();
-    Serial.printf("[COLETA] %s | rodada %lu | %s\n",
+    Serial.printf("[COLETA] %s | rodada %lu | %s\r\n",
                   coletando ? "INICIADA" : "PARADA", (unsigned long)rodada, situacao.c_str());
     ultimoDebounceColeta = millis();
   }
@@ -104,7 +110,7 @@ void loop() {
   // Botao SITUACAO: muda o ensaio, sem iniciar a coleta.
   int leituraSituacao = digitalRead(BTN_SITUACAO);
   if (ultimoBotaoSituacao == HIGH && leituraSituacao == LOW &&
-      millis() - ultimoDebounceSituacao > debounceMs && leituraColeta == HIGH) {
+      millis() - ultimoDebounceSituacao > debounceMs) {
     if (!coletando) {
       indiceSituacao++;
       if (indiceSituacao >= TOTAL_SITUACOES) {
@@ -115,23 +121,23 @@ void loop() {
         Serial.println("Nova rodada: feche a bag antes de iniciar a coleta.");
       }
       situacao = SITUACOES[indiceSituacao];
-      Serial.println("[SITUACAO] " + situacao);
+      Serial.printf("[SITUACAO] %s | rodada %lu\r\n", situacao.c_str(), (unsigned long)rodada);
     } else {
       Serial.println("Pare a coleta antes de trocar a situacao.");
     }
     ultimoDebounceSituacao = millis();
   }
   ultimoBotaoSituacao = leituraSituacao;
-  unsigned long agora = millis();
 
+  // O DHT22 e lento: guardamos a ultima leitura boa e enviamos ela.
+  unsigned long agora = millis();
   if (agora - ultimoDHT >= INTERVALO_DHT) {
     ultimoDHT = agora;
-    auto leitura = ESP32Sensors::Ambiente::medirAmbiente();
-    if (leitura.valido) {
-      ambiente = leitura;
-    }
+    ESP32Sensors::Ambiente::AMBIENTE leitura = ESP32Sensors::Ambiente::medirAmbiente();
+    if (leitura.valido) ambiente = leitura;
   }
 
+  // O MPU e rapido: 20 amostras por segundo, guardamos so os maiores.
   agora = millis();
   if (coletando && agora - ultimoMPU >= INTERVALO_MPU) {
     ultimoMPU = agora;
@@ -140,9 +146,10 @@ void loop() {
     inclMax = fmaxf(inclMax, ESP32Sensors::Accel::medirInclinacao(accel));
   }
 
+  // O HC-SR04 e lido junto do envio: a distancia nao muda em milissegundos.
   if (coletando && millis() - tempoAnterior >= INTERVALO_COLETA) {
     enviarDadosColetados();
-    movMax = inclMax = NAN;
+    movMax = inclMax = NAN;   // recomeca a procurar os picos
     tempoAnterior = millis();
   }
 
@@ -171,7 +178,7 @@ void calibrarDistancia() {
     delay(60);
   }
   distBase = validas == 5 ? soma / validas : NAN;
-  Serial.printf("[BASELINE] %.2f cm\n", distBase);
+  Serial.printf("[BASELINE] %.2f cm\r\n", distBase);
   baselinePendente = !isfinite(distBase);
   if (baselinePendente) Serial.println("[BASELINE] Sem medida. Feche a bag e tente na proxima coleta.");
 }
@@ -183,13 +190,21 @@ void conectarWiFi() {
 }
 
 void conectarMQTT() {
-  bool ok = mqttClient.connect(MQTT_CLIENT_ID);
-  Serial.println(ok ? "[MQTT] Conectado" : "[MQTT] Falha ao conectar");
+  if (mqttClient.connect(MQTT_CLIENT_ID)) {
+    Serial.println("[MQTT] Conectado");
+  } else {
+    Serial.printf("[MQTT] Falha: %d\r\n", mqttClient.state());
+  }
 }
 
 void enviarDadosColetados() {
   float dist = ESP32Sensors::Distancia::medirDistancia();
   int luz = ESP32Sensors::LDR::ler();
+
+  // Mesma ordem da linha de titulo impressa no setup().
+  Serial.printf("%lu,%s,%.1f,%.1f,%.2f,%d,%.2f,%.1f\r\n",
+                (unsigned long)rodada, situacao.c_str(), ambiente.temp, ambiente.umid,
+                dist - distBase, luz, movMax, inclMax);
 
   JsonDocument doc;
   doc["device"] = MQTT_CLIENT_ID;
@@ -201,9 +216,9 @@ void enviarDadosColetados() {
   doc["luz"] = luz;
   doc["mov_max"] = movMax;
   doc["incl_max"] = inclMax;
+
   String payload;
   serializeJson(doc, payload);
-  Serial.println(payload);
   if (!mqttClient.connected() || !mqttClient.publish(MQTT_PUB_TOPIC, payload.c_str())) {
     Serial.println("[MQTT] Amostra nao enviada");
   }

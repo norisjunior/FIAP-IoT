@@ -57,7 +57,9 @@ O firmware mantém apenas os máximos de movimento/inclinação a cada segundo e
 
 ## Depois da coleta
 
-Abra `app19_coleta_e_rotulagem.ipynb`, selecione a equipe e o intervalo de uma execução contínua e confira a tabela de anotações antes de exportar. Rode os dois notebooks de treinamento com o mesmo arquivo.
+Abra [app19_coleta_e_rotulagem.ipynb](colab/app19_coleta_e_rotulagem.ipynb), selecione a equipe e o intervalo de uma execução contínua e confira a tabela de anotações antes de exportar. Rode os dois notebooks de treinamento com o mesmo arquivo.
+
+O transporte MQTT -> InfluxDB esta em [NodeRED/CONSTRUIR-O-FLUXO.md](NodeRED/CONSTRUIR-O-FLUXO.md); o firmware, em [device/CONSTRUIR-O-FIRMWARE.md](device/CONSTRUIR-O-FIRMWARE.md).
 
 Duas rodadas são o mínimo didático. Para ajustar configurações e avaliar generalização, colete rodadas completas adicionais e preserve o teste. As acurácias do exemplo sintético anterior não são resultados desta coleta.
 
