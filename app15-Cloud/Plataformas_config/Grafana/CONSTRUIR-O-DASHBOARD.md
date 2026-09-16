@@ -20,12 +20,19 @@ Uma vez só, e os dois dashboards usam. Connections > Add new connection > **Inf
 
 | Campo | Valor |
 |---|---|
-| Query language | **Flux** |
+| **Product** | **InfluxDB Cloud Serverless** |
 | URL | `https://<sua-regiao>.aws.cloud2.influxdata.com` |
-| Auth | tudo desligado |
-| Organization | a sua |
+| **Query language** | **SQL** |
+| Database | o seu bucket |
 | Token | o mesmo do Node-RED |
-| Default Bucket | o seu |
+
+**Product vem antes de tudo.** As opções de *Query language* dependem dele: SQL só
+aparece em produtos InfluxDB 3. Se o Product ficar em `InfluxDB OSS 2.x` ou
+`InfluxDB Cloud (TSM)`, o Grafana oferece Flux e InfluxQL, mostra campos de
+*Organization* e *Default Bucket*, e não há SQL em lugar nenhum.
+
+`Database` é o nome do **bucket** — mudou o nome do campo, é a mesma coisa.
+A URL é a mesma de sempre: o SQL usa Flight (gRPC) no mesmo endereço, não outra porta.
 
 **Save & test** tem que responder *datasource is working*.
 
@@ -35,15 +42,15 @@ Uma vez só, e os dois dashboards usam. Connections > Add new connection > **Inf
 
 New dashboard > Add visualization > escolha a fonte de dados.
 
-**a) O primeiro painel.** Cole a consulta, em modo **Script Editor** (não o construtor
-visual):
+**a) O primeiro painel.** No editor da consulta, troque **Builder** por **Code** e ponha
+`Format: Table`. Cole:
 
-```flux
-from(bucket: "SEU_BUCKET")
-  |> range(start: -5m)
-  |> filter(fn: (r) => r["_measurement"] == "nexolog")
-  |> filter(fn: (r) => r["_field"] == "temp")
-  |> last()
+```sql
+SELECT "temp"
+FROM "nexolog"
+WHERE time >= now() - interval '5 minutes'
+ORDER BY time DESC
+LIMIT 1
 ```
 
 Visualização **Gauge**. Na barra da direita:
@@ -54,7 +61,9 @@ Visualização **Gauge**. Na barra da direita:
 | Standard options > Min / Max | `0` / `50` |
 | Thresholds | Base verde · `25` amarelo · `30` vermelho |
 
-`last()` devolve só o ponto mais recente — é o que um indicador precisa.
+`ORDER BY time DESC LIMIT 1` devolve só o ponto mais recente — é o que um indicador
+precisa. A janela de 5 minutos é de propósito: se o ESP32 parar de publicar, o gauge
+fica sem dado em vez de mostrar para sempre o último valor de ontem.
 
 **b) Os outros três**, iguais, trocando o campo e os ajustes:
 
@@ -69,22 +78,31 @@ No **Bar gauge**, ponha Orientation **Vertical** e Display mode **Gradient**: fi
 cara de nível de tanque, igual ao widget da tampa no Node-RED.
 
 **c) As séries.** Mesma coisa, com outra consulta — esta pega o intervalo da tela, não
-os últimos 5 minutos:
+os últimos 5 minutos. Ponha `Format: Time series`:
 
-```flux
-from(bucket: "SEU_BUCKET")
-  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-  |> filter(fn: (r) => r["_measurement"] == "nexolog")
-  |> filter(fn: (r) => r["_field"] == "temp" or r["_field"] == "umid")
-  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)
+```sql
+SELECT
+  $__dateBin(time) AS time,
+  avg("temp") AS temperatura,
+  avg("umid") AS umidade
+FROM "nexolog"
+WHERE $__timeFilter(time)
+GROUP BY $__dateBin(time)
+ORDER BY time
 ```
 
 Visualização **Time series**. Três painéis: `temp` + `umid` juntos, `movimentacao`
-sozinho, `dist` sozinho.
+sozinho, `dist` sozinho — nos outros dois, troque as duas linhas do `avg(...)` pelo
+campo que interessa.
 
-`v.timeRangeStart` e `v.windowPeriod` vêm do seletor de tempo lá em cima. O
-`aggregateWindow` agrupa conforme o zoom — é o que faz um mês de dados abrir rápido em
+**As duas macros são o pulo do gato.** `$__timeFilter(time)` vira
+`time >= <início da tela> AND time <= <fim da tela>`: é ela que faz o painel obedecer ao
+seletor de tempo lá em cima, em vez de um intervalo fixo escrito na consulta.
+`$__dateBin(time)` agrupa conforme o zoom — é o que faz um mês de dados abrir rápido em
 vez de mandar milhões de pontos para o navegador.
+
+A coluna de tempo **precisa se chamar `time`** no resultado, por isso o `AS time`. Sem
+isso o Grafana não reconhece a série e o painel fica vazio.
 
 **Save dashboard.**
 
@@ -95,15 +113,22 @@ vez de mandar milhões de pontos para o navegador.
 - [ ] Mude o intervalo do topo para 6 horas: as séries mostram a entrega inteira
 - [ ] O gauge continua no valor de agora — ele não olha o intervalo
 
-O último item é a diferença entre os dois tipos: `last()` ignora o seletor de tempo,
-`range(v.timeRangeStart)` obedece.
+O último item é a diferença entre os dois tipos: a consulta do gauge tem o intervalo
+escrito nela (`now() - interval '5 minutes'`) e ignora o seletor; a da série usa
+`$__timeFilter(time)` e obedece.
+
+> Se um painel aparecer vazio com o aviso **Data outside time range**, é isso: a consulta
+> trouxe dados de um período que não é o do seletor. Ou troque o intervalo lá em cima, ou
+> use `$__timeFilter(time)` na consulta.
 
 | Deu errado | Onde olhar |
 |---|---|
 | `No data` em tudo | confira antes no InfluxDB > Data Explorer. Se não tem lá, o problema é o Node-RED |
-| `No data` só nos gauges | o `last()` olha 5 minutos: o ESP32 parou de publicar |
-| Erro de bucket | o nome entre aspas na consulta é o **seu** bucket |
-| A série sobe em degraus | normal: `aggregateWindow` tira a média por janela |
+| `No data` só nos gauges | a consulta olha 5 minutos: o ESP32 parou de publicar |
+| `table 'nexolog' not found` | o measurement é o do **seu** Fluxo_2, e o Database certo está na fonte de dados |
+| Painel vazio, com `Data outside time range` | o intervalo da consulta não é o do seletor |
+| A série não desenha, mas a tabela tem dados | faltou `AS time`, ou o `Format` está em `Table` e não `Time series` |
+| A série sobe em degraus | normal: `$__dateBin` tira a média por janela |
 
 ---
 
@@ -111,22 +136,22 @@ O último item é a diferença entre os dois tipos: `last()` ignora o seletor de
 
 Aqui a foto da bag vira o painel, e as medições ficam em cima dela.
 
-**a) Painel novo, visualização Canvas.** A consulta é **uma só** para os quatro campos,
-e termina em `pivot`:
+**a) Painel novo, visualização Canvas.** A consulta é **uma só** para os quatro campos.
+`Format: Table`:
 
-```flux
-from(bucket: "SEU_BUCKET")
-  |> range(start: -5m)
-  |> filter(fn: (r) => r["_measurement"] == "nexolog")
-  |> filter(fn: (r) => r["_field"] == "temp" or r["_field"] == "umid"
-                    or r["_field"] == "dist" or r["_field"] == "movimentacao")
-  |> last()
-  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+```sql
+SELECT "temp", "umid", "dist", "movimentacao"
+FROM "nexolog"
+WHERE time >= now() - interval '5 minutes'
+ORDER BY time DESC
+LIMIT 1
 ```
 
-**O `pivot` é obrigatório.** Sem ele o Flux devolve quatro linhas, uma por campo, e
-cada elemento do canvas enxerga só uma. Com ele, os quatro viram colunas de uma linha
-só — que é o que os seletores procuram pelo nome.
+Uma linha, quatro colunas — que é o que os seletores do canvas procuram pelo nome.
+
+> No Flux esta consulta precisava terminar em `pivot()`, porque ele devolvia quatro
+> linhas, uma por campo, e cada elemento do canvas enxergava só uma. Em SQL cada field
+> já é uma coluna e o `pivot` simplesmente não existe.
 
 **b) A foto de fundo.** Selecione o quadro de fora (Element 1, o frame) e em
 **Background > Image** cole a URL:
@@ -199,7 +224,7 @@ Temperatura e umidade não levam seta — elas não são da bag, são do ambient
 | Deu errado | Onde olhar |
 |---|---|
 | Elemento mostra o rótulo e não o número | Text > Source está em **Fixed**, tem que ser **Field** |
-| Só um campo aparece, os outros vazios | faltou o `pivot` na consulta |
+| Só um campo aparece, os outros vazios | a consulta trouxe só aquela coluna: confira os quatro nomes no `SELECT` |
 | Nada muda de cor | Color mode em Standard options tem que ser **From thresholds** |
 | A cor muda na caixa mas não na seta | a seta tem o próprio seletor de cor: ponha em **Field** |
 | A seta não nasce | arraste **do ponto na borda** da elipse, não do meio dela |
@@ -212,5 +237,6 @@ Os dois prontos estão em [dashboard_nexolog.json](dashboard_nexolog.json) e
 com os seus.
 
 > **Antes de importar os prontos:** eles foram exportados de uma instalação específica,
-> então a fonte de dados e o nome do bucket vêm preenchidos com os de lá. Depois de
-> importar, abra cada consulta e troque o bucket pelo seu.
+> com as consultas ainda em **Flux**. Servem para comparar layout, limiares e elementos
+> do canvas — mas as consultas não rodam numa fonte de dados em SQL. Monte pelo roteiro
+> acima, ou abra cada painel e substitua a consulta pela versão SQL correspondente.
