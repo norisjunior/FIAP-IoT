@@ -10,8 +10,10 @@ ESP32. Aqui ele não decide nada: o app19 é um **gerador de dataset**, e quem v
 é o modelo, depois de treinado. O fluxo é só transporte.
 
 Firmware do app19 gravado e publicando:
-[CONSTRUIR-O-FIRMWARE.md](../device/CONSTRUIR-O-FIRMWARE.md). Broker no ar:
-[instalar_mqtt.md](../device/instalar_mqtt.md).
+[CONSTRUIR-O-FIRMWARE.md](../device/CONSTRUIR-O-FIRMWARE.md). Plataforma no ar
+(Mosquitto, Node-RED, InfluxDB e Grafana num Compose só):
+[IoT-platform](../../IoT-platform/README.md) — `./start-windows.ps1` ou
+`bash start-linux.sh`. Node-RED em http://localhost:1880, admin / FIAPIoT.
 
 > Desative os fluxos do app14/app15 antes de ativar este. Eles assinam outro tópico, mas
 > deixar três fluxos ligados no mesmo Node-RED só atrapalha a leitura do debug.

@@ -36,8 +36,9 @@ nenhuma comparação diria nada.
 
 1. Abra `device/` no PlatformIO e compile com `pio run`. Para montar o firmware em
    quatro iterações: [CONSTRUIR-O-FIRMWARE.md](device/CONSTRUIR-O-FIRMWARE.md).
-2. Configure Wi-Fi/broker no `.ino`. No Wokwi local: `host.wokwi.internal`. Broker:
-   [instalar_mqtt.md](device/instalar_mqtt.md).
+2. Suba a plataforma: [IoT-platform](../IoT-platform/README.md), com
+   `./start-windows.ps1` ou `bash start-linux.sh`. Configure Wi-Fi/broker no `.ino`:
+   no Wokwi com gateway local, `host.wokwi.internal`.
 3. Importe `NodeRED/Fluxo_2_envio_InfluxDB.json` e configure broker, URL, organização,
    bucket e token. Para montar em vez de importar:
    [CONSTRUIR-O-FLUXO.md](NodeRED/CONSTRUIR-O-FLUXO.md). Measurement:
