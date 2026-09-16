@@ -24,7 +24,7 @@ Imagens ausentes são baixadas; as existentes não são atualizadas a cada iníc
 
 ## Arquivos
 
-- `.env`: configuração local, ignorada pelo Git; inclua na entrega à faculdade.
+- `.env`: configuração local, ignorada pelo Git.
 - `.env.exemplo`: valores didáticos versionados para copiar.
 - `docker-compose.yml`: definição fixa dos serviços e volumes.
 - `mqtt-broker/mosquitto.conf`: configuração pronta de MQTT e WebSocket.
@@ -88,14 +88,3 @@ InfluxDB e Grafana só são criadas em volumes vazios; editar a senha no arquivo
 altera uma conta já gravada no banco. Preserve `N8N_ENCRYPTION_KEY` após salvar credenciais.
 Para atualizar imagens, faça backup e execute `docker compose pull`, seguido do start.
 
-## Instalações anteriores
-
-A pasta antiga `IoTStack/` não é removida nem migrada. Antes de iniciar no mesmo servidor,
-pare o Compose antigo dentro dessa pasta, preservando os volumes, para evitar conflitos
-de nomes e portas. Faça backup e migre/restaure os dados antes de substituir uma instalação em uso.
-
-Os dados antigos do n8n e PostgreSQL ficavam em pastas locais; agora ficam em volumes Docker.
-Volumes antigos de InfluxDB e Grafana podem ser reutilizados se o projeto anterior se
-chamava `iotstack`, padrão de `COMPOSE_PROJECT_NAME`. Confira com `docker volume ls`.
-Copiar esta pasta leva a configuração, não os dados dos volumes. Para transportar uma
-instalação com dados, leve e restaure os backups também.
