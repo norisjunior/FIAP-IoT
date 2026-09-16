@@ -58,7 +58,13 @@ São limites de aula, não especificações de conservação de uma carga real. 
 
 ## Plataforma
 
-Inicie a `IoT-platform` do repositório de avaliação. Importe somente os arquivos indicados no README da etapa. Os dashboards usam `node-red-dashboard` (`ui_gauge`, `ui_chart`, `ui_text`), como no material original. O histórico usa `node-red-contrib-influxdb`.
+Entre no diretório `IoT-platform` que você recebeu e suba a plataforma:
+
+```bash
+docker compose up -d
+```
+
+Sobem juntos Mosquitto, Node-RED, n8n, InfluxDB e Grafana. Para parar, `docker compose down` na mesma pasta — sem opção de remover volumes, senão você perde fluxos e dashboards. Importe somente os arquivos indicados no README da etapa. Os dashboards usam `node-red-dashboard` (`ui_gauge`, `ui_chart`, `ui_text`), como no material original. O histórico usa `node-red-contrib-influxdb`.
 
 | Origem da conexão | Broker MQTT |
 |---|---|

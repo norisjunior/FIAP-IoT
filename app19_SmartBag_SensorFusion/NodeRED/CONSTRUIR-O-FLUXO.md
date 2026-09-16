@@ -10,10 +10,17 @@ ESP32. Aqui ele não decide nada: o app19 é um **gerador de dataset**, e quem v
 é o modelo, depois de treinado. O fluxo é só transporte.
 
 Firmware do app19 gravado e publicando:
-[CONSTRUIR-O-FIRMWARE.md](../device/CONSTRUIR-O-FIRMWARE.md). Plataforma no ar
-(Mosquitto, Node-RED, InfluxDB e Grafana num Compose só):
-[IoT-platform](../../IoT-platform/README.md) — `./start-windows.ps1` ou
-`bash start-linux.sh`. Node-RED em http://localhost:1880, admin / FIAPIoT.
+[CONSTRUIR-O-FIRMWARE.md](../device/CONSTRUIR-O-FIRMWARE.md).
+
+Plataforma no ar: entre no diretório `IoT-platform` que você recebeu e rode
+
+```bash
+docker compose up -d
+```
+
+Sobem Mosquitto, Node-RED, n8n, InfluxDB e Grafana juntos. Editor do Node-RED em
+http://localhost:1880, com **admin / FIAPIoT**. Para parar, `docker compose down` na
+mesma pasta — nunca com remoção de volumes, ou os fluxos somem.
 
 > Desative os fluxos do app14/app15 antes de ativar este. Eles assinam outro tópico, mas
 > deixar três fluxos ligados no mesmo Node-RED só atrapalha a leitura do debug.
@@ -112,7 +119,7 @@ exportação sempre remove. Cada aluno cola o dele.
 > local, e ele serve muito bem para dashboard — mas o Colab de coleta consulta com
 > **SQL**, pelo `InfluxDBClient3`, e essa API só existe no InfluxDB v3 (Cloud). Apontar
 > este nó para `influxdb:8086` grava normalmente e só quebra lá na frente, no Colab, com
-> um erro que não menciona versão nenhuma. Da IoT-platform, o app19 usa o Mosquitto e o
+> um erro que não menciona versão nenhuma. Da `IoT-platform`, o app19 usa o Mosquitto e o
 > Node-RED.
 
 Deploy e colete de novo.
