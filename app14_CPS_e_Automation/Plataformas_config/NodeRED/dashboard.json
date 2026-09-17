@@ -42,7 +42,6 @@
             [
                 "3578713664b2f423",
                 "eee234633af23cd9",
-                "06d8284feeb5833a",
                 "20f7dbf601619b1d"
             ]
         ]
@@ -223,102 +222,6 @@
         ]
     },
     {
-        "id": "06d8284feeb5833a",
-        "type": "function",
-        "z": "69e5326f76928c61",
-        "name": "Estado da entrega",
-        "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\n// sensor e a chave que o n8n roteia; texto e o que o humano le.\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push({sensor: \"falha\", texto: \"Falha de sensor\"});\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push({sensor: \"temperatura\", texto: \"Temperatura alta\"});\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push({sensor: \"umidade\", texto: \"Umidade alta\"});\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push({sensor: \"tampa\", texto: \"Tampa aberta\"});\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push({sensor: \"movimento\", texto: \"Movimentação brusca\"});\nconst alerta = motivos.length > 0;\nif (!alerta) motivos.push({sensor: \"normal\", texto: \"Entrega em condição normal\"});\nmsg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(\" / \")};\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 610,
-        "y": 540,
-        "wires": [
-            [
-                "927051f96223a544",
-                "aa132ad8efaa5c13"
-            ]
-        ]
-    },
-    {
-        "id": "927051f96223a544",
-        "type": "ui_text",
-        "z": "69e5326f76928c61",
-        "group": "0ee1f74a76248fdc",
-        "order": 6,
-        "width": 12,
-        "height": 1,
-        "name": "Estado da entrega",
-        "label": "Entrega",
-        "format": "{{msg.payload.estado}}",
-        "layout": "row-spread",
-        "className": "",
-        "style": false,
-        "font": "Arial",
-        "fontSize": 16,
-        "color": "#333333",
-        "x": 930,
-        "y": 520,
-        "wires": []
-    },
-    {
-        "id": "aa132ad8efaa5c13",
-        "type": "function",
-        "z": "69e5326f76928c61",
-        "name": "Somente mudança de estado",
-        "func": "const p = msg.payload;\nconst chave = p.device;\nconst anterior = context.get(chave);\ncontext.set(chave, p.estado);\nif (anterior === p.estado) return null;\nif (anterior === undefined && !p.alerta) return null;\nmsg.payload = {...p, timestamp: new Date().toISOString()};\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 960,
-        "y": 600,
-        "wires": [
-            [
-                "74ef3205cc5ebd2c"
-            ]
-        ]
-    },
-    {
-        "id": "74ef3205cc5ebd2c",
-        "type": "json",
-        "z": "69e5326f76928c61",
-        "name": "Objeto para JSON",
-        "property": "payload",
-        "action": "str",
-        "pretty": false,
-        "x": 1210,
-        "y": 600,
-        "wires": [
-            [
-                "fbf6d7a3ff76c648"
-            ]
-        ]
-    },
-    {
-        "id": "fbf6d7a3ff76c648",
-        "type": "mqtt out",
-        "z": "69e5326f76928c61",
-        "name": "Evento para n8n",
-        "topic": "FIAPIoT/nexolog/equipe01/eventos",
-        "qos": "0",
-        "retain": "false",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "0705b78e51469992",
-        "x": 1410,
-        "y": 600,
-        "wires": []
-    },
-    {
         "id": "20f7dbf601619b1d",
         "type": "trigger",
         "z": "69e5326f76928c61",
@@ -348,7 +251,7 @@
         "type": "ui_text",
         "z": "69e5326f76928c61",
         "group": "0ee1f74a76248fdc",
-        "order": 7,
+        "order": 6,
         "width": 12,
         "height": 1,
         "name": "Conexão",

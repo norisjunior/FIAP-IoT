@@ -4,11 +4,11 @@ Uma empresa fictícia acompanha cargas sensíveis. A mesma caixa e os mesmos dad
 
 | Etapa | Firmware | Plataforma |
 |---|---|---|
-| [App14](README.md) | Projeto-base: coleta e publicação MQTT | Fluxos, Debug, gauges, gráficos e eventos |
-| [App15](../app15-Cloud/README.md) | Acrescentar somente callback e assinatura MQTT ao app14 | Regras enviam ON/OFF ao LED |
-| [App16](../app16-Edge/README.md) | Mesmo firmware preparado no app15 | Mesmos fluxos executados no Raspberry Pi |
+| [App14](README.md) | Projeto-base: coleta e publicação MQTT | Node-RED mostra; n8n decide e avisa |
+| App15 | Acrescentar somente callback e assinatura MQTT ao app14 | Regras enviam ON/OFF ao LED |
+| App16 | Mesmo firmware preparado no app15 | Mesmos fluxos executados no Raspberry Pi |
 
-O projeto embarcado está em `app14_CPS_e_Automation/app14_NexoLog`. Para montar do zero, em duas iterações que rodam: [firmware](app14_NexoLog/CONSTRUIR-O-FIRMWARE.md), [Node-RED](Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md) e [n8n](Plataformas_config/n8n/CONSTRUIR-O-FLUXO.md). O app15 contém o roteiro das alterações e as configurações da plataforma. O app16 contém somente a orientação de implantação no Raspberry.
+O projeto embarcado está em `app14_CPS_e_Automation/app14_NexoLog_PUB_only`. Para montar do zero, em duas iterações que rodam: [firmware](app14_NexoLog_PUB_only/CONSTRUIR-O-FIRMWARE.md), [Node-RED](Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md) e [n8n](Plataformas_config/n8n/CONSTRUIR-O-FLUXO.md). O app15 contém o roteiro das alterações e as configurações da plataforma. O app16 contém somente a orientação de implantação no Raspberry.
 
 ## Montagem
 
@@ -27,15 +27,14 @@ Os pinos ficam todos do lado direito da placa, para facilitar a montagem física
 
 Usamos FastIMU 1.3.0, como nos projetos de IMU da disciplina. Em `ESP32SensorsAccel.hpp`, selecione `MPU_TYPE`: `MPU6050` para o diagrama Wokwi ou `MPU6500` para essa placa física. O endereço I2C é `0x68`, com AD0 em GND.
 
-A biblioteca retorna aceleração em g; o módulo converte para m/s² antes da publicação. A movimentação é a magnitude da aceleração descontando a gravidade, em m/s²: caixa parada fica próxima de 0 e sobe conforme o chacoalho. Não há calibração automática nesta aula.
+A biblioteca retorna aceleração em g; o módulo converte para m/s² antes da publicação. A movimentação é a magnitude da aceleração descontando a gravidade, em m/s²: caixa parada fica próxima de 0 e sobe conforme o chacoalho. O firmware amostra o MPU a cada 50 ms e publica o **maior** valor do último segundo — uma leitura por envio deixaria o pico do sacolejo passar despercebido. Não há calibração automática nesta aula.
 
 ## Dados e comandos
 
 Os tópicos são iguais nas três etapas:
 
-- `FIAPIoT/nexolog/equipe01/dados`: leituras JSON, a cada 2,5 segundos.
-- `FIAPIoT/nexolog/equipe01/eventos`: mudanças de estado publicadas pelo Node-RED.
-- `FIAPIoT/nexolog/equipe01/cmd`: comandos ON/OFF, recebidos a partir do app15.
+- `FIAPIoT/nexolog/equipe01/dados`: leituras JSON, a cada 1 segundo. Node-RED e n8n assinam **os dois** este tópico.
+- `FIAPIoT/nexolog/equipe01/cmd`: comandos em JSON para os LEDs, recebidos a partir do app15.
 
 O dispositivo usa `NexoLogEquipe01`. Troque a identificação e `equipe01` no firmware e nos fluxos para sua equipe. Não execute dois ESP32 com o mesmo Client ID.
 
@@ -59,7 +58,13 @@ São limites de aula, não especificações de conservação de uma carga real. 
 
 ## Plataforma
 
-Inicie a `IoT-platform` do repositório de avaliação. Importe somente os arquivos indicados no README da etapa. Os dashboards usam `node-red-dashboard` (`ui_gauge`, `ui_chart`, `ui_text`), como no material original. O histórico usa `node-red-contrib-influxdb`.
+Entre no diretório `IoT-platform` que você recebeu e suba a plataforma:
+
+```bash
+docker compose up -d
+```
+
+Sobem juntos Mosquitto, Node-RED, n8n, InfluxDB e Grafana. Para parar, `docker compose down` na mesma pasta — sem opção de remover volumes, senão você perde fluxos e dashboards. Importe somente os arquivos indicados no README da etapa. Os dashboards usam `node-red-dashboard` (`ui_gauge`, `ui_chart`, `ui_text`), como no material original. O histórico usa `node-red-contrib-influxdb`.
 
 | Origem da conexão | Broker MQTT |
 |---|---|
@@ -74,9 +79,13 @@ Como as etapas compartilham tópicos, desative o dashboard anterior ao ativar o 
 
 ## InfluxDB, n8n e Grafana
 
-Depois do dashboard, importe `Fluxo_2_envio_InfluxDB.json`. Configure URL, organização, bucket e token. Os valores iniciais `fiapiot` e `sensores` seguem o `.env.exemplo` da plataforma. O measurement é `nexolog` e a tag é `device`. O horário registrado é o de recebimento no banco.
+Depois do dashboard, importe `Fluxo_2_envio_InfluxDB.json`. Ele assina o mesmo `dados` e grava as sete medições, sem regra nenhuma: o measurement é `nexolog`, `device` é a tag e o horário registrado é o de recebimento no banco.
 
-No n8n, importe `fluxo_mqtt.json`, configure MQTT, Telegram e `SEU_CHAT_ID`, e ative o workflow. O Node-RED publica eventos na entrada em alerta, mudança do motivo e recuperação. A primeira leitura normal não gera aviso. Reiniciar o Node-RED reinicia essa memória de estado.
+Usamos o **InfluxDB Cloud**, não o da plataforma. Cada um preenche quatro campos: URL da sua região e token no nó de configuração, organização e bucket no nó `Gravar leituras`. O token não vem no arquivo importado — o Node-RED guarda token como credencial e a exportação sempre remove.
+
+Dashboard e InfluxDB são dois fluxos independentes assinando o mesmo tópico. Rode os dois ao mesmo tempo: um mostra agora, o outro guarda para depois.
+
+No n8n, importe `fluxo_mqtt.json`, configure MQTT, Telegram e `SEU_CHAT_ID`, e ative o workflow. Ele assina `dados` direto do ESP32: um Switch compara as quatro variáveis com os limiares e cada saída monta a sua mensagem. O aviso sai a cada leitura que passar do limite, não só na mudança — veja a nota sobre a taxa do Telegram no guia do fluxo.
 
 Grafana pode consultar o mesmo banco e measurement, sem modificar o firmware. Não há dashboard Grafana exportado nesta versão.
 

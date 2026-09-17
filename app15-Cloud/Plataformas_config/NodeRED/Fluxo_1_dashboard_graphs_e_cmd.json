@@ -1,788 +1,641 @@
 [
-  {
-    "id": "efd1c69a09330861",
-    "type": "tab",
-    "label": "NexoLog 15 - Dashboard",
-    "disabled": false,
-    "info": "Equipe01. Ajuste os tópicos para sua equipe."
-  },
-  {
-    "id": "6c9a71ebeeca9850",
-    "type": "mqtt-broker",
-    "name": "Mosquitto - plataforma IoT",
-    "broker": "mosquitto",
-    "port": 1883,
-    "clientid": "",
-    "autoConnect": true,
-    "usetls": false,
-    "protocolVersion": 4,
-    "keepalive": 60,
-    "cleansession": true,
-    "autoUnsubscribe": true,
-    "birthTopic": "",
-    "birthQos": "0",
-    "birthRetain": "false",
-    "birthPayload": "",
-    "birthMsg": {},
-    "closeTopic": "",
-    "closeQos": "0",
-    "closeRetain": "false",
-    "closePayload": "",
-    "closeMsg": {},
-    "willTopic": "",
-    "willQos": "0",
-    "willRetain": "false",
-    "willPayload": "",
-    "willMsg": {},
-    "userProps": "",
-    "sessionExpiry": ""
-  },
-  {
-    "id": "6766567e893b6d33",
-    "type": "mqtt in",
-    "z": "efd1c69a09330861",
-    "name": "Dados da caixa",
-    "topic": "FIAPIoT/nexolog/equipe01/dados",
-    "qos": "0",
-    "datatype": "utf8",
-    "broker": "6c9a71ebeeca9850",
-    "nl": false,
-    "rap": true,
-    "rh": 0,
-    "inputs": 0,
-    "x": 140,
-    "y": 80,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ]
-  },
-  {
-    "id": "4fb6617d790fe9ae",
-    "type": "json",
-    "z": "efd1c69a09330861",
-    "x": 360,
-    "y": 80,
-    "wires": [
-      [
-        "a9361d471ecc9e6f",
-        "2accca3aa6722ee6",
-        "877edd3dabde1e28",
-        "30eb40094bb00b2b"
-      ]
-    ],
-    "name": "JSON para objeto",
-    "property": "payload",
-    "action": "obj",
-    "pretty": false
-  },
-  {
-    "id": "a9361d471ecc9e6f",
-    "type": "debug",
-    "z": "efd1c69a09330861",
-    "name": "Objeto recebido",
-    "active": true,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "payload",
-    "statusVal": "",
-    "statusType": "auto",
-    "x": 600,
-    "y": 40,
-    "wires": []
-  },
-  {
-    "id": "dffa0fa8ea4d3ec5",
-    "type": "ui_tab",
-    "name": "NexoLog 15",
-    "icon": "dashboard",
-    "disabled": false,
-    "hidden": false
-  },
-  {
-    "id": "971cfe2ccd7a75ef",
-    "type": "ui_group",
-    "name": "Caixa equipe01",
-    "tab": "dffa0fa8ea4d3ec5",
-    "order": 1,
-    "disp": true,
-    "width": "12",
-    "collapse": false
-  },
-  {
-    "id": "2accca3aa6722ee6",
-    "type": "function",
-    "z": "efd1c69a09330861",
-    "name": "separarDadosSensores",
-    "func": "const p = msg.payload;\nlet temp = {payload: p.temp, topic: \"Temperatura\"};\nlet umid = {payload: p.umid};\nlet dist = {payload: p.dist};\nlet movimentacao = {payload: p.movimentacao};\nreturn [temp, umid, dist, movimentacao];",
-    "outputs": 4,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 610,
-    "y": 180,
-    "wires": [
-      [
-        "d4218674c01bb50f",
-        "96217b70724b2739"
-      ],
-      [
-        "6056a38bee430a81"
-      ],
-      [
-        "4f946f1e5a02fe38",
-        "840543c9aea542e5"
-      ],
-      [
-        "90644ff70540edc2",
-        "a1c0de0000ab2000"
-      ]
-    ]
-  },
-  {
-    "id": "d4218674c01bb50f",
-    "type": "ui_gauge",
-    "z": "efd1c69a09330861",
-    "name": "Temperatura",
-    "group": "971cfe2ccd7a75ef",
-    "order": 1,
-    "width": 3,
-    "height": 3,
-    "gtype": "gage",
-    "title": "Temperatura",
-    "label": "°C",
-    "format": "{{value | number:1}}",
-    "min": 0,
-    "max": 50,
-    "colors": [
-      "#00b500",
-      "#e6e600",
-      "#ca3838"
-    ],
-    "seg1": "25",
-    "seg2": "30",
-    "diff": false,
-    "className": "",
-    "x": 920,
-    "y": 120,
-    "wires": []
-  },
-  {
-    "id": "6056a38bee430a81",
-    "type": "ui_gauge",
-    "z": "efd1c69a09330861",
-    "name": "Umidade",
-    "group": "971cfe2ccd7a75ef",
-    "order": 2,
-    "width": 3,
-    "height": 3,
-    "gtype": "gage",
-    "title": "Umidade",
-    "label": "%",
-    "format": "{{value | number:1}}",
-    "min": 0,
-    "max": 100,
-    "colors": [
-      "#00b500",
-      "#e6e600",
-      "#ca3838"
-    ],
-    "seg1": "60",
-    "seg2": "70",
-    "diff": false,
-    "className": "",
-    "x": 920,
-    "y": 180,
-    "wires": []
-  },
-  {
-    "id": "4f946f1e5a02fe38",
-    "type": "ui_level",
-    "z": "efd1c69a09330861",
-    "group": "971cfe2ccd7a75ef",
-    "order": 3,
-    "width": 3,
-    "height": 3,
-    "name": "Distância da tampa",
-    "label": "Tampa",
-    "colorHi": "#e60000",
-    "colorWarn": "#ff9900",
-    "colorNormal": "#00b33c",
-    "colorOff": "#595959",
-    "min": 0,
-    "max": 50,
-    "segWarn": "20",
-    "segHigh": "25",
-    "unit": "cm",
-    "layout": "sv",
-    "channelA": "",
-    "channelB": "",
-    "decimals": 1,
-    "animations": "soft",
-    "shape": 2,
-    "colorschema": "fixed",
-    "textoptions": "default",
-    "colorText": "#eeeeee",
-    "fontLabel": "",
-    "fontValue": "",
-    "fontSmall": "",
-    "colorFromTheme": true,
-    "textAnimations": false,
-    "hideValue": false,
-    "tickmode": "off",
-    "peakmode": false,
-    "property": "payload",
-    "peaktime": 3000,
-    "x": 920,
-    "y": 240,
-    "wires": []
-  },
-  {
-    "id": "90644ff70540edc2",
-    "type": "ui_gauge",
-    "z": "efd1c69a09330861",
-    "name": "Movimentação",
-    "group": "971cfe2ccd7a75ef",
-    "order": 4,
-    "width": 3,
-    "height": 3,
-    "gtype": "gage",
-    "title": "Movimentação",
-    "label": "m/s²",
-    "format": "{{value | number:1}}",
-    "min": 0,
-    "max": 20,
-    "colors": [
-      "#00b500",
-      "#e6e600",
-      "#ca3838"
-    ],
-    "seg1": "1.5",
-    "seg2": "3",
-    "diff": false,
-    "className": "",
-    "x": 920,
-    "y": 300,
-    "wires": []
-  },
-  {
-    "id": "96217b70724b2739",
-    "type": "ui_chart",
-    "z": "efd1c69a09330861",
-    "name": "Histórico na tela",
-    "group": "971cfe2ccd7a75ef",
-    "order": 5,
-    "width": 12,
-    "height": 4,
-    "label": "Temperatura (°C)",
-    "chartType": "line",
-    "legend": "false",
-    "xformat": "HH:mm:ss",
-    "interpolate": "linear",
-    "nodata": "",
-    "dot": false,
-    "ymin": "",
-    "ymax": "",
-    "removeOlder": 5,
-    "removeOlderPoints": "",
-    "removeOlderUnit": "60",
-    "cutout": 0,
-    "useOneColor": false,
-    "useUTC": false,
-    "colors": [
-      "#1f77b4",
-      "#aec7e8",
-      "#ff7f0e",
-      "#2ca02c",
-      "#98df8a",
-      "#d62728",
-      "#ff9896",
-      "#9467bd",
-      "#c5b0d5"
-    ],
-    "outputs": 1,
-    "useDifferentColor": false,
-    "className": "",
-    "x": 920,
-    "y": 380,
-    "wires": [
-      []
-    ]
-  },
-  {
-    "id": "840543c9aea542e5",
-    "type": "switch",
-    "z": "efd1c69a09330861",
-    "name": "Tampa: dist > 25 cm",
-    "property": "payload",
-    "propertyType": "msg",
-    "rules": [
-      {
-        "t": "gt",
-        "v": "25",
-        "vt": "num"
-      },
-      {
-        "t": "else"
-      }
-    ],
-    "checkall": "true",
-    "repair": false,
-    "outputs": 2,
-    "x": 900,
-    "y": 690,
-    "wires": [
-      [
-        "a1c0de0000ab1001",
-        "15867f465e5f117d"
-      ],
-      [
-        "a1c0de0000ab1002"
-      ]
-    ]
-  },
-  {
-    "id": "a1c0de0000ab2000",
-    "type": "switch",
-    "z": "efd1c69a09330861",
-    "name": "Movimentação > 3 m/s²",
-    "property": "payload",
-    "propertyType": "msg",
-    "rules": [
-      {
-        "t": "gt",
-        "v": "3",
-        "vt": "num"
-      },
-      {
-        "t": "else"
-      }
-    ],
-    "checkall": "true",
-    "repair": false,
-    "outputs": 2,
-    "x": 900,
-    "y": 850,
-    "wires": [
-      [
-        "a1c0de0000ab2001"
-      ],
-      [
-        "a1c0de0000ab2002"
-      ]
-    ]
-  },
-  {
-    "id": "a1c0de0000ab2001",
-    "type": "change",
-    "z": "efd1c69a09330861",
-    "name": "Comando: movimento ON",
-    "rules": [
-      {
-        "t": "set",
-        "p": "payload",
-        "pt": "msg",
-        "to": "{\"alvo\": \"movimento\", \"estado\": \"ON\"}",
-        "tot": "json"
-      }
-    ],
-    "action": "",
-    "property": "",
-    "from": "",
-    "to": "",
-    "reg": false,
-    "x": 1150,
-    "y": 820,
-    "wires": [
-      [
-        "948117e25c041dd8"
-      ]
-    ]
-  },
-  {
-    "id": "a1c0de0000ab2002",
-    "type": "change",
-    "z": "efd1c69a09330861",
-    "name": "Comando: movimento OFF",
-    "rules": [
-      {
-        "t": "set",
-        "p": "payload",
-        "pt": "msg",
-        "to": "{\"alvo\": \"movimento\", \"estado\": \"OFF\"}",
-        "tot": "json"
-      }
-    ],
-    "action": "",
-    "property": "",
-    "from": "",
-    "to": "",
-    "reg": false,
-    "x": 1150,
-    "y": 880,
-    "wires": [
-      [
-        "948117e25c041dd8"
-      ]
-    ]
-  },
-  {
-    "id": "a1c0de0000ab1001",
-    "type": "change",
-    "z": "efd1c69a09330861",
-    "name": "Comando: tampa ON",
-    "rules": [
-      {
-        "t": "set",
-        "p": "payload",
-        "pt": "msg",
-        "to": "{\"alvo\": \"tampa\", \"estado\": \"ON\"}",
-        "tot": "json"
-      }
-    ],
-    "action": "",
-    "property": "",
-    "from": "",
-    "to": "",
-    "reg": false,
-    "x": 1150,
-    "y": 660,
-    "wires": [
-      [
-        "948117e25c041dd8"
-      ]
-    ]
-  },
-  {
-    "id": "a1c0de0000ab1002",
-    "type": "change",
-    "z": "efd1c69a09330861",
-    "name": "Comando: tampa OFF",
-    "rules": [
-      {
-        "t": "set",
-        "p": "payload",
-        "pt": "msg",
-        "to": "{\"alvo\": \"tampa\", \"estado\": \"OFF\"}",
-        "tot": "json"
-      }
-    ],
-    "action": "",
-    "property": "",
-    "from": "",
-    "to": "",
-    "reg": false,
-    "x": 1150,
-    "y": 720,
-    "wires": [
-      [
-        "948117e25c041dd8"
-      ]
-    ]
-  },
-  {
-    "id": "15867f465e5f117d",
-    "type": "debug",
-    "z": "efd1c69a09330861",
-    "name": "Tampa aberta",
-    "active": true,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "payload",
-    "statusVal": "",
-    "statusType": "auto",
-    "x": 1400,
-    "y": 600,
-    "wires": []
-  },
-  {
-    "id": "877edd3dabde1e28",
-    "type": "function",
-    "z": "efd1c69a09330861",
-    "name": "Estado da entrega",
-    "func": "const p = msg.payload;\nconst LIMIAR_TEMP = 30;\nconst LIMIAR_UMID = 70;\nconst LIMIAR_DIST = 25;\nconst LIMIAR_MOVIMENTACAO = 3;   // m/s2. Limite depende do contexto:\n// caixa em prateleira aceita pouco; bag de entregador em moto passa disso na rua ruim.\n\n// sensor e a chave que o n8n roteia; texto e o que o humano le.\nlet motivos = [];\nif (![p.temp, p.umid, p.dist, p.movimentacao].every(Number.isFinite)) motivos.push({sensor: \"falha\", texto: \"Falha de sensor\"});\nif (Number.isFinite(p.temp) && p.temp > LIMIAR_TEMP) motivos.push({sensor: \"temperatura\", texto: \"Temperatura alta\"});\nif (Number.isFinite(p.umid) && p.umid > LIMIAR_UMID) motivos.push({sensor: \"umidade\", texto: \"Umidade alta\"});\nif (Number.isFinite(p.dist) && p.dist > LIMIAR_DIST) motivos.push({sensor: \"tampa\", texto: \"Tampa aberta\"});\nif (Number.isFinite(p.movimentacao) && p.movimentacao > LIMIAR_MOVIMENTACAO) motivos.push({sensor: \"movimento\", texto: \"Movimentação brusca\"});\nconst alerta = motivos.length > 0;\nif (!alerta) motivos.push({sensor: \"normal\", texto: \"Entrega em condição normal\"});\nmsg.payload = {...p, motivos, alerta, estado: motivos.map(m => m.texto).join(\" / \")};\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 610,
-    "y": 540,
-    "wires": [
-      [
-        "4273671bb5661029",
-        "bbf40fd9eed66a56"
-      ]
-    ]
-  },
-  {
-    "id": "4273671bb5661029",
-    "type": "ui_text",
-    "z": "efd1c69a09330861",
-    "group": "971cfe2ccd7a75ef",
-    "order": 6,
-    "width": 12,
-    "height": 1,
-    "name": "Estado da entrega",
-    "label": "Entrega",
-    "format": "{{msg.payload.estado}}",
-    "layout": "row-spread",
-    "className": "",
-    "style": false,
-    "font": "Arial",
-    "fontSize": 16,
-    "color": "#333333",
-    "x": 930,
-    "y": 520,
-    "wires": []
-  },
-  {
-    "id": "bbf40fd9eed66a56",
-    "type": "function",
-    "z": "efd1c69a09330861",
-    "name": "Somente mudança de estado",
-    "func": "const p = msg.payload;\nconst chave = p.device;\nconst anterior = context.get(chave);\ncontext.set(chave, p.estado);\nif (anterior === p.estado) return null;\nif (anterior === undefined && !p.alerta) return null;\nmsg.payload = {...p, timestamp: new Date().toISOString()};\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 910,
-    "y": 600,
-    "wires": [
-      [
-        "83a523307d837f8b"
-      ]
-    ]
-  },
-  {
-    "id": "83a523307d837f8b",
-    "type": "json",
-    "z": "efd1c69a09330861",
-    "x": 1170,
-    "y": 600,
-    "wires": [
-      [
-        "0fdb63535bc6f9f0"
-      ]
-    ],
-    "name": "Objeto para JSON",
-    "property": "payload",
-    "action": "str",
-    "pretty": false
-  },
-  {
-    "id": "0fdb63535bc6f9f0",
-    "type": "mqtt out",
-    "z": "efd1c69a09330861",
-    "name": "Evento para n8n",
-    "topic": "FIAPIoT/nexolog/equipe01/eventos",
-    "qos": "0",
-    "retain": "false",
-    "respTopic": "",
-    "contentType": "",
-    "userProps": "",
-    "correl": "",
-    "expiry": "",
-    "broker": "6c9a71ebeeca9850",
-    "x": 1410,
-    "y": 600,
-    "wires": []
-  },
-  {
-    "id": "30eb40094bb00b2b",
-    "type": "trigger",
-    "z": "efd1c69a09330861",
-    "x": 610,
-    "y": 680,
-    "wires": [
-      [
-        "70f1c7e56a984596"
-      ]
-    ],
-    "name": "Sem dados por 10 s",
-    "op1": "Recebendo dados",
-    "op2": "Sem dados há 10 s",
-    "op1type": "str",
-    "op2type": "str",
-    "duration": "10",
-    "extend": true,
-    "overrideDelay": false,
-    "units": "s",
-    "reset": "",
-    "bytopic": "all",
-    "topic": "topic",
-    "outputs": 1
-  },
-  {
-    "id": "70f1c7e56a984596",
-    "type": "ui_text",
-    "z": "efd1c69a09330861",
-    "group": "971cfe2ccd7a75ef",
-    "order": 7,
-    "width": 12,
-    "height": 1,
-    "name": "Conexão",
-    "label": "Conexão",
-    "format": "{{msg.payload}}",
-    "layout": "row-spread",
-    "className": "",
-    "style": false,
-    "font": "Arial",
-    "fontSize": 16,
-    "color": "#333333",
-    "x": 930,
-    "y": 680,
-    "wires": []
-  },
-  {
-    "id": "948117e25c041dd8",
-    "type": "mqtt out",
-    "z": "efd1c69a09330861",
-    "name": "LED da caixa",
-    "topic": "FIAPIoT/nexolog/equipe01/cmd",
-    "qos": "0",
-    "retain": "false",
-    "respTopic": "",
-    "contentType": "",
-    "userProps": "",
-    "correl": "",
-    "expiry": "",
-    "broker": "6c9a71ebeeca9850",
-    "x": 1420,
-    "y": 770,
-    "wires": []
-  },
-  {
-    "id": "933c60021eb994d4",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 180,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Normal",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
-  },
-  {
-    "id": "01b595f130efd8b1",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 240,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Temperatura alta",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 35, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
-  },
-  {
-    "id": "dbba821b51bd0dca",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 300,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Tampa aberta",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 40, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
-  },
-  {
-    "id": "57409907ca8ba33f",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 360,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Movimentação brusca",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": 24, \"umid\": 55, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 24.8, \"movimentacao\": 15}",
-    "payloadType": "json"
-  },
-  {
-    "id": "f6ead24591c9d96d",
-    "type": "inject",
-    "z": "efd1c69a09330861",
-    "x": 150,
-    "y": 420,
-    "wires": [
-      [
-        "4fb6617d790fe9ae"
-      ]
-    ],
-    "name": "Simular: Falha DHT",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "{\"device\": \"NexoLogEquipe01\", \"temp\": null, \"umid\": null, \"dist\": 10, \"accel_x\": 0, \"accel_y\": 0, \"accel_z\": 9.81, \"movimentacao\": 0}",
-    "payloadType": "json"
-  }
+    {
+        "id": "005d16b3d8efee5b",
+        "type": "tab",
+        "label": "NexoLog 15 - Dashboard",
+        "disabled": false,
+        "info": "Equipe01. Ajuste os tópicos para sua equipe."
+    },
+    {
+        "id": "b878ae12b1f9bede",
+        "type": "mqtt in",
+        "z": "005d16b3d8efee5b",
+        "name": "Dados da caixa",
+        "topic": "FIAPIoT/nexolog/equipe01/dados",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "6c9a71ebeeca9850",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 100,
+        "y": 80,
+        "wires": [
+            [
+                "85df2219b30dbfbe"
+            ]
+        ]
+    },
+    {
+        "id": "85df2219b30dbfbe",
+        "type": "json",
+        "z": "005d16b3d8efee5b",
+        "name": "JSON para objeto",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 310,
+        "y": 80,
+        "wires": [
+            [
+                "2819f4e2f67d9997",
+                "4069e15db1bf8b26",
+                "15ebb36af6b82a69",
+                "c83ca327e24cfce3"
+            ]
+        ]
+    },
+    {
+        "id": "2819f4e2f67d9997",
+        "type": "debug",
+        "z": "005d16b3d8efee5b",
+        "name": "Objeto recebido",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "4069e15db1bf8b26",
+        "type": "function",
+        "z": "005d16b3d8efee5b",
+        "name": "separarDadosSensores",
+        "func": "const p = msg.payload;\nlet temp = {payload: p.temp, topic: \"Temperatura\"};\nlet umid = {payload: p.umid};\nlet dist = {payload: p.dist};\nlet movimentacao = {payload: p.movimentacao};\nreturn [temp, umid, dist, movimentacao];",
+        "outputs": 4,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 160,
+        "wires": [
+            [
+                "32bc26728cf85905",
+                "8f1d0b8417216321"
+            ],
+            [
+                "df98997e1c3d4460"
+            ],
+            [
+                "781ebaeae379bb7e"
+            ],
+            [
+                "b1d0525a419a756f"
+            ]
+        ]
+    },
+    {
+        "id": "32bc26728cf85905",
+        "type": "ui_gauge",
+        "z": "005d16b3d8efee5b",
+        "name": "Temperatura",
+        "group": "971cfe2ccd7a75ef",
+        "order": 1,
+        "width": 3,
+        "height": 3,
+        "gtype": "gage",
+        "title": "Temperatura",
+        "label": "°C",
+        "format": "{{value | number:1}}",
+        "min": 0,
+        "max": 50,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "25",
+        "seg2": "30",
+        "diff": false,
+        "className": "",
+        "x": 870,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "df98997e1c3d4460",
+        "type": "ui_gauge",
+        "z": "005d16b3d8efee5b",
+        "name": "Umidade",
+        "group": "971cfe2ccd7a75ef",
+        "order": 2,
+        "width": 3,
+        "height": 3,
+        "gtype": "gage",
+        "title": "Umidade",
+        "label": "%",
+        "format": "{{value | number:1}}",
+        "min": 0,
+        "max": 100,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "60",
+        "seg2": "70",
+        "diff": false,
+        "className": "",
+        "x": 860,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "781ebaeae379bb7e",
+        "type": "ui_level",
+        "z": "005d16b3d8efee5b",
+        "group": "971cfe2ccd7a75ef",
+        "order": 3,
+        "width": 3,
+        "height": 3,
+        "name": "Distância da tampa",
+        "label": "Tampa",
+        "colorHi": "#e60000",
+        "colorWarn": "#ff9900",
+        "colorNormal": "#00b33c",
+        "colorOff": "#595959",
+        "min": 0,
+        "max": 50,
+        "segWarn": "20",
+        "segHigh": "25",
+        "unit": "cm",
+        "layout": "sv",
+        "channelA": "",
+        "channelB": "",
+        "decimals": 1,
+        "animations": "soft",
+        "shape": 2,
+        "colorschema": "fixed",
+        "textoptions": "default",
+        "colorText": "#eeeeee",
+        "fontLabel": "",
+        "fontValue": "",
+        "fontSmall": "",
+        "colorFromTheme": true,
+        "textAnimations": false,
+        "hideValue": false,
+        "tickmode": "off",
+        "peakmode": false,
+        "property": "payload",
+        "peaktime": 3000,
+        "x": 890,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "b1d0525a419a756f",
+        "type": "ui_gauge",
+        "z": "005d16b3d8efee5b",
+        "name": "Movimentação",
+        "group": "971cfe2ccd7a75ef",
+        "order": 4,
+        "width": 3,
+        "height": 3,
+        "gtype": "gage",
+        "title": "Movimentação",
+        "label": "m/s²",
+        "format": "{{value | number:1}}",
+        "min": 0,
+        "max": 20,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "1.5",
+        "seg2": "3",
+        "diff": false,
+        "className": "",
+        "x": 880,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "8f1d0b8417216321",
+        "type": "ui_chart",
+        "z": "005d16b3d8efee5b",
+        "name": "Histórico na tela",
+        "group": "971cfe2ccd7a75ef",
+        "order": 5,
+        "width": 12,
+        "height": 4,
+        "label": "Temperatura (°C)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 5,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 880,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c83ca327e24cfce3",
+        "type": "switch",
+        "z": "005d16b3d8efee5b",
+        "name": "Tampa aberta?",
+        "property": "payload.dist",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "25",
+                "vt": "num"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 580,
+        "y": 360,
+        "wires": [
+            [
+                "75a75d80ec8149f9"
+            ],
+            [
+                "e38e55b094071441"
+            ]
+        ]
+    },
+    {
+        "id": "75a75d80ec8149f9",
+        "type": "switch",
+        "z": "005d16b3d8efee5b",
+        "name": "Movimento brusco?",
+        "property": "payload.movimentacao",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "3",
+                "vt": "num"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 890,
+        "y": 360,
+        "wires": [
+            [
+                "e4c4239a8a202083"
+            ],
+            [
+                "e38e55b094071441"
+            ]
+        ]
+    },
+    {
+        "id": "e4c4239a8a202083",
+        "type": "change",
+        "z": "005d16b3d8efee5b",
+        "name": "Alerta ON",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{\"alerta\": \"ON\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1100,
+        "y": 360,
+        "wires": [
+            [
+                "14fa5a86e1e1a274",
+                "33ea189fecf88cd1",
+                "825fa36794654946"
+            ]
+        ]
+    },
+    {
+        "id": "e38e55b094071441",
+        "type": "change",
+        "z": "005d16b3d8efee5b",
+        "name": "Alerta OFF",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{\"alerta\": \"OFF\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1110,
+        "y": 480,
+        "wires": [
+            [
+                "14fa5a86e1e1a274",
+                "825fa36794654946"
+            ]
+        ]
+    },
+    {
+        "id": "825fa36794654946",
+        "type": "change",
+        "z": "005d16b3d8efee5b",
+        "name": "Só o alerta",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.alerta",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1340,
+        "y": 420,
+        "wires": [
+            [
+                "8f1a455fdf501d23"
+            ]
+        ]
+    },
+    {
+        "id": "8f1a455fdf501d23",
+        "type": "ui_led",
+        "z": "005d16b3d8efee5b",
+        "order": 7,
+        "group": "971cfe2ccd7a75ef",
+        "width": 4,
+        "height": 3,
+        "label": "LED",
+        "labelPlacement": "left",
+        "labelAlignment": "center",
+        "colorForValue": [
+            {
+                "color": "#5b5b5b",
+                "value": "OFF",
+                "valueType": "str"
+            },
+            {
+                "color": "#ff0000",
+                "value": "ON",
+                "valueType": "str"
+            }
+        ],
+        "allowColorForValueInMessage": false,
+        "shape": "circle",
+        "showGlow": true,
+        "name": "Espelho do LED",
+        "x": 1560,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "33ea189fecf88cd1",
+        "type": "debug",
+        "z": "005d16b3d8efee5b",
+        "name": "Alerta disparado",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1320,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "15ebb36af6b82a69",
+        "type": "trigger",
+        "z": "005d16b3d8efee5b",
+        "name": "Sem dados por 10 s",
+        "op1": "Recebendo dados",
+        "op2": "Sem dados há 10 s",
+        "op1type": "str",
+        "op2type": "str",
+        "duration": "10",
+        "extend": true,
+        "overrideDelay": false,
+        "units": "s",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 600,
+        "y": 540,
+        "wires": [
+            [
+                "3e8ebf305e815a34"
+            ]
+        ]
+    },
+    {
+        "id": "3e8ebf305e815a34",
+        "type": "ui_text",
+        "z": "005d16b3d8efee5b",
+        "group": "971cfe2ccd7a75ef",
+        "order": 13,
+        "width": 12,
+        "height": 1,
+        "name": "Conexão",
+        "label": "Conexão",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "Arial",
+        "fontSize": 16,
+        "color": "#333333",
+        "x": 800,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "14fa5a86e1e1a274",
+        "type": "mqtt out",
+        "z": "005d16b3d8efee5b",
+        "name": "LED da caixa",
+        "topic": "FIAPIoT/nexolog/equipe01/cmd",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "6c9a71ebeeca9850",
+        "x": 1310,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "c9290dbfe34fc93f",
+        "type": "ui_spacer",
+        "z": "005d16b3d8efee5b",
+        "name": "spacer",
+        "group": "971cfe2ccd7a75ef",
+        "order": 6,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "b1d47cec0e52f4d6",
+        "type": "ui_spacer",
+        "z": "005d16b3d8efee5b",
+        "name": "spacer",
+        "group": "971cfe2ccd7a75ef",
+        "order": 8,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "d043e2e202953f6c",
+        "type": "ui_spacer",
+        "z": "005d16b3d8efee5b",
+        "name": "spacer",
+        "group": "971cfe2ccd7a75ef",
+        "order": 9,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "46f3586f6fbdf75b",
+        "type": "ui_spacer",
+        "z": "005d16b3d8efee5b",
+        "name": "spacer",
+        "group": "971cfe2ccd7a75ef",
+        "order": 10,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "da571861c5b27c6b",
+        "type": "ui_spacer",
+        "z": "005d16b3d8efee5b",
+        "name": "spacer",
+        "group": "971cfe2ccd7a75ef",
+        "order": 11,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "88f0d416bd093683",
+        "type": "ui_spacer",
+        "z": "005d16b3d8efee5b",
+        "name": "spacer",
+        "group": "971cfe2ccd7a75ef",
+        "order": 12,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "6c9a71ebeeca9850",
+        "type": "mqtt-broker",
+        "name": "Mosquitto - plataforma IoT",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "971cfe2ccd7a75ef",
+        "type": "ui_group",
+        "name": "Caixa equipe01",
+        "tab": "dffa0fa8ea4d3ec5",
+        "order": 1,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "dffa0fa8ea4d3ec5",
+        "type": "ui_tab",
+        "name": "NexoLog 15",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "5eed9c4c6ee8aff2",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6",
+            "node-red-contrib-ui-level": "0.1.46",
+            "node-red-contrib-ui-led": "0.4.11"
+        }
+    }
 ]

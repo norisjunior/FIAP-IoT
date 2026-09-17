@@ -2,135 +2,145 @@
 
 Duas iterações. Cada uma roda.
 
-1. O evento chegando no n8n.
-2. O evento virando mensagem no Telegram.
+1. O dado do ESP32 chegando no n8n.
+2. O n8n decidindo e avisando no Telegram.
 
-O n8n só entra depois que o Node-RED já publica em `.../eventos`:
-[CONSTRUIR-O-FLUXO.md do Node-RED](../NodeRED/CONSTRUIR-O-FLUXO.md).
+O n8n assina **o mesmo tópico do ESP32**, `.../dados`, junto com o Node-RED. Um
+tópico MQTT entrega para todo mundo que assinar: o Node-RED mostra, o n8n decide.
+Nenhum dos dois sabe do outro.
+
+Sem nó de código. Um Switch compara os números, quatro nós montam o texto e um
+único Telegram envia.
 
 `http://localhost:5678`
 
 ---
 
-## Iteração 1 — Ver o evento chegar
+## Iteração 1 — Ver o dado chegar
 
 Workflow novo. Um nó só: **MQTT Trigger**.
 
 | Campo | Valor |
 |---|---|
 | Credential | Create new · Host `mosquitto` · Port `1883` · sem usuário/senha |
-| Topics | `FIAPIoT/nexolog/equipe01/eventos` |
+| Topics | `FIAPIoT/nexolog/equipe01/dados` |
+| Options | **JSON Parse Body** |
 
-Clique em **Listen for test event**. No Wokwi, mude a distância de 10 para 40 cm.
+Clique em **Listen for test event**.
 
-**Funcionou?** O nó verde, com um item:
+**Funcionou?** O nó verde, com um item por segundo:
 
 ```json
-{ "topic": "FIAPIoT/nexolog/equipe01/eventos",
-  "message": "{\"device\":\"NexoLogEquipe01\",\"estado\":\"Tampa aberta\",...}" }
+{ "topic": "FIAPIoT/nexolog/equipe01/dados",
+  "message": { "device": "NexoLogEquipe01", "temp": 24, "umid": 40,
+               "dist": 10, "movimentacao": 0.03 } }
 ```
 
 - [ ] A credencial fecha com **Connection tested successfully**
-- [ ] Chega um item ao mudar a distância
+- [ ] `message` abre em campos, não é um texto entre aspas
+- [ ] Chega sozinho, sem você mexer em nada
+
+Os campos ficam **dentro** de `message` — por isso toda expressão daqui para a frente
+começa com `$json.message`.
+
+> **Não ligue `Only Message`.** Ela promete entregar só o conteúdo, mas embrulha num
+> array: o item vira `[{...}]`, `{{ $json.temp }}` fica `undefined`, nenhuma regra do
+> Switch casa e as mensagens saem vazias. Dá para reconhecer na aba Schema — aparece
+> um nível `0` entre o nó e os campos.
 
 | Deu errado | Onde olhar |
 |---|---|
 | Erro na credencial | `mosquitto`, não `localhost` — os dois containers estão na mesma rede |
-| Nada chega | o evento sai só na **mudança** de estado. Volte a distância para 10 e suba de novo |
-| Nada chega, e o Node-RED também está mudo | o tópico `eventos` é o de saída do Node-RED, não o `dados` do ESP32 |
+| Nada chega | o ESP32 está publicando? Confira no Debug do Node-RED, que assina o mesmo tópico |
+| `message` como texto | faltou `JSON Parse Body` |
 
 ---
 
-## Iteração 2 — Uma mensagem por limiar
+## Iteração 2 — Decidir e avisar
 
-Quatro limiares, quatro nós de Telegram. Se a entrega estoura temperatura **e**
-tampa ao mesmo tempo, saem duas mensagens. Sem nó de código: três nós de ligar
-e os avisos.
+**a) Nó Switch**, chamado `Passou de algum limiar?`. Mode `Rules`. Uma regra por
+variável, comparando número com número:
 
-**a) Volte no MQTT Trigger** e ligue duas opções (Add Option):
+| Saída | Left | Operação | Right | Rename output |
+|---|---|---|---|---|
+| 1 | `{{ $json.message.temp }}` | Number · **is greater than** | `30` | Temperatura |
+| 2 | `{{ $json.message.umid }}` | Number · is greater than | `70` | Umidade |
+| 3 | `{{ $json.message.dist }}` | Number · is greater than | `25` | Tampa |
+| 4 | `{{ $json.message.movimentacao }}` | Number · is greater than | `3` | Movimentação |
 
-| Opção | Por quê |
-|---|---|
-| **JSON Parse Body** | `message` chega como texto; assim vira objeto sozinho |
-| **Only Message** | tira o envelope: o item passa a ser o próprio payload |
+Em **Options**, ligue **Send data to all matching outputs**. Sem isso o Switch para na
+primeira regra que casar, e a caixa quente **e** aberta avisaria só a temperatura.
 
-Execute de novo. Onde antes vinha `{topic, message}`, agora vêm `device`, `temp`,
-`motivos` e o resto, no primeiro nível.
+Não ponha `Fallback Output`: quando nada passa do limite, nada deve sair. O aviso
+serve para o que está errado.
 
-**b) Nó Split Out**, chamado `Um item por motivo`:
+**Os quatro limiares moram aqui**, e em nenhum outro lugar. O ESP32 não conhece
+nenhum deles — ele mede e publica. Mudar um limite é mudar um número nesta tela, sem
+recompilar nada. Ponha ao lado um **Sticky Note** com a tabela, para quem abrir o
+workflow achar os números.
+
+**b) Quatro nós Edit Fields (Set)**, um por saída do Switch. Cada um cria um campo
+`texto`, do tipo String, com a mensagem daquela variável — modo expressão:
+
+```
+NexoLog | {{ $json.message.device }}
+Tampa aberta
+Distância: {{ $json.message.dist.toFixed(1) }} cm
+```
+
+Trocando as duas últimas linhas em cada um:
+
+| Nó | Título | Linha do valor |
+|---|---|---|
+| `Texto: temperatura alta` | Temperatura alta | `Temperatura: {{ $json.message.temp.toFixed(1) }} °C` |
+| `Texto: umidade alta` | Umidade alta | `Umidade: {{ $json.message.umid.toFixed(1) }} %` |
+| `Texto: tampa aberta` | Tampa aberta | `Distância: {{ $json.message.dist.toFixed(1) }} cm` |
+| `Texto: movimentação brusca` | Movimentação brusca | `Movimentação: {{ $json.message.movimentacao.toFixed(2) }} m/s²` |
+
+**c) Um nó Telegram**, action `Send a Text Message`. Os quatro Set ligam **nele**:
 
 | Campo | Valor |
 |---|---|
-| Fields To Split Out | `motivos` |
-| Include | `All Other Fields` |
-| Destination Field Name | `motivo` |
+| Credential | token do @BotFather |
+| Chat ID | o seu — mande um "oi" para o bot e pegue em `api.telegram.org/bot<TOKEN>/getUpdates` |
+| Text | `{{ $json.texto }}` (com o botão de expressão ligado) |
 
-`motivos` é a lista que o Node-RED publica. O Split Out faz um item por elemento,
-carregando junto todos os outros campos — dois limiares estourados viram dois itens,
-cada um com as medições completas. É o laço, sem o laço.
-
-Cada item ganha o campo `motivo`, com as duas partes: `motivo.sensor` (a chave, para
-rotear) e `motivo.texto` (a prosa, para mostrar).
-
-**c) Nó Switch**, chamado `Qual limiar?`. Routing Rules sobre `{{ $json.motivo.sensor }}`,
-`is equal to`. Compara a chave, nunca a prosa:
-
-| Saída | Valor | Rename output |
-|---|---|---|
-| 1 | `temperatura` | Temperatura |
-| 2 | `umidade` | Umidade |
-| 3 | `tampa` | Tampa |
-| 4 | `movimento` | Movimentação |
-
-Em **Options**, acrescente `Fallback Output` = `Extra Output`. É a saída 5, por onde
-saem as chaves `falha` e `normal`.
-
-**d) Cinco nós Telegram**, um por saída, action `Send a Text Message`. Credencial do
-@BotFather e o seu Chat ID em todos. Só o campo **Text** muda, e é onde mora o texto
-de cada sensor — com o botão de expressão ligado:
-
-```
-NexoLog | {{ $json.device }}
-{{ $json.motivo.texto }}
-Temperatura: {{ $json.temp }} °C (limite 30)
-{{ $json.timestamp }}
-```
-
-Trocando a terceira linha em cada um:
-
-| Nó | Terceira linha |
-|---|---|
-| `Avisar: temperatura` | `Temperatura: {{ $json.temp }} °C (limite 30)` |
-| `Avisar: umidade` | `Umidade: {{ $json.umid }} % (limite 70)` |
-| `Avisar: tampa` | `Distância: {{ $json.dist }} cm (limite 25)` |
-| `Avisar: movimentação` | `Movimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)` |
-| `Avisar: outro` | sem terceira linha |
+Um nó só, uma credencial só, e ainda assim uma mensagem por variável: o que muda é o
+caminho até ele, não o envio.
 
 **Save** e **Active**.
 
-**Funcionou?** Abra a tampa no Wokwi:
+> **Antes de ativar.** O ESP32 publica a cada 1 s, e o aviso sai a cada leitura que
+> passar do limite — o Telegram bloqueia com esse ritmo. Para demonstrar o **fluxo**,
+> deixe a credencial do Telegram de fora e acompanhe pelas execuções. Para demonstrar
+> o **aviso**, aumente `INTERVALO_COLETA` no firmware ou ponha um nó **Wait** antes do
+> Telegram.
+
+**Funcionou?** Abra a tampa no Wokwi, de 10 para 40 cm:
 
 ```
 NexoLog | NexoLogEquipe01
 Tampa aberta
-Distância: 40.0 cm (limite 25)
-2026-09-11T13:20:05.412Z
+Distância: 40.0 cm
 ```
 
-- [ ] Uma mensagem ao abrir, outra ao fechar
-- [ ] Só o nó `Avisar: tampa` fica verde — os outros três não recebem nada
-- [ ] Suba a temperatura para 35 °C com a tampa aberta: chegam **duas** mensagens
+- [ ] Caixa boa: o Switch recebe e não sai nada por nenhuma saída
+- [ ] Tampa aberta: só a saída 3 acende
+- [ ] Tampa aberta **e** 35 °C: duas saídas acendem e chegam duas mensagens
+- [ ] Feche a tampa: para de avisar sozinho
 
 | Deu errado | Onde olhar |
 |---|---|
-| Campos vazios no Telegram | faltou `JSON Parse Body` ou `Only Message` no trigger |
-| Tudo cai na saída 5 | a regra compara `motivo.sensor`, não o texto. Confira a chave no `motivos.push` do Node-RED |
-| Nenhum item sai do Split Out | `motivos` não está no payload: veja a função "Estado da entrega" |
-| Uma mensagem só, com tudo junto | o Split Out ficou de fora |
+| Campos vazios, e nada casa | `Only Message` está ligada: desligue. O Schema mostra um nível `0` quando isso acontece |
+| `{{ $json.temp }}` não resolve | faltou o `message` no meio: é `$json.message.temp` |
+| Caixa quente e aberta avisa só uma coisa | faltou **Send data to all matching outputs** |
+| Nunca casa nada | a regra está comparando texto com número: o operador tem que ser **Number** |
+| `toFixed is not a function` | o campo veio `null` — o sensor falhou. Veja a leitura no Debug do Node-RED |
 | `Bad Request: chat not found` | Chat ID errado, ou você nunca falou com o bot primeiro |
-| Manda `{{ $json.device }}` literal | o campo Text está em modo fixo, não expressão |
-| Uma enxurrada de mensagens | o nó "Somente mudança de estado" do Node-RED ficou de fora |
+| Telegram parou de responder | a taxa: veja o aviso acima |
 
-O fluxo completo está em [fluxo_mqtt.json](fluxo_mqtt.json) — Import from File, para comparar com o seu.
+O fluxo completo está em [fluxo_mqtt.json](fluxo_mqtt.json) — Import from File, para
+comparar com o seu.
 
-Uma equipe, um workflow ativo. Dois workflows no mesmo tópico mandam a mensagem duas vezes.
+Uma equipe, um workflow ativo. Dois workflows no mesmo tópico mandam a mensagem duas
+vezes.

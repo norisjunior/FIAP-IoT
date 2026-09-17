@@ -48,4 +48,4 @@ cru. Parado e nivelado, `mean_az` fica perto de `1.0`.
 
 [`colab/treinamento_binario.ipynb`](colab/treinamento_binario.ipynb) lê estas janelas do
 InfluxDB (measurement `vibracao_binario`) e gera o `modelo_vibracao_binaria.pkl`, que a
-[Aplicação 24](../../app24-Inferencia-AI-API_Sinais-Binary_IMU/) carrega para responder no MQTT.
+**app seguinte de inferência usando IMU** carrega para responder no MQTT.

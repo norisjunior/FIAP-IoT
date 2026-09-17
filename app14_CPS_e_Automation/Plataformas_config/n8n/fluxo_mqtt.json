@@ -1,12 +1,27 @@
 {
-  "name": "NexoLog app14 - eventos da entrega",
+  "name": "NexoLog app14 - avisos por limiar",
   "nodes": [
     {
       "parameters": {
-        "topics": "FIAPIoT/nexolog/equipe01/eventos",
+        "content": "## Limiares desta aula\n\nEstao nas quatro regras do Switch ao lado, em numero.\nNao sao especificacao de conservacao de carga real.\n\n| Sensor | Passa quando |\n|---|---|\n| temp | > 30 °C |\n| umid | > 70 % |\n| dist | > 25 cm |\n| movimentacao | > 3 m/s² |\n\nO ESP32 nao conhece nenhum deles: ele mede e publica.\nMudar um limite e mudar um numero aqui, sem recompilar nada.",
+        "height": 320,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        -420
+      ],
+      "id": "78c058e4-6f97-4b42-89e0-004b7addd394",
+      "name": "Limiares"
+    },
+    {
+      "parameters": {
+        "topics": "FIAPIoT/nexolog/equipe01/dados",
         "options": {
-          "jsonParseBody": true,
-          "onlyMessage": true
+          "jsonParseBody": true
         }
       },
       "type": "n8n-nodes-base.mqttTrigger",
@@ -15,25 +30,8 @@
         0,
         0
       ],
-      "id": "9aa1b2a3-3115-438f-9a29-4cf15edb67c0",
+      "id": "20296795-55ac-4afd-8b59-bf3be1ba65d1",
       "name": "MQTT Trigger"
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "motivos",
-        "include": "allOtherFields",
-        "options": {
-          "destinationFieldName": "motivo"
-        }
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        220,
-        0
-      ],
-      "id": "87ec6c6c-7ce4-4ff0-bf3d-7080cc604754",
-      "name": "Um item por motivo"
     },
     {
       "parameters": {
@@ -49,12 +47,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "f34febec-e0c6-4f11-8c97-bf5f681e008e",
-                    "leftValue": "={{ $json.motivo.sensor }}",
-                    "rightValue": "temperatura",
+                    "id": "d32f8a5c-3c2d-47dd-b160-6cf2b8242cbe",
+                    "leftValue": "={{ $json.message.temp }}",
+                    "rightValue": 30,
                     "operator": {
-                      "type": "string",
-                      "operation": "equals"
+                      "type": "number",
+                      "operation": "gt"
                     }
                   }
                 ],
@@ -73,12 +71,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "1c57c5a1-0d82-477c-86aa-95bcf64401b9",
-                    "leftValue": "={{ $json.motivo.sensor }}",
-                    "rightValue": "umidade",
+                    "id": "42afd9d5-80a0-48ef-92e3-d784978c28fb",
+                    "leftValue": "={{ $json.message.umid }}",
+                    "rightValue": 70,
                     "operator": {
-                      "type": "string",
-                      "operation": "equals"
+                      "type": "number",
+                      "operation": "gt"
                     }
                   }
                 ],
@@ -97,12 +95,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "02e2ad0d-99c3-4842-8ba8-7cddfc887a87",
-                    "leftValue": "={{ $json.motivo.sensor }}",
-                    "rightValue": "tampa",
+                    "id": "0a293912-f52b-44c6-8c61-741b8b7d1508",
+                    "leftValue": "={{ $json.message.dist }}",
+                    "rightValue": 25,
                     "operator": {
-                      "type": "string",
-                      "operation": "equals"
+                      "type": "number",
+                      "operation": "gt"
                     }
                   }
                 ],
@@ -121,12 +119,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "1f60c2c6-cfad-4d23-b8ed-ec722e779195",
-                    "leftValue": "={{ $json.motivo.sensor }}",
-                    "rightValue": "movimento",
+                    "id": "a4384b2f-d5cf-42c3-bccb-21c7e647b213",
+                    "leftValue": "={{ $json.message.movimentacao }}",
+                    "rightValue": 3,
                     "operator": {
-                      "type": "string",
-                      "operation": "equals"
+                      "type": "number",
+                      "operation": "gt"
                     }
                   }
                 ],
@@ -139,98 +137,129 @@
         },
         "looseTypeValidation": false,
         "options": {
-          "fallbackOutput": "extra",
-          "renameFallbackOutput": "Outro"
+          "allMatchingOutputs": true
         }
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        440,
+        240,
         0
       ],
-      "id": "b3108c44-b555-4a5f-8386-b2a4bcdaa02e",
-      "name": "Qual limiar?"
+      "id": "2aa3ee3f-95b7-40bb-b9b1-7010565bc161",
+      "name": "Passou de algum limiar?"
     },
     {
       "parameters": {
-        "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nTemperatura: {{ $json.temp }} °C (limite 30)\n{{ $json.timestamp }}",
-        "additionalFields": {}
+        "assignments": {
+          "assignments": [
+            {
+              "id": "80b33175-33dd-4052-81a6-0db52a8cb81a",
+              "name": "texto",
+              "value": "=NexoLog | {{ $json.message.device }}\nTemperatura alta\nTemperatura: {{ $json.message.temp.toFixed(1) }} °C",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
       },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        660,
+        480,
         -300
       ],
-      "id": "02546065-368b-441c-88f7-2cc2b687b29c",
-      "name": "Avisar: temperatura",
-      "webhookId": "68f4b03a-12ce-4b8f-88fc-c716e0d89f34"
+      "id": "8648607d-1bcc-49f1-9671-b5e5e64256b0",
+      "name": "Texto: temperatura alta"
     },
     {
       "parameters": {
-        "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nUmidade: {{ $json.umid }} % (limite 70)\n{{ $json.timestamp }}",
-        "additionalFields": {}
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1a94c41f-da3e-4b1f-a655-29a969ae4a77",
+              "name": "texto",
+              "value": "=NexoLog | {{ $json.message.device }}\nUmidade alta\nUmidade: {{ $json.message.umid.toFixed(1) }} %",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
       },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        660,
-        -150
+        480,
+        -100
       ],
-      "id": "f940ad53-b753-48b4-a8f8-186072ca1db8",
-      "name": "Avisar: umidade",
-      "webhookId": "7654b285-84ac-436f-9e4f-37edb4c55c02"
+      "id": "27a1043c-b604-430f-aaa7-aac92ad5ccdf",
+      "name": "Texto: umidade alta"
     },
     {
       "parameters": {
-        "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nDistância: {{ $json.dist }} cm (limite 25)\n{{ $json.timestamp }}",
-        "additionalFields": {}
+        "assignments": {
+          "assignments": [
+            {
+              "id": "20743689-cff7-4ac9-bb24-a276ffb3eda3",
+              "name": "texto",
+              "value": "=NexoLog | {{ $json.message.device }}\nTampa aberta\nDistância: {{ $json.message.dist.toFixed(1) }} cm",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
       },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        660,
-        0
+        480,
+        100
       ],
-      "id": "d3a3fde8-921e-4f69-b2fc-e5c9d1853ae7",
-      "name": "Avisar: tampa",
-      "webhookId": "d3f15d95-c039-4a6d-901f-b043fa5119b6"
+      "id": "2c3dcbc9-aaed-4224-aff3-2e3c93d35322",
+      "name": "Texto: tampa aberta"
     },
     {
       "parameters": {
-        "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\nMovimentação: {{ $json.movimentacao.toFixed(2) }} m/s² (limite 3)\n{{ $json.timestamp }}",
-        "additionalFields": {}
+        "assignments": {
+          "assignments": [
+            {
+              "id": "15e7d2b7-3258-43cb-962a-8ecf0061f1b5",
+              "name": "texto",
+              "value": "=NexoLog | {{ $json.message.device }}\nMovimentação brusca\nMovimentação: {{ $json.message.movimentacao.toFixed(2) }} m/s²",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
       },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        660,
-        150
-      ],
-      "id": "efb2d919-56dc-4b1a-859b-a2f26790dbc3",
-      "name": "Avisar: movimentação",
-      "webhookId": "f7d49131-3271-4819-88ba-2791d99156cb"
-    },
-    {
-      "parameters": {
-        "chatId": "SEU_CHAT_ID",
-        "text": "=NexoLog | {{ $json.device }}\n{{ $json.motivo.texto }}\n{{ $json.timestamp }}",
-        "additionalFields": {}
-      },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        660,
+        480,
         300
       ],
-      "id": "0dd52312-b3d5-4763-a79d-f0a0845b588b",
-      "name": "Avisar: outro",
-      "webhookId": "85eea7ca-bd68-4d9d-9643-13665f6abcda"
+      "id": "4f29b612-20b4-4272-8999-007a16a44a60",
+      "name": "Texto: movimentação brusca"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "97a2a09b-3e31-4f57-9818-8715f8537485",
+      "name": "Avisar no Telegram",
+      "webhookId": "acf68263-b686-4a11-934e-caaa345e7341"
     }
   ],
   "connections": {
@@ -238,57 +267,83 @@
       "main": [
         [
           {
-            "node": "Um item por motivo",
+            "node": "Passou de algum limiar?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Um item por motivo": {
+    "Passou de algum limiar?": {
       "main": [
         [
           {
-            "node": "Qual limiar?",
+            "node": "Texto: temperatura alta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Texto: umidade alta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Texto: tampa aberta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Texto: movimentação brusca",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Qual limiar?": {
+    "Texto: temperatura alta": {
       "main": [
         [
           {
-            "node": "Avisar: temperatura",
+            "node": "Avisar no Telegram",
             "type": "main",
             "index": 0
           }
-        ],
+        ]
+      ]
+    },
+    "Texto: umidade alta": {
+      "main": [
         [
           {
-            "node": "Avisar: umidade",
+            "node": "Avisar no Telegram",
             "type": "main",
             "index": 0
           }
-        ],
+        ]
+      ]
+    },
+    "Texto: tampa aberta": {
+      "main": [
         [
           {
-            "node": "Avisar: tampa",
+            "node": "Avisar no Telegram",
             "type": "main",
             "index": 0
           }
-        ],
+        ]
+      ]
+    },
+    "Texto: movimentação brusca": {
+      "main": [
         [
           {
-            "node": "Avisar: movimentação",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Avisar: outro",
+            "node": "Avisar no Telegram",
             "type": "main",
             "index": 0
           }

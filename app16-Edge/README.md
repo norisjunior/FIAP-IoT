@@ -1,6 +1,6 @@
 # App16 — Plataforma no Raspberry Pi
 
-Use o mesmo firmware preparado no [app15](../app15-Cloud/README.md). A decisão continua nos fluxos da plataforma; o Raspberry Pi próximo dos dispositivos representa o Near Edge/Fog.
+Use o mesmo firmware preparado no **app anterior, para cloud**. A decisão continua nos fluxos da plataforma; o Raspberry Pi próximo dos dispositivos representa o Near Edge/Fog.
 
 ## Preparação
 
@@ -10,13 +10,17 @@ Use o mesmo firmware preparado no [app15](../app15-Cloud/README.md). A decisão 
 4. No firmware, configure a rede Wi-Fi e altere somente `MQTT_SERVER` para esse IP. Exemplo: `"192.168.1.50"`. Recompile e grave quando alterar essas configurações.
 5. Acesse `http://IP_DO_RASPBERRY:1880` para importar o dashboard e `http://IP_DO_RASPBERRY:5678` para configurar o n8n.
 
-## Mesmos fluxos do app15
+## Mesmos fluxos do app anterior, para cloud
 
-- [Node-RED: dashboard e comandos](../app15-Cloud/Plataformas_config/NodeRED/Fluxo_1_dashboard_graphs_e_cmd.json)
-- [Node-RED: InfluxDB opcional](../app15-Cloud/Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json)
-- [n8n: notificações](../app15-Cloud/Plataformas_config/n8n/fluxo_mqtt.json)
+Importe os mesmos arquivos, sem alterar nada dentro deles:
 
-Configure as conexões no Raspberry: na rede Docker, o broker pode ser `mosquitto`; em uma instalação nativa, `localhost`. O ESP32 usa o IP do Raspberry. Preserve tópicos, payload e regras do app15.
+| Arquivo | Onde | O que faz |
+|---|---|---|
+| `Fluxo_1_dashboard_graphs_e_cmd.json` | Node-RED | dashboard e comandos |
+| `Fluxo_2_envio_InfluxDB.json` | Node-RED | histórico, opcional |
+| `fluxo_mqtt.json` | n8n | notificações |
+
+Configure as conexões no Raspberry: na rede Docker, o broker pode ser `mosquitto`; em uma instalação nativa, `localhost`. O ESP32 usa o IP do Raspberry. Preserve tópicos, payload e regras do app anterior.
 
 Reconfigure as credenciais do n8n e do InfluxDB no novo ambiente. O token não acompanha o JSON exportado. Se também usar Grafana/InfluxDB localmente, configure a fonte de dados para o banco do Raspberry.
 
