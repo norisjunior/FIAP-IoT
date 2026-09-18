@@ -37,7 +37,7 @@ unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 
 /* ---- Medicoes guardadas entre um envio e outro ---- */
 ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
-ESP32Sensors::Distancia::DISTANCIA distancia = {NAN};
+float distancia = NAN;
 AccelData accel = {};
 float movimentacaoMax = NAN;
 
@@ -84,28 +84,25 @@ void loop() {
     movimentacaoMax = NAN;   // recomeca a procurar o pico
   }
 
-  if (WiFi.status() != WL_CONNECTED) {
-    if (millis() - ultimaTentativaWiFi >= INTERVALO_RECONEXAO) {
-      ultimaTentativaWiFi = millis();
-      WiFi.reconnect();
-    }
-  } else if (!mqttClient.connected()) {
-    if (millis() - ultimaTentativaMQTT >= INTERVALO_RECONEXAO) {
-      ultimaTentativaMQTT = millis();
-      conectarMQTT();
-    }
-  } else {
-    mqttClient.loop();
-  }
+  if (WiFi.status() != WL_CONNECTED) conectarWiFi();
+  else if (!mqttClient.connected()) conectarMQTT();
+  else mqttClient.loop();
 }
 
 void conectarWiFi() {
+  // Uma tentativa a cada INTERVALO_RECONEXAO. A primeira passa direto.
+  if (ultimaTentativaWiFi > 0 && millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) return;
+  ultimaTentativaWiFi = millis();
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   WiFi.setSleep(false);
 }
 
 void conectarMQTT() {
+  if (ultimaTentativaMQTT > 0 && millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) return;
+  ultimaTentativaMQTT = millis();
+
   if (mqttClient.connect(MQTT_CLIENT_ID)) {
     Serial.println("[MQTT] Conectado");
 
@@ -116,13 +113,13 @@ void conectarMQTT() {
 
 bool enviarDadosColetados() {
   Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
-                ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
+                ambiente.temp, ambiente.umid, distancia, movimentacaoMax);
 
   JsonDocument doc;
   doc["device"] = MQTT_CLIENT_ID;
   doc["temp"] = ambiente.temp;
   doc["umid"] = ambiente.umid;
-  doc["dist"] = distancia.cm;
+  doc["dist"] = distancia;
   doc["accel_x"] = accel.accelX;
   doc["accel_y"] = accel.accelY;
   doc["accel_z"] = accel.accelZ;
