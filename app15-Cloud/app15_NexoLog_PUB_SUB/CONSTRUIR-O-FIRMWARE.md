@@ -182,12 +182,18 @@ mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m 'ON'
 
 ## Iteração 3 — O alerta acendendo o LED
 
-Uma linha no fim da callback:
+Duas linhas no fim da callback:
 
 ```cpp
   // A nuvem ja decidiu. Aqui so obedecemos.
-  digitalWrite(LED_ALERTA, strcmp(alerta, "ON") == 0 ? HIGH : LOW);
+  bool ligar = strcmp(alerta, "ON") == 0;
+  digitalWrite(LED_ALERTA, ligar ? HIGH : LOW);
 ```
+
+A primeira linha responde uma pergunta: **o comando é para acender?** A segunda usa a
+resposta. Daria para fazer tudo de uma vez dentro do `digitalWrite`, mas aí a
+comparação de texto e a escolha do nível ficariam na mesma linha, e nenhuma das duas
+fica clara.
 
 `strcmp` porque `alerta` é `const char*`, não `String`: `alerta == "ON"` compara
 endereços e dá sempre falso. E `strcmp` devolve **0** quando os textos são iguais — daí
