@@ -121,7 +121,9 @@ dentro do `loop()` e viram globais.
   if (millis() - ultimoDHT >= INTERVALO_DHT) {
     ultimoDHT = millis();
     ESP32Sensors::Ambiente::AMBIENTE leitura = ESP32Sensors::Ambiente::medirAmbiente();
-    if (leitura.valido) ambiente = leitura;
+    if (leitura.valido) {
+      ambiente = leitura;
+    }
   }
 
   // O MPU e rapido: 20 amostras por segundo, guardamos so a maior.
@@ -206,16 +208,18 @@ PubSubClient mqttClient(wifiClient);
 
 ```cpp
 const unsigned long INTERVALO_RECONEXAO = 5000;
-unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
+unsigned long proximaTentativaWiFi = 0, proximaTentativaMQTT = 0;
 ```
 
 **Duas funções**, no fim do arquivo:
 
 ```cpp
 void conectarWiFi() {
-  // Uma tentativa a cada INTERVALO_RECONEXAO. A primeira passa direto.
-  if (ultimaTentativaWiFi > 0 && millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) return;
-  ultimaTentativaWiFi = millis();
+  // Uma tentativa a cada INTERVALO_RECONEXAO.
+  if (millis() < proximaTentativaWiFi) {
+    return;
+  }
+  proximaTentativaWiFi = millis() + INTERVALO_RECONEXAO;
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -223,8 +227,10 @@ void conectarWiFi() {
 }
 
 void conectarMQTT() {
-  if (ultimaTentativaMQTT > 0 && millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) return;
-  ultimaTentativaMQTT = millis();
+  if (millis() < proximaTentativaMQTT) {
+    return;
+  }
+  proximaTentativaMQTT = millis() + INTERVALO_RECONEXAO;
 
   if (mqttClient.connect(MQTT_CLIENT_ID)) {
     Serial.println("[MQTT] Conectado");
@@ -235,8 +241,10 @@ void conectarMQTT() {
 ```
 
 Cada função cuida do próprio ritmo de tentativa. Quem chama não precisa saber disso —
-chama à vontade, a função decide se é hora. O `> 0` deixa a primeira chamada passar:
-sem ele, o dispositivo esperaria 5 s para tentar conectar.
+chama à vontade, a função decide se é hora.
+
+A variável guarda **quando pode tentar de novo**, e começa em zero: no boot,
+`millis()` já é maior que zero, então a primeira chamada passa direto.
 
 **Dois protótipos**, antes do `setup()`, porque as funções agora ficam depois de quem
 as chama:
@@ -258,9 +266,13 @@ void conectarMQTT();
 **No fim do `loop()`**, depois dos três relógios — três linhas, sem `delay()`:
 
 ```cpp
-  if (WiFi.status() != WL_CONNECTED) conectarWiFi();
-  else if (!mqttClient.connected()) conectarMQTT();
-  else mqttClient.loop();
+  if (WiFi.status() != WL_CONNECTED) {
+    conectarWiFi();
+  } else if (!mqttClient.connected()) {
+    conectarMQTT();
+  } else {
+    mqttClient.loop();
+  }
 ```
 
 Sem Wi-Fi, tenta Wi-Fi. Com Wi-Fi e sem MQTT, tenta MQTT. Com os dois, `mqttClient.loop()`
@@ -298,7 +310,7 @@ Sem `return` aqui: o bloco de conexão está logo abaixo e precisa rodar.
 | Deu errado | Onde olhar |
 |---|---|
 | `[MQTT] Falha: -2` | broker no ar? No Wokwi o host é `host.wokwi.internal`; na placa, o IP da Ethernet do notebook |
-| Demora 5 s para conectar ao ligar | faltou o `> 0` na condição do `conectarWiFi()` |
+| Demora 5 s para conectar ao ligar | a variável guarda a **próxima** tentativa, não a última: confira o sinal do `<` |
 | Conecta e cai sozinho | dois ESP32 com o mesmo `MQTT_CLIENT_ID` |
 | `Publicado`, mas nada no `mosquitto_sub` | tópico diferente entre firmware e assinante — confira `equipe01` |
 | Publica e para depois de uns segundos | falta o `mqttClient.loop()` |
@@ -338,7 +350,9 @@ bool enviarDadosColetados() {
 
   String payload;
   serializeJson(doc, payload);
-  if (!mqttClient.connected()) return false;
+  if (!mqttClient.connected()) {
+    return false;
+  }
   bool ok = mqttClient.publish(MQTT_PUB_TOPIC, payload.c_str());
   Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
   return ok;

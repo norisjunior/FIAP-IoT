@@ -33,7 +33,7 @@ const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapi
 const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
 const unsigned long INTERVALO_RECONEXAO = 5000;
 unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
-unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
+unsigned long proximaTentativaWiFi = 0, proximaTentativaMQTT = 0;
 
 /* ---- Medicoes guardadas entre um envio e outro ---- */
 ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
@@ -66,7 +66,9 @@ void loop() {
   if (millis() - ultimoDHT >= INTERVALO_DHT) {
     ultimoDHT = millis();
     ESP32Sensors::Ambiente::AMBIENTE leitura = ESP32Sensors::Ambiente::medirAmbiente();
-    if (leitura.valido) ambiente = leitura;
+    if (leitura.valido) {
+      ambiente = leitura;
+    }
   }
 
   // O MPU e rapido: 20 amostras por segundo, guardamos so a maior.
@@ -84,15 +86,21 @@ void loop() {
     movimentacaoMax = NAN;   // recomeca a procurar o pico
   }
 
-  if (WiFi.status() != WL_CONNECTED) conectarWiFi();
-  else if (!mqttClient.connected()) conectarMQTT();
-  else mqttClient.loop();
+  if (WiFi.status() != WL_CONNECTED) {
+    conectarWiFi();
+  } else if (!mqttClient.connected()) {
+    conectarMQTT();
+  } else {
+    mqttClient.loop();
+  }
 }
 
 void conectarWiFi() {
-  // Uma tentativa a cada INTERVALO_RECONEXAO. A primeira passa direto.
-  if (ultimaTentativaWiFi > 0 && millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) return;
-  ultimaTentativaWiFi = millis();
+  // Uma tentativa a cada INTERVALO_RECONEXAO.
+  if (millis() < proximaTentativaWiFi) {
+    return;
+  }
+  proximaTentativaWiFi = millis() + INTERVALO_RECONEXAO;
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -100,8 +108,10 @@ void conectarWiFi() {
 }
 
 void conectarMQTT() {
-  if (ultimaTentativaMQTT > 0 && millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) return;
-  ultimaTentativaMQTT = millis();
+  if (millis() < proximaTentativaMQTT) {
+    return;
+  }
+  proximaTentativaMQTT = millis() + INTERVALO_RECONEXAO;
 
   if (mqttClient.connect(MQTT_CLIENT_ID)) {
     Serial.println("[MQTT] Conectado");
@@ -127,7 +137,9 @@ bool enviarDadosColetados() {
 
   String payload;
   serializeJson(doc, payload);
-  if (!mqttClient.connected()) return false;
+  if (!mqttClient.connected()) {
+    return false;
+  }
   bool ok = mqttClient.publish(MQTT_PUB_TOPIC, payload.c_str());
   Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
   return ok;

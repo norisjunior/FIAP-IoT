@@ -32,6 +32,7 @@ Nada do que sobe muda. **Paridade com o app14:**
 | Intervalo de publicação | 1000 ms |
 | Saída no Serial | CSV com `\r\n`, título no `setup()` |
 | Reconexão | dentro de `conectarWiFi()` e `conectarMQTT()`, uma tentativa a cada 5 s |
+| Estilo | todo `if` com chaves, mesmo de uma linha |
 | Client ID | `NexoLogEquipe01`, um por equipe |
 | `mqttClient.setKeepAlive(120)` | mantido |
 
@@ -144,7 +145,7 @@ outro diz o que chegou. Juntos, o Serial conta a conversa inteira.
 ```
 
 **e) Assinar**, em `conectarMQTT()`, dentro do `if (mqttClient.connect(...))` — depois
-do controle de tentativa, que já está no começo da função:
+do controle de próxima tentativa, que já está no começo da função:
 
 ```cpp
     mqttClient.subscribe(MQTT_SUB_TOPIC);
