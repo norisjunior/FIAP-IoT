@@ -58,7 +58,8 @@ void callbackMQTT(char* topico, byte* conteudo, unsigned int tamanho) {
   }
 
   // A nuvem ja decidiu. Aqui so obedecemos.
-  digitalWrite(LED_ALERTA, strcmp(alerta, "ON") == 0 ? HIGH : LOW);
+  bool ligar = strcmp(alerta, "ON") == 0;
+  digitalWrite(LED_ALERTA, ligar ? HIGH : LOW);
 }
 ```
 

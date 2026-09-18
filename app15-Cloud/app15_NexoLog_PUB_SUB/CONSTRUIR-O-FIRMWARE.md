@@ -31,6 +31,8 @@ Nada do que sobe muda. **Paridade com o app14:**
 | Campos do JSON | os mesmos oito, sem acréscimo |
 | Intervalo de publicação | 1000 ms |
 | Saída no Serial | CSV com `\r\n`, título no `setup()` |
+| Reconexão | dentro de `conectarWiFi()` e `conectarMQTT()`, uma tentativa a cada 5 s |
+| Estilo | todo `if` com chaves, mesmo de uma linha |
 | Client ID | `NexoLogEquipe01`, um por equipe |
 | `mqttClient.setKeepAlive(120)` | mantido |
 
@@ -142,7 +144,8 @@ outro diz o que chegou. Juntos, o Serial conta a conversa inteira.
   mqttClient.setCallback(callbackMQTT);
 ```
 
-**e) Assinar**, em `conectarMQTT()`, dentro do `if (mqttClient.connect(...))`:
+**e) Assinar**, em `conectarMQTT()`, dentro do `if (mqttClient.connect(...))` — depois
+do controle de tentativa, que já está no começo da função:
 
 ```cpp
     mqttClient.subscribe(MQTT_SUB_TOPIC);
@@ -179,12 +182,18 @@ mosquitto_pub -h localhost -t 'FIAPIoT/nexolog/equipe01/cmd' -m 'ON'
 
 ## Iteração 3 — O alerta acendendo o LED
 
-Uma linha no fim da callback:
+Duas linhas no fim da callback:
 
 ```cpp
   // A nuvem ja decidiu. Aqui so obedecemos.
-  digitalWrite(LED_ALERTA, strcmp(alerta, "ON") == 0 ? HIGH : LOW);
+  bool ligar = strcmp(alerta, "ON") == 0;
+  digitalWrite(LED_ALERTA, ligar ? HIGH : LOW);
 ```
+
+A primeira linha responde uma pergunta: **o comando é para acender?** A segunda usa a
+resposta. Daria para fazer tudo de uma vez dentro do `digitalWrite`, mas aí a
+comparação de texto e a escolha do nível ficariam na mesma linha, e nenhuma das duas
+fica clara.
 
 `strcmp` porque `alerta` é `const char*`, não `String`: `alerta == "ON"` compara
 endereços e dá sempre falso. E `strcmp` devolve **0** quando os textos são iguais — daí

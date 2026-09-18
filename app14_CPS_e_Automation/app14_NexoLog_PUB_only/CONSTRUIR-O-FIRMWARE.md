@@ -3,9 +3,9 @@
 Quatro iterações. Cada uma compila e roda.
 
 1. Sensores no Serial.
-2. Os mesmos dados saindo por MQTT.
-3. O `loop()` limpo.
-4. Um relógio por sensor.
+2. Um relógio por sensor.
+3. Os mesmos dados saindo por MQTT.
+4. O `loop()` limpo.
 
 Comece com `src/app14-NexoLog-PUBonly.ino` vazio. Os três `.hpp` dos sensores já
 estão em `src/`. Este firmware só mede e publica — o LED entra no app15, quando
@@ -46,12 +46,12 @@ void loop() {
     tempoAnterior = millis();
 
     ESP32Sensors::Ambiente::AMBIENTE amb = ESP32Sensors::Ambiente::medirAmbiente();
-    ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
+    float dist = ESP32Sensors::Distancia::medirDistancia();
     AccelData accel = ESP32Sensors::Accel::medirAccel();
     float movimentacao = ESP32Sensors::Accel::medirMovimentacao(accel);
 
     Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
-                  amb.temp, amb.umid, dist.cm, movimentacao);
+                  amb.temp, amb.umid, dist, movimentacao);
   }
 }
 ```
@@ -80,9 +80,106 @@ em `\r\n`; nos `printf` o `\r\n` vai escrito à mão, que é o que o Windows esp
 
 ---
 
-## Iteração 2 — Publicar por MQTT
+## Iteração 2 — Um relógio por sensor
 
-Acrescente ao que já funciona.
+Sacuda o MPU por dois segundos e veja `0.00` no Serial. É o normal: o acelerômetro é
+lido **uma vez** por ciclo, 1 ms a cada 2500 ms, e a amostra cai fora do movimento.
+
+Cada sensor tem um ritmo próprio, e nenhum deles é o ritmo do envio:
+
+| Sensor | Ritmo | Por quê |
+|---|---|---|
+| DHT22 | 2,1 s | o sensor não responde mais rápido — abaixo de 2 s ele devolve leitura inválida |
+| MPU | 50 ms | para pegar o pico do movimento, não um instante sorteado |
+| HC-SR04 | 1 s | junto do envio, a distância não muda em milissegundos |
+| Enviar | 1 s | é o que a plataforma vai mostrar |
+
+**a) Três relógios**, no lugar do bloco de intervalo:
+
+```cpp
+/* ---- Controle de intervalo ---- */
+const unsigned long INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
+const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
+const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
+unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
+
+/* ---- Medicoes guardadas entre um envio e outro ---- */
+ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
+float distancia = NAN;
+AccelData accel = {};
+float movimentacaoMax = NAN;
+```
+
+Os três sensores passam a ser lidos em momentos diferentes, então o valor de cada um
+precisa ficar guardado até a hora de mostrar — são essas quatro variáveis. Elas saem de
+dentro do `loop()` e viram globais.
+
+**b) Duas caixas novas no `loop()`**, antes do bloco que já existe:
+
+```cpp
+  // O DHT22 e lento: guardamos a ultima leitura boa e enviamos ela.
+  if (millis() - ultimoDHT >= INTERVALO_DHT) {
+    ultimoDHT = millis();
+    ESP32Sensors::Ambiente::AMBIENTE leitura = ESP32Sensors::Ambiente::medirAmbiente();
+    if (leitura.valido) {
+      ambiente = leitura;
+    }
+  }
+
+  // O MPU e rapido: 20 amostras por segundo, guardamos so a maior.
+  if (millis() - ultimoMPU >= INTERVALO_MPU) {
+    ultimoMPU = millis();
+    accel = ESP32Sensors::Accel::medirAccel();
+    movimentacaoMax = fmaxf(movimentacaoMax, ESP32Sensors::Accel::medirMovimentacao(accel));
+  }
+```
+
+`if (leitura.valido)` é o que faz o cache: leitura ruim é descartada e o último valor
+bom continua valendo. `fmaxf` é o máximo entre o que já tinha e o que acabou de medir
+— vinte comparações por segundo, e sobra o pico.
+
+**c) O terceiro relógio** já existe; ele perde as três medições que subiram, mede só a
+distância e zera o pico:
+
+```cpp
+  // O HC-SR04 e lido junto do envio: a distancia nao muda em milissegundos.
+  if (millis() - tempoAnterior >= INTERVALO_COLETA) {
+    tempoAnterior = millis();
+    distancia = ESP32Sensors::Distancia::medirDistancia();
+
+    Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
+                  ambiente.temp, ambiente.umid, distancia, movimentacaoMax);
+
+    movimentacaoMax = NAN;   // recomeca a procurar o pico
+  }
+```
+
+Sem zerar, o maior valor do dia ficaria para sempre.
+
+**Funcionou?**
+
+- [ ] O Serial passa a sair uma vez por segundo
+- [ ] Parado, a última coluna fica perto de 0,00 e a temperatura repete por dois envios
+- [ ] Sacuda o MPU: a última coluna sobe e mostra o pico daquele segundo
+- [ ] Pare de sacudir: no envio seguinte já volta para perto de 0,00
+
+| Deu errado | Onde olhar |
+|---|---|
+| A última coluna cresce e nunca cai | faltou o `movimentacaoMax = NAN;` do (c) |
+| Temperatura sempre `nan` | `INTERVALO_DHT` abaixo de 2000: o sensor recusa e nunca preenche o cache |
+| A última coluna continua sorteada | o `medirAccel()` ficou no bloco de 1 s, em vez do relógio do MPU |
+| Sai muito mais rápido que 1 s | tem dois `tempoAnterior = millis()` no `loop()` |
+| `'amb' was not declared` | as medições viraram globais com outros nomes: `ambiente`, `distancia` |
+
+Anote quanto marca com a caixa **parada**. O FastIMU está sem calibração, então um viés
+de fábrica vira um piso constante — e é a partir desse piso que você escolhe o limiar
+lá no n8n.
+
+---
+
+## Iteração 3 — Publicar por MQTT
+
+Acrescente ao que já funciona. Os nomes das medições não mudam mais.
 
 **Includes**, junto dos demais:
 
@@ -105,22 +202,36 @@ const char* WIFI_PASSWORD = "";
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
-
-const unsigned long INTERVALO_RECONEXAO = 5000;
-unsigned long ultimaTentativaWiFi = 0;
-unsigned long ultimaTentativaMQTT = 0;
 ```
 
-**Duas funções**, antes do `setup()`:
+**Mais um intervalo e dois relógios**, no bloco de controle:
+
+```cpp
+const unsigned long INTERVALO_RECONEXAO = 5000;
+unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
+```
+
+**Duas funções**, no fim do arquivo:
 
 ```cpp
 void conectarWiFi() {
+  // Uma tentativa a cada INTERVALO_RECONEXAO.
+  if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaWiFi = millis();
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   WiFi.setSleep(false);
 }
 
 void conectarMQTT() {
+  if (millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaMQTT = millis();
+
   if (mqttClient.connect(MQTT_CLIENT_ID)) {
     Serial.println("[MQTT] Conectado");
   } else {
@@ -129,110 +240,128 @@ void conectarMQTT() {
 }
 ```
 
+Cada função cuida do próprio ritmo de tentativa. Quem chama não precisa saber disso —
+chama à vontade, a função decide se é hora.
+
+Repare no `delay(INTERVALO_RECONEXAO)` do `setup()`. A conta `millis() - ultima`
+começa valendo poucos milissegundos no boot, menos que o intervalo — sem a espera, a
+**primeira** tentativa seria bloqueada pelo próprio controle. O `delay` resolve com
+uma linha, ao custo de cinco segundos parado ao ligar.
+
+> É uma simplificação didática assumida. Um firmware de produção não para o boot para
+> isso — e por que, e o que se faz no lugar, fica para a aula de recursos de
+> produção.
+
+**Dois protótipos**, antes do `setup()`, porque as funções agora ficam depois de quem
+as chama:
+
+```cpp
+void conectarWiFi();
+void conectarMQTT();
+```
+
 **No `setup()`**, entre os `inicializar` e a linha de título do CSV:
 
 ```cpp
+  // O controle de tentativa usa millis(). No boot ele ainda e menor que
+  // INTERVALO_RECONEXAO, entao esperamos para a primeira tentativa passar.
+  delay(INTERVALO_RECONEXAO);
   conectarWiFi();
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setBufferSize(768);
   mqttClient.setKeepAlive(120);
 ```
 
-**No fim do `loop()`**, depois do bloco de coleta — reconecta sem `delay()`:
+**No fim do `loop()`**, depois dos três relógios — três linhas, sem `delay()`:
 
 ```cpp
   if (WiFi.status() != WL_CONNECTED) {
-    if (millis() - ultimaTentativaWiFi >= INTERVALO_RECONEXAO) {
-      ultimaTentativaWiFi = millis();
-      WiFi.reconnect();
-    }
+    conectarWiFi();
   } else if (!mqttClient.connected()) {
-    if (millis() - ultimaTentativaMQTT >= INTERVALO_RECONEXAO) {
-      ultimaTentativaMQTT = millis();
-      conectarMQTT();
-    }
+    conectarMQTT();
   } else {
     mqttClient.loop();
   }
 ```
 
+Sem Wi-Fi, tenta Wi-Fi. Com Wi-Fi e sem MQTT, tenta MQTT. Com os dois, `mqttClient.loop()`
+mantém a conexão viva.
+
 **Depois do `Serial.printf`**, monte e publique o JSON:
 
 ```cpp
-  JsonDocument doc;
-  doc["device"] = MQTT_CLIENT_ID;
-  doc["temp"] = amb.temp;
-  doc["umid"] = amb.umid;
-  doc["dist"] = dist.cm;
-  doc["accel_x"] = accel.accelX;
-  doc["accel_y"] = accel.accelY;
-  doc["accel_z"] = accel.accelZ;
-  doc["movimentacao"] = movimentacao;
+    JsonDocument doc;
+    doc["device"] = MQTT_CLIENT_ID;
+    doc["temp"] = ambiente.temp;
+    doc["umid"] = ambiente.umid;
+    doc["dist"] = distancia;
+    doc["accel_x"] = accel.accelX;
+    doc["accel_y"] = accel.accelY;
+    doc["accel_z"] = accel.accelZ;
+    doc["movimentacao"] = movimentacaoMax;
 
-  String payload;
-  serializeJson(doc, payload);
-  if (mqttClient.connected()) {
-    bool ok = mqttClient.publish(MQTT_PUB_TOPIC, payload.c_str());
-    Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
-  }
+    String payload;
+    serializeJson(doc, payload);
+    if (mqttClient.connected()) {
+      bool ok = mqttClient.publish(MQTT_PUB_TOPIC, payload.c_str());
+      Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
+    }
 ```
 
-Sem `return` aqui: o bloco de reconexão está logo abaixo e precisa rodar.
+Sem `return` aqui: o bloco de conexão está logo abaixo e precisa rodar.
 
 **Funcionou?**
 
-- [ ] `[MQTT] Conectado` aparece uma vez
-- [ ] `[MQTT] Publicado` a cada 2,5 s
+- [ ] `[MQTT] Conectado` aparece uma vez, logo no começo
+- [ ] `[MQTT] Publicado` a cada 1 s, entre as linhas do CSV
 - [ ] `mosquitto_sub -h localhost -t 'FIAPIoT/nexolog/equipe01/dados'` mostra o JSON
 
 | Deu errado | Onde olhar |
 |---|---|
 | `[MQTT] Falha: -2` | broker no ar? No Wokwi o host é `host.wokwi.internal`; na placa, o IP da Ethernet do notebook |
+| Nunca conecta, nem depois de minutos | faltou o `delay` do `setup()`: a primeira tentativa foi bloqueada e a variável nunca avança |
 | Conecta e cai sozinho | dois ESP32 com o mesmo `MQTT_CLIENT_ID` |
 | `Publicado`, mas nada no `mosquitto_sub` | tópico diferente entre firmware e assinante — confira `equipe01` |
 | Publica e para depois de uns segundos | falta o `mqttClient.loop()` |
 
 ---
 
-## Iteração 3 — Arrumar o `loop()`
+## Iteração 4 — Arrumar o `loop()`
 
 O `loop()` está com duas responsabilidades misturadas: medir/publicar e cuidar da
 conexão. Nada de novo aqui — só mover código. Compile antes e depois: a saída no
 Serial tem que ser idêntica.
 
-**a) Um protótipo**, antes do `setup()`:
+**a) Mais um protótipo**, junto dos outros:
 
 ```cpp
 bool enviarDadosColetados();
 ```
 
-**b) Recorte** tudo que está dentro do `if (millis() - tempoAnterior >= ...)`, da
-primeira medição até o `publish`, e cole no fim do arquivo dentro desta função —
+**b) Recorte** tudo que está dentro do `if (millis() - tempoAnterior >= ...)`, do
+`Serial.printf` até o `publish`, e cole no fim do arquivo dentro desta função —
 trocando o `if (mqttClient.connected())` por dois `return`:
 
 ```cpp
 bool enviarDadosColetados() {
-  ESP32Sensors::Ambiente::AMBIENTE amb = ESP32Sensors::Ambiente::medirAmbiente();
-  ESP32Sensors::Distancia::DISTANCIA dist = ESP32Sensors::Distancia::medirDistancia();
-  AccelData accel = ESP32Sensors::Accel::medirAccel();
-  float movimentacao = ESP32Sensors::Accel::medirMovimentacao(accel);
-
   Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
-                amb.temp, amb.umid, dist.cm, movimentacao);
+                ambiente.temp, ambiente.umid, distancia, movimentacaoMax);
 
   JsonDocument doc;
   doc["device"] = MQTT_CLIENT_ID;
-  doc["temp"] = amb.temp;
-  doc["umid"] = amb.umid;
-  doc["dist"] = dist.cm;
+  doc["temp"] = ambiente.temp;
+  doc["umid"] = ambiente.umid;
+  doc["dist"] = distancia;
   doc["accel_x"] = accel.accelX;
   doc["accel_y"] = accel.accelY;
   doc["accel_z"] = accel.accelZ;
-  doc["movimentacao"] = movimentacao;
+  doc["movimentacao"] = movimentacaoMax;
 
   String payload;
   serializeJson(doc, payload);
-  if (!mqttClient.connected()) return false;
+  if (!mqttClient.connected()) {
+    return false;
+  }
   bool ok = mqttClient.publish(MQTT_PUB_TOPIC, payload.c_str());
   Serial.println(ok ? "[MQTT] Publicado" : "[MQTT] Falha ao publicar");
   return ok;
@@ -244,91 +373,6 @@ Agora o `return false` é seguro: ele sai de `enviarDadosColetados()`, não do `
 **c) No lugar do que você recortou**, uma linha:
 
 ```cpp
-void loop() {
-  if (millis() - tempoAnterior >= INTERVALO_COLETA) {
-    tempoAnterior = millis();
-    enviarDadosColetados();
-  }
-
-  // ... o bloco de reconexão da iteração 2, sem mudança
-}
-```
-
-**Funcionou?**
-
-- [ ] Serial idêntico ao da iteração 2
-- [ ] `loop()` cabe na tela
-
-| Deu errado | Onde olhar |
-|---|---|
-| `'enviarDadosColetados' was not declared in this scope` | faltou o protótipo do (a) |
-| `'amb' was not declared` | sobrou no `loop()` uma linha que era para ter ido junto |
-
-Compare com o `src/app14-NexoLog-PUBonly.ino`, tirando a iteração 4.
-
----
-
-## Iteração 4 — Um relógio por sensor
-
-Sacuda o MPU por dois segundos e veja `0.00` no Serial. É o normal: o acelerômetro é
-lido **uma vez** por envio, 1 ms a cada 2500 ms, e a amostra cai fora do movimento.
-
-Cada sensor tem um ritmo próprio, e nenhum deles é o ritmo do envio:
-
-| Sensor | Ritmo | Por quê |
-|---|---|---|
-| DHT22 | 2,1 s | o sensor não responde mais rápido — abaixo de 2 s ele devolve leitura inválida |
-| MPU | 50 ms | para pegar o pico do movimento, não um instante sorteado |
-| HC-SR04 | 1 s | junto do envio, a distância não muda em milissegundos |
-| Publicar | 1 s | é o que a plataforma vai mostrar |
-
-**a) Três relógios**, no lugar do bloco de intervalo:
-
-```cpp
-/* ---- Controle de intervalo ---- */
-const unsigned long INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
-const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
-const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
-const unsigned long INTERVALO_RECONEXAO = 5000;
-unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
-unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
-
-/* ---- Medicoes guardadas entre um envio e outro ---- */
-ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
-ESP32Sensors::Distancia::DISTANCIA distancia = {NAN};
-AccelData accel = {};
-float movimentacaoMax = NAN;
-```
-
-Agora os três sensores são lidos fora da função que publica, então o valor de cada um
-precisa ficar guardado até o envio — são essas quatro variáveis.
-
-**b) Duas caixas novas no `loop()`**, antes do bloco de envio:
-
-```cpp
-  // O DHT22 e lento: guardamos a ultima leitura boa e enviamos ela.
-  if (millis() - ultimoDHT >= INTERVALO_DHT) {
-    ultimoDHT = millis();
-    ESP32Sensors::Ambiente::AMBIENTE leitura = ESP32Sensors::Ambiente::medirAmbiente();
-    if (leitura.valido) ambiente = leitura;
-  }
-
-  // O MPU e rapido: 20 amostras por segundo, guardamos so a maior.
-  if (millis() - ultimoMPU >= INTERVALO_MPU) {
-    ultimoMPU = millis();
-    accel = ESP32Sensors::Accel::medirAccel();
-    movimentacaoMax = fmaxf(movimentacaoMax, ESP32Sensors::Accel::medirMovimentacao(accel));
-  }
-```
-
-`if (leitura.valido)` é o que faz o cache: leitura ruim é descartada e o último valor
-bom continua valendo. `fmaxf` é o máximo entre o que já tinha e o que acabou de medir
-— vinte comparações por segundo, e sobra o pico.
-
-**c) O terceiro relógio** mede a distância e publica. E zera o pico, senão o maior valor
-de hoje fica para sempre:
-
-```cpp
   // O HC-SR04 e lido junto do envio: a distancia nao muda em milissegundos.
   if (millis() - tempoAnterior >= INTERVALO_COLETA) {
     tempoAnterior = millis();
@@ -338,55 +382,20 @@ de hoje fica para sempre:
   }
 ```
 
-**d) `enviarDadosColetados()` não mede mais nada.** Apague as quatro primeiras linhas,
-que mediam os sensores, e troque `amb.` por `ambiente.`, `dist.` por `distancia.` e
-`movimentacao` por `movimentacaoMax`:
-
-```cpp
-bool enviarDadosColetados() {
-  Serial.printf("%.1f,%.1f,%.1f,%.2f\r\n",
-                ambiente.temp, ambiente.umid, distancia.cm, movimentacaoMax);
-
-  JsonDocument doc;
-  doc["device"] = MQTT_CLIENT_ID;
-  doc["temp"] = ambiente.temp;
-  doc["umid"] = ambiente.umid;
-  doc["dist"] = distancia.cm;
-  doc["accel_x"] = accel.accelX;
-  doc["accel_y"] = accel.accelY;
-  doc["accel_z"] = accel.accelZ;
-  doc["movimentacao"] = movimentacaoMax;
-```
-
-São seis linhas trocadas: as quatro medições apagadas no topo, e `amb.`/`dist.`/
-`movimentacao` virando `ambiente.`/`distancia.`/`movimentacaoMax` no `printf` e no
-`doc[]`. O `accel` não muda de nome — virou global, mas continua se chamando `accel`.
-
-O resto da função não muda. Ela virou **só formatar e publicar** — medir é assunto dos
-três relógios. O payload continua com os mesmos oito campos, mas `movimentacao` passa a
-ser o **pico do último segundo**, e `accel_x/y/z` a última amostra do MPU.
-
-No arquivo pronto, `conectarWiFi()` e `conectarMQTT()` também aparecem declaradas no
-bloco de protótipos. É só arrumação — elas já estão definidas antes de quem as chama.
+Repare no `loop()` inteiro agora: três caixas de relógio e três linhas de conexão. Cada
+sensor no seu ritmo, e nenhuma medição solta. Medir é assunto do `loop()`; formatar e
+publicar é da função.
 
 **Funcionou?**
 
-- [ ] O Serial passa a sair uma vez por segundo
-- [ ] Parado, a última coluna fica perto de 0,00 e a temperatura repete por dois envios
-- [ ] Sacuda o MPU: a última coluna sobe e mostra o pico daquele segundo
-- [ ] Pare de sacudir: no envio seguinte já volta para perto de 0,00
+- [ ] Serial idêntico ao da iteração 3
+- [ ] `loop()` cabe na tela
 
 | Deu errado | Onde olhar |
 |---|---|
-| A última coluna cresce e nunca cai | faltou o `movimentacaoMax = NAN;` do (c) |
-| Temperatura sempre `nan` | `INTERVALO_DHT` abaixo de 2000: o sensor recusa e nunca preenche o cache |
-| A última coluna continua sorteada | o `medirAccel()` ficou dentro de `enviarDadosColetados()`, em vez do relógio do MPU |
-| Publica muito mais rápido que 1 s | tem dois `tempoAnterior = millis()` no `loop()` |
-| `dist` sempre `nan` | o `medirDistancia()` ficou dentro da função de envio e some com a variável guardada |
-
-Anote quanto marca com a caixa **parada**. O FastIMU está sem calibração, então um viés
-de fábrica vira um piso constante — e é a partir desse piso que você escolhe o limiar
-lá no n8n.
+| `'enviarDadosColetados' was not declared in this scope` | faltou o protótipo do (a) |
+| `dist` sempre `nan` | o `medirDistancia()` foi junto para dentro da função de envio |
+| Parou de reconectar | as três linhas de conexão foram recortadas junto |
 
 Esse é o `src/app14-NexoLog-PUBonly.ino` pronto. Compare.
 

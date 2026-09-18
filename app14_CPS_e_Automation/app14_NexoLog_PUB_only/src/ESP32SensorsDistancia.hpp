@@ -6,10 +6,6 @@ namespace ESP32Sensors {
     static uint8_t trigPin = 0;
     static uint8_t echoPin = 0;
 
-    struct DISTANCIA {
-      float cm;   // NAN quando nao volta eco
-    };
-
     void inicializar(uint8_t tPin, uint8_t ePin) {
       trigPin = tPin;
       echoPin = ePin;
@@ -17,7 +13,8 @@ namespace ESP32Sensors {
       pinMode(echoPin, INPUT);
     }
 
-    DISTANCIA medirDistancia() {
+    // Devolve cm, ou NAN quando nao volta eco.
+    float medirDistancia() {
       digitalWrite(trigPin, LOW);
       delayMicroseconds(2);
       digitalWrite(trigPin, HIGH);
@@ -25,7 +22,7 @@ namespace ESP32Sensors {
       digitalWrite(trigPin, LOW);
 
       unsigned long duracao = pulseIn(echoPin, HIGH, 30000);
-      return {duracao ? duracao * 0.034f / 2 : NAN};
+      return duracao ? duracao * 0.034f / 2 : NAN;
     }
   }
 }
