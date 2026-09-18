@@ -145,7 +145,7 @@ outro diz o que chegou. Juntos, o Serial conta a conversa inteira.
 ```
 
 **e) Assinar**, em `conectarMQTT()`, dentro do `if (mqttClient.connect(...))` — depois
-do controle de próxima tentativa, que já está no começo da função:
+do controle de tentativa, que já está no começo da função:
 
 ```cpp
     mqttClient.subscribe(MQTT_SUB_TOPIC);

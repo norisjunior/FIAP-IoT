@@ -33,7 +33,7 @@ const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapi
 const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
 const unsigned long INTERVALO_RECONEXAO = 5000;
 unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
-unsigned long proximaTentativaWiFi = 0, proximaTentativaMQTT = 0;
+unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 
 /* ---- Medicoes guardadas entre um envio e outro ---- */
 ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
@@ -52,6 +52,9 @@ void setup() {
   ESP32Sensors::Distancia::inicializar(TRIG_PIN, ECHO_PIN);
   ESP32Sensors::Accel::inicializar(SCL_PIN, SDA_PIN);
 
+  // O controle de tentativa usa millis(). No boot ele ainda e menor que
+  // INTERVALO_RECONEXAO, entao esperamos para a primeira tentativa passar.
+  delay(INTERVALO_RECONEXAO);
   conectarWiFi();
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setBufferSize(768);
@@ -97,10 +100,10 @@ void loop() {
 
 void conectarWiFi() {
   // Uma tentativa a cada INTERVALO_RECONEXAO.
-  if (millis() < proximaTentativaWiFi) {
+  if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
     return;
   }
-  proximaTentativaWiFi = millis() + INTERVALO_RECONEXAO;
+  ultimaTentativaWiFi = millis();
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -108,10 +111,10 @@ void conectarWiFi() {
 }
 
 void conectarMQTT() {
-  if (millis() < proximaTentativaMQTT) {
+  if (millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) {
     return;
   }
-  proximaTentativaMQTT = millis() + INTERVALO_RECONEXAO;
+  ultimaTentativaMQTT = millis();
 
   if (mqttClient.connect(MQTT_CLIENT_ID)) {
     Serial.println("[MQTT] Conectado");

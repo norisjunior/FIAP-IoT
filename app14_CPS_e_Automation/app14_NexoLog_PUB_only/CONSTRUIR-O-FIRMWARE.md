@@ -208,7 +208,7 @@ PubSubClient mqttClient(wifiClient);
 
 ```cpp
 const unsigned long INTERVALO_RECONEXAO = 5000;
-unsigned long proximaTentativaWiFi = 0, proximaTentativaMQTT = 0;
+unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 ```
 
 **Duas funções**, no fim do arquivo:
@@ -216,10 +216,10 @@ unsigned long proximaTentativaWiFi = 0, proximaTentativaMQTT = 0;
 ```cpp
 void conectarWiFi() {
   // Uma tentativa a cada INTERVALO_RECONEXAO.
-  if (millis() < proximaTentativaWiFi) {
+  if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
     return;
   }
-  proximaTentativaWiFi = millis() + INTERVALO_RECONEXAO;
+  ultimaTentativaWiFi = millis();
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -227,10 +227,10 @@ void conectarWiFi() {
 }
 
 void conectarMQTT() {
-  if (millis() < proximaTentativaMQTT) {
+  if (millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) {
     return;
   }
-  proximaTentativaMQTT = millis() + INTERVALO_RECONEXAO;
+  ultimaTentativaMQTT = millis();
 
   if (mqttClient.connect(MQTT_CLIENT_ID)) {
     Serial.println("[MQTT] Conectado");
@@ -243,8 +243,14 @@ void conectarMQTT() {
 Cada função cuida do próprio ritmo de tentativa. Quem chama não precisa saber disso —
 chama à vontade, a função decide se é hora.
 
-A variável guarda **quando pode tentar de novo**, e começa em zero: no boot,
-`millis()` já é maior que zero, então a primeira chamada passa direto.
+Repare no `delay(INTERVALO_RECONEXAO)` do `setup()`. A conta `millis() - ultima`
+começa valendo poucos milissegundos no boot, menos que o intervalo — sem a espera, a
+**primeira** tentativa seria bloqueada pelo próprio controle. O `delay` resolve com
+uma linha, ao custo de cinco segundos parado ao ligar.
+
+> É uma simplificação didática assumida. Um firmware de produção não para o boot para
+> isso — e por que, e o que se faz no lugar, fica para a aula de recursos de
+> produção.
 
 **Dois protótipos**, antes do `setup()`, porque as funções agora ficam depois de quem
 as chama:
@@ -257,6 +263,9 @@ void conectarMQTT();
 **No `setup()`**, entre os `inicializar` e a linha de título do CSV:
 
 ```cpp
+  // O controle de tentativa usa millis(). No boot ele ainda e menor que
+  // INTERVALO_RECONEXAO, entao esperamos para a primeira tentativa passar.
+  delay(INTERVALO_RECONEXAO);
   conectarWiFi();
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setBufferSize(768);
@@ -310,7 +319,7 @@ Sem `return` aqui: o bloco de conexão está logo abaixo e precisa rodar.
 | Deu errado | Onde olhar |
 |---|---|
 | `[MQTT] Falha: -2` | broker no ar? No Wokwi o host é `host.wokwi.internal`; na placa, o IP da Ethernet do notebook |
-| Demora 5 s para conectar ao ligar | a variável guarda a **próxima** tentativa, não a última: confira o sinal do `<` |
+| Nunca conecta, nem depois de minutos | faltou o `delay` do `setup()`: a primeira tentativa foi bloqueada e a variável nunca avança |
 | Conecta e cai sozinho | dois ESP32 com o mesmo `MQTT_CLIENT_ID` |
 | `Publicado`, mas nada no `mosquitto_sub` | tópico diferente entre firmware e assinante — confira `equipe01` |
 | Publica e para depois de uns segundos | falta o `mqttClient.loop()` |
