@@ -91,10 +91,22 @@ LED onboard aceso = conectado ao broker.
 No Wokwi não há como inclinar o MPU6050: só `operando` e `anomalia` têm
 equivalente no simulador.
 
+## 5) A mesma janela, sem nuvem
+
+[`edge/`](edge/README.md) traz o outro extremo: a mesma janela, as mesmas 8
+features e as mesmas 4 saídas, mas com uma **Random Forest embarcada** decidindo
+dentro do ESP32. Sai o MQTT, sai o n8n, sai a API — e a resposta cai de ~1 s para
+dezenas de microssegundos.
+
+Nada do que está acima muda: `api/`, `device/` e `n8n/` continuam valendo. O
+`edge/` é uma segunda leitura do mesmo problema, com um modelo novo treinado a
+partir do mesmo dataset do `app17-7`.
+
 ## Estrutura
 
 ```text
 api/       service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
 device/    firmware (publica a janela, assina o tópico de comando)
 n8n/       Fluxo-n8n-predict.json
+edge/      inferência na borda: Colab da Random Forest + firmware sem rede
 ```
