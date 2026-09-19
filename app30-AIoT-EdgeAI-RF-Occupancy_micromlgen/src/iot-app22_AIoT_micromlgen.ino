@@ -63,7 +63,7 @@ bool coletaDados_e_realizaInferencia() {
   
   // 4. NORMALIZAÇÃO (StandardScaler)
   float dadosPadronizados[5];
-  Scaler::std(dadosBrutos, dadosPadronizados);
+  Scaler::standardize(dadosBrutos, dadosPadronizados);
   
   Serial.println("\n[NORMALIZAÇÃO] Dados processados:");
   Serial.printf("  Temp: %.2f | Hum: %.2f | Light: %.2f | CO2: %.3f | HR: %.3f",

@@ -147,7 +147,7 @@ bool coletaDados_e_realizaInferencia() {
   // 2. ADICIONADO: normalização com StandardScaler gerado no Colab
   float dadosBrutos[5] = { amb.temp, amb.umid, luz.lux, co2.ppm, hr.valor };
   float dadosPadronizados[5];
-  Scaler::std(dadosBrutos, dadosPadronizados);
+  Scaler::standardize(dadosBrutos, dadosPadronizados);
 
   // 3. ADICIONADO: inferência local com micromlgen
   //    predict() recebe float* e retorna a classe diretamente (0=vazia, 1=ocupada)
