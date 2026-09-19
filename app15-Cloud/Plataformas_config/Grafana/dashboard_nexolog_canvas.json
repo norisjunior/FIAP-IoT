@@ -62,10 +62,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\" or r[\"_field\"] == \"umid\"\n                    or r[\"_field\"] == \"dist\" or r[\"_field\"] == \"movimentacao\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\" or r[\"_field\"] == \"umid\"\n                    or r[\"_field\"] == \"dist\" or r[\"_field\"] == \"movimentacao\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
                       }
                     },
                     "refId": "A",
@@ -459,7 +459,7 @@
                           },
                           "source": {
                             "x": 0.9998561859130859,
-                            "y": 0.00005350587978115809
+                            "y": 5.350587978115809e-05
                           },
                           "sourceOriginal": {
                             "x": 864.9817155629396,
@@ -773,6 +773,22 @@
       "fiscalYearStartMonth": 0
     },
     "title": "NexoLog — A bag (canvas)",
-    "variables": []
+    "variables": [
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "bucket",
+          "label": "Bucket",
+          "description": "O nome do seu bucket no InfluxDB Cloud.",
+          "current": {
+            "text": "SEU_BUCKET",
+            "value": "SEU_BUCKET"
+          },
+          "query": "SEU_BUCKET",
+          "hide": "dontHide",
+          "skipUrlSync": false
+        }
+      }
+    ]
   }
 }

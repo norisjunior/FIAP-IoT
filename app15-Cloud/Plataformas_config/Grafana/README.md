@@ -39,6 +39,11 @@ Na tela de import, o Grafana pergunta qual é a fonte de dados InfluxDB — esco
 você acabou de criar. Depois de abrir, no topo tem a caixa **Bucket**: escreva o nome
 do seu bucket e dê Enter. Todos os painéis usam essa caixa, então é um lugar só.
 
+> Os arquivos foram exportados do Grafana 13.2.1, no schema `dashboard.grafana.app/v2`.
+> Se a sua versão recusar a variável **Bucket** na importação, crie à mão: Dashboard
+> settings > Variables > New > **Textbox**, nome `bucket`. É o nome que as consultas
+> procuram, em `v.bucket`.
+
 ## 3. O dashboard de medições
 
 Sete painéis, com os mesmos limites do n8n:
