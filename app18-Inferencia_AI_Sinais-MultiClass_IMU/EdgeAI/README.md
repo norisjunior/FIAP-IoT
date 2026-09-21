@@ -1,6 +1,6 @@
-# app18 / edge — a mesma decisão, dentro do ESP32
+# app18 / EdgeAI — a mesma decisão, dentro do ESP32
 
-A pasta `api/` deste app coloca o modelo na nuvem: a janela sai por MQTT,
+A pasta `CloudAI/` deste app coloca o modelo na nuvem: a janela sai por MQTT,
 atravessa o n8n e a FastAPI, e a classe volta por outro tópico. Aqui o modelo
 desce para o dispositivo. A janela é a mesma, as 8 features são as mesmas, as 4
 saídas são as mesmas — **muda só quem decide, e a resposta para de sair da
@@ -16,7 +16,7 @@ IoT-platform.
 
 ## O que muda
 
-| | com API (`device/`) | na borda (`edge/device/`) |
+| | `CloudAI/device/` | `EdgeAI/device/` |
 |---|---|---|
 | Modelo | rede neural (MLP), num `.pkl` | Random Forest, em `if`/`else` |
 | Onde roda | FastAPI, no computador | na flash do ESP32 |
@@ -44,14 +44,9 @@ rodada, e gera três arquivos — o mesmo modelo, em três formatos:
 | `ModeloMotorScaler.hpp` | a média e o desvio de cada feature, para o ESP32 |
 | `modelo_motor_rf.pkl` | o Pipeline inteiro, para Python |
 
-O notebook também compara a floresta com a rede neural no mesmo corte, antes de
-exportar: da nuvem para a borda mudam o modelo *e* o lugar onde ele roda, e sem
-essa comparação não dá para saber a qual dos dois atribuir uma diferença de
-resultado.
-
-O `.pkl` fecha esse raciocínio na prática. Ele é treinado com os rótulos em
-**texto**, igual ao do `app17-7`, então roda na API do app18 sem adaptação
-nenhuma — basta colocá-lo em `api/` e subir apontando para ele:
+O `.pkl` é treinado com os rótulos em **texto**, igual ao do `app17-7`, então
+roda na API do `CloudAI` sem adaptação nenhuma — basta colocá-lo em
+`CloudAI/api/` e subir apontando para ele:
 
 ```bash
 MODELO_ARQUIVO=modelo_motor_rf.pkl uvicorn service_app:app --host 0.0.0.0 --port 8000
@@ -66,7 +61,7 @@ Descompacte o ZIP baixado e cole os dois arquivos em `device/src/`, por cima dos
 sintéticos que vieram no projeto:
 
 ```text
-edge/device/src/
+EdgeAI/device/src/
 ├── app18-edge-inferencia-rf.cpp
 ├── ModeloMotorRF.hpp        ← gerado no Colab
 └── ModeloMotorScaler.hpp    ← gerado no Colab
@@ -76,7 +71,7 @@ edge/device/src/
 > da floresta foram escritos; misturar o scaler de uma execução com a floresta de
 > outra não dá erro de compilação — dá predição errada, em silêncio.
 
-O notebook imprime, no fim, a linha do vetor `NOMES_CLASSES[4]`. Cole-a também:
+A seção 9 do notebook imprime a linha do vetor `NOMES_CLASSES[4]`. Cole-a também:
 é ela que transforma o número que sai do `predict()` de volta em nome de classe.
 
 ## 3) Compilar
@@ -144,6 +139,6 @@ pelo micromlgen, ou foi colado pela metade — ele precisa conter
 manter as árvores rasas. Se o seu ficou com milhares de linhas, alguma coisa mudou
 na configuração da floresta.
 
-**Predição diferente da que o Colab mostrou.** Rode a seção 9 do notebook: ela
-compila o header e compara com o scikit-learn. Se ela passa e o ESP32 diverge, o
-problema é paridade de features — vá para o checklist do guia do firmware.
+**Predição diferente da que o Colab mostrou.** Confira primeiro se os dois
+`.hpp` são do mesmo treino. Se forem, o problema é paridade de features — vá
+para o checklist do guia do firmware.

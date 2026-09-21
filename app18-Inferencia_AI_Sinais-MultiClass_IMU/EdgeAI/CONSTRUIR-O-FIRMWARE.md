@@ -291,7 +291,7 @@ Eloquent::ML::Port::RandomForest modeloRF;
 /* ⚖ paridade 9: os nomes na ordem de classes_, que é ALFABÉTICA.
    O predict() devolve 0, 1, 2 ou 3; quem dá nome a esse número é este vetor.
    A ordem não é a que a gente usaria: o scikit-learn ordena as classes pelo
-   nome, então anomalia fica no índice 0 e operando no 3. A seção 10 do Colab
+   nome, então anomalia fica no índice 0 e operando no 3. A seção 9 do Colab
    imprime esta linha pronta para colar — copie de lá em vez de escrever.
 
    Trocar duas linhas aqui não gera erro — só faz o motor inclinado para trás
@@ -449,9 +449,9 @@ trocadas, suspeite da montagem antes de suspeitar do modelo.
 
 Sem rede, o caminho é curto — e cada degrau isola uma peça:
 
-1. **O Colab conferiu?** A seção 9 do notebook compila o header e compara com o
-   scikit-learn. Se ela falhou, não adianta gravar: o que você embarcaria não é
-   o que você avaliou.
+1. **Os dois `.hpp` são do mesmo treino?** É a única coisa que não dá erro de
+   compilação quando está errada. Na dúvida, rode o Colab de novo e traga os
+   dois juntos.
 2. **A fiação:** os três LEDs em sequência e o bipe, no `setup()`.
 3. **As features:** motor nivelado e parado → `mean_az ≈ 1.0`, `std_*` baixos.
    Inclinado 25° → `mean_ax ≈ ±0,42`.
