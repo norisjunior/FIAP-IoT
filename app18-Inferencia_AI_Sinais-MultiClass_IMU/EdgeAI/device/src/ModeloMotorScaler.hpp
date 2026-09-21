@@ -1,17 +1,14 @@
 #ifndef STANDARD_SCALER_HPP
 #define STANDARD_SCALER_HPP
 
-// ATENCAO: SCALER SINTETICO, do mesmo treino que gerou o ModeloMotorRF.hpp sintetico.
-// Substitua pelo arquivo que o seu Colab gerar -- os dois SEMPRE juntos, do mesmo treino.
 // Ordem: mean_ax, mean_ay, mean_az, std_ax, std_ay, std_az, std_mag, p2p_mag.
-
 namespace Scaler {
     const static float means[8] = {
-        -0.0009419483f, -0.0000197652f, 0.9548196720f, 0.0648160148f, 0.0666950176f, 0.0644961376f, 0.0798845106f, 0.3629787513f
+        -0.1239266667f, -0.0139733333f, 0.8788266667f, 0.2479155556f, 0.1327711111f, 0.2249933333f, 0.2033222222f, 0.7809222222f
     };
 
     const static float scales[8] = {
-        0.2970160040f, 0.0074532413f, 0.0455328939f, 0.0617378420f, 0.0633172231f, 0.0591534782f, 0.0748611406f, 0.3413349236f
+        0.4441638451f, 0.4540238508f, 0.1856842510f, 0.4790651795f, 0.1467829798f, 0.3230766988f, 0.2651809876f, 1.1172538121f
     };
 
     inline void standardize(const float* input, float* output) {
