@@ -1,10 +1,10 @@
-# Construir o firmware do app19, do zero
+# Construir o firmware, do zero
 
-**O app15 publicava sempre e obedecia à nuvem.** Aqui o dispositivo faz o contrário:
+**O NexoLog publicava sempre e obedecia à nuvem.** Aqui o dispositivo faz o contrário:
 publica **só quando um humano manda**, e não recebe nada de volta. É um gerador de
 dataset — quem rotula cada amostra é a pessoa que aperta o botão, não um limiar.
 
-**Repare no que sai.** O `callbackMQTT`, o tópico `cmd` e o `subscribe` do app15 **são
+**Repare no que sai.** O `callbackMQTT`, o tópico `cmd` e o `subscribe` do NexoLog **são
 removidos**. Um gerador de dataset que aceita comando da nuvem contamina o próprio
 dataset: a nuvem mexeria no dispositivo no meio da coleta, e você não saberia quais
 amostras foram afetadas.
@@ -20,12 +20,12 @@ Quatro iterações. Cada uma compila e roda.
 
 ## Iteração 0 — A base
 
-Copie `app15_NexoLog_PUB_SUB` inteiro e renomeie a pasta para `device`. Renomeie o
-`.ino` para `app19-SmartBag.ino`. Ele precisa estar rodando as três iterações do guia de
-firmware do app15 antes de continuar: publicando JSON a cada 1 s e obedecendo ao comando
+Copie a pasta do firmware do NexoLog inteira e renomeie-a para `device`. Renomeie o
+`.ino` para `SmartBag.ino`. Ele precisa estar rodando as três iterações do guia de
+firmware do NexoLog antes de continuar: publicando JSON a cada 1 s e obedecendo ao comando
 que chega em `cmd`.
 
-**Paridade com o app15** — o que não muda:
+**Paridade com o NexoLog** — o que não muda:
 
 | O quê | Valor |
 |---|---|
@@ -60,7 +60,7 @@ Troque também o tópico e o Client ID, senão você grava por cima do NexoLog:
 ## Iteração 1 — Luz e inclinação
 
 Duas medidas novas. Nada de botão ainda: o programa continua publicando a cada segundo,
-como o app15.
+como o NexoLog.
 
 **a) O LDR.** Crie `src/ESP32SensorsLDR.hpp`:
 
@@ -85,7 +85,7 @@ namespace ESP32Sensors {
 }
 ```
 
-**Três linhas de função, e é de propósito.** O app30 tem um `ESP32SensorsLDR.hpp` que
+**Três linhas de função, e é de propósito.** O app de ocupação com micromlgen tem um `ESP32SensorsLDR.hpp` que
 converte para lux, com resistência, gama e logaritmo. Aqui a feature é o **RAW de 0 a
 4095**, sem conversão nenhuma.
 
@@ -137,7 +137,7 @@ Publique as duas no Serial, junto das que já saem. Compile, abra o Wokwi e conf
 
 ## Iteração 2 — Os dois botões
 
-Este é o pedaço que vem do **app17-7**, igual: dois botões em `INPUT_PULLUP`, debounce de
+Este é o pedaço que vem do **app de coleta do motor**, igual: dois botões em `INPUT_PULLUP`, debounce de
 300 ms tratado no próprio `loop()`, e uma sequência cíclica que incrementa a rodada ao
 fechar a volta.
 
@@ -171,7 +171,7 @@ misturaria duas classes na mesma rodada, sem deixar rastro no CSV.
 
 **d) O LED** acende com a coleta e apaga sem ela. Só isso.
 
-No app15 o LED era o **alerta decidido pela nuvem**. Aqui ele é o **indicador de estado
+No NexoLog o LED era o **alerta decidido pela nuvem**. Aqui ele é o **indicador de estado
 de gravação**, como a luz vermelha de uma câmera. Ele não significa "problema" — quem vai
 dizer se é problema é o modelo, nos apps 20 a 22, e aí o LED volta a ter esse sentido.
 
@@ -219,7 +219,7 @@ de qualquer amostra sair. Se falhar, `distBase` fica NaN e o delta sai `null` �
 400 cm, que é o que o HC-SR04 "responde" quando não volta eco.
 
 O `medirDistancia()` desta versão devolve `float` direto, em cm, ou `NAN` sem eco. O
-app15 devolvia uma `struct DISTANCIA` com um `bool valido`; com `isfinite()` o bool era
+NexoLog devolvia uma `struct DISTANCIA` com um `bool valido`; com `isfinite()` o bool era
 informação repetida.
 
 **b) Os máximos.** O MPU é lido a cada 50 ms, mas só sai **uma** amostra por segundo.
@@ -240,7 +240,7 @@ todos os segundos seguintes, e o modelo aprenderia a rotular pelo passado.
 
 > **Máximo não guarda ordem.** Uma abertura no fim do segundo e um impacto no começo do
 > mesmo segundo produzem exatamente a mesma linha no CSV que os dois simultâneos. É a
-> segunda limitação intencional deste exemplo. Se quiser preservar ordem, é o app17 —
+> segunda limitação intencional deste exemplo. Se quiser preservar ordem, é o app do motor —
 > sinal, janela e features de forma de onda.
 
 **c) O amortecimento do DHT.** Ele continua sendo lido a cada 2500 ms, **mesmo com a
@@ -298,7 +298,7 @@ eventos diferentes e o sinal é o que os separa.
 ## Ordem do arquivo
 
 Configurações → `setup()`/`loop()` → baseline → conexão → publicação. Sensores continuam
-em funções nos headers `ESP32Sensors*.hpp`, como desde o app14.
+em funções nos headers `ESP32Sensors*.hpp`, como desde o NexoLog.
 
 ## Depois do firmware
 

@@ -1,7 +1,7 @@
-# Construir a API do app20, do zero
+# Construir a API, do zero
 
 A API recebe as seis features escalares medidas a bordo, consulta a Random
-Forest treinada no app19 e devolve a classe e as probabilidades em JSON.
+Forest treinada no app de coleta e devolve a classe e as probabilidades em JSON.
 
 ```text
 ESP32 → MQTT → n8n → API Python → modelo .pkl
@@ -23,7 +23,7 @@ Nesta pasta você precisa de dois arquivos:
 
 - `requirements.txt` — já está aqui.
 - `modelo_smartbag.pkl` — **você copia**, do `smartbag_rf.zip` que o
-  `app19_treinamento_smartbag_rf.ipynb` baixa.
+  `treinamento_smartbag_rf.ipynb` baixa.
 
 Não há modelo de exemplo, e a API se recusa a subir sem o seu. Uma floresta
 inventada responderia com confiança sobre uma bag que ela nunca viu — e como a
@@ -77,9 +77,9 @@ Duas coisas para reparar:
 3600 de luz — e a normalização acontece lá dentro. Não normalize antes de
 chamar a API: seria normalizar duas vezes.
 
-**As classes são `0` e `1`, não os nomes.** Diferente do app18, onde o treino
+**As classes são `0` e `1`, não os nomes.** Diferente do app do motor, onde o treino
 usava rótulo em texto e o `predict` já devolvia `"anomalia"`. Aqui o notebook
-mapeou os nomes para inteiros porque o **micromlgen**, no app21, só entende
+mapeou os nomes para inteiros porque o **micromlgen**, no app da floresta embarcada, só entende
 classe numérica. O mapa de volta é responsabilidade de quem consome:
 
 ```python
@@ -106,7 +106,7 @@ x_df = pd.DataFrame([amostra.model_dump()])[FEATURES]
 ```
 
 O DataFrame casa por **nome**, então trocar a ordem aqui não quebraria a API.
-Mas quebraria a comparação com o app21, que monta um `float dados[6]` e casa por
+Mas quebraria a comparação com o app da floresta embarcada, que monta um `float dados[6]` e casa por
 **posição**. Um contrato só, para os dois lados.
 
 **c) Faltar campo é erro, não zero.** Os seis campos do modelo Pydantic não têm
@@ -137,7 +137,7 @@ O último é por que ele pode mandar o `device` junto sem atrapalhar.
 
 A API não pode discordar do notebook que treinou o modelo. Pegue algumas linhas
 do `entradas_teste_normalizadas.csv`... **não**: aquele arquivo está
-normalizado, e é para o app21. Para a API, use linhas do **CSV original**, em
+normalizado, e é para o app da floresta embarcada. Para a API, use linhas do **CSV original**, em
 valores de sensor.
 
 ```python

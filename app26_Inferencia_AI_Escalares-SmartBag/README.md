@@ -1,7 +1,7 @@
-# app20 — Inferência na nuvem: revisar a entrega?
+# Inferência na nuvem: revisar a entrega?
 
-A mesma bag do app19, com os mesmos seis sensores e o mesmo cálculo. O que muda
-é quem rotula: no app19 era uma pessoa apertando um botão; aqui é a Random
+A mesma bag do app de coleta, com os mesmos seis sensores e o mesmo cálculo. O que muda
+é quem rotula: no app de coleta era uma pessoa apertando um botão; aqui é a Random
 Forest treinada com aquele dataset.
 
 ```text
@@ -12,11 +12,11 @@ Duas classes: `ENTREGA_OK` e `REVISAR_ENTREGA`.
 
 ## O eixo desta etapa
 
-O app21 roda **esta mesma floresta** dentro do ESP32. A comparação entre os dois
+O app da floresta embarcada roda **esta mesma floresta** dentro do ESP32. A comparação entre os dois
 só diz alguma coisa porque o modelo é o mesmo arquivo: muda **onde** ele roda,
 não o que ele aprendeu. Por isso nada aqui pode ser retreinado "só para a API".
 
-| | app20 | app21 |
+| | este app | o app da floresta embarcada |
 |---|---|---|
 | Onde roda | servidor | ESP32 |
 | Artefato | `modelo_smartbag.pkl` | `AIoTRandomForest_micromlgen.hpp` |
@@ -25,7 +25,7 @@ não o que ele aprendeu. Por isso nada aqui pode ser retreinado "só para a API"
 
 ## 1) O modelo
 
-O `app19_treinamento_smartbag_rf.ipynb` gera o `modelo_smartbag.pkl` dentro do
+O `treinamento_smartbag_rf.ipynb` gera o `modelo_smartbag.pkl` dentro do
 `smartbag_rf.zip`. Copie o arquivo para `api/`.
 
 **Ele não vem no repositório**, e a API se recusa a subir sem ele — com a
@@ -63,7 +63,7 @@ Resposta:
 ```
 
 O `code` vem junto porque o treino mapeou `ENTREGA_OK = 0` e
-`REVISAR_ENTREGA = 1` — é o inteiro que o `predict()` do app21 devolve. Ter os
+`REVISAR_ENTREGA = 1` — é o inteiro que o `predict()` do app da floresta embarcada devolve. Ter os
 dois na resposta deixa a comparação entre nuvem e borda direta.
 
 Passo a passo: [Construir a API](api/CONSTRUIR-A-API.md).
@@ -105,11 +105,11 @@ Ajuste o Wi-Fi e o `MQTT_SERVER` no `.ino` antes de gravar.
 **Feche a bag antes de ligar.** O baseline da distância é medido uma vez, no
 `setup()` — aqui não há botão para recalibrar.
 
-**Os botões sumiram.** No app19 eles existiam porque aquilo era um gerador de
+**Os botões sumiram.** No app de coleta eles existiam porque aquilo era um gerador de
 dataset, com uma pessoa rotulando cada amostra. O GPIO 27, que era o botão
 COLETA, virou saída: de entrada do rótulo humano para saída do rótulo do modelo.
 
-O LED 21 é o mesmo pino do alerta do app15. Lá quem acendia era um limiar
+O LED 21 é o mesmo pino do alerta do NexoLog. Lá quem acendia era um limiar
 desenhado no Node-RED; aqui é um modelo treinado. O caminho é o mesmo — o
 dispositivo mede, publica e obedece —, o que mudou foi a natureza da decisão.
 

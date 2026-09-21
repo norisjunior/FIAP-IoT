@@ -1,4 +1,4 @@
-# Construir o firmware do app25, do zero
+# Construir o firmware da nuvem, do zero
 
 Sete etapas. A cada uma, o arquivo compila e faz mais uma coisa.
 
@@ -7,7 +7,7 @@ O que este firmware faz: mede o acelerômetro, fecha uma janela de 1 s, calcula
 `FIAPIoT/motor/multiclasse/cmd`. Não há um único `if` sobre vibração ou
 inclinação — quem decide é o `.pkl`.
 
-Comece com `src/app25-multiclasse-inferencia.cpp` vazio.
+Comece com `src/inferencia-na-nuvem.cpp` vazio.
 
 ---
 
@@ -18,7 +18,7 @@ produzidos por um firmware específico, com uma configuração específica de
 sensor. **Se a inferência produzir os números de outro jeito, o modelo recebe
 features fora da distribuição em que foi treinado — e erra sem avisar.**
 
-Sete coisas precisam ser idênticas às do `app17-7`. Elas aparecem marcadas
+Sete coisas precisam ser idênticas às do app de coleta. Elas aparecem marcadas
 com **⚖ paridade** ao longo do guia:
 
 | # | O quê | Valor |
@@ -31,7 +31,7 @@ com **⚖ paridade** ao longo do guia:
 | 6 | As 4 funções de feature | copiadas literalmente |
 | 7 | Nomes e unidade | os 8 nomes exatos, valores em `g` |
 
-O `platformio.ini` já vem pronto e é igual ao do `app17-7` — mesma versão de
+O `platformio.ini` já vem pronto e é igual ao do app de coleta — mesma versão de
 plataforma e as mesmas três bibliotecas:
 
 ```ini
@@ -196,7 +196,7 @@ vão de `0` a `99`.
 
 ## Etapa 3 — As 8 features
 
-**⚖ paridade 6.** Copie estas quatro funções **literalmente** do `app17-7`.
+**⚖ paridade 6.** Copie estas quatro funções **literalmente** do app de coleta.
 Não reescreva, não "melhore".
 
 ```cpp
@@ -289,7 +289,7 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 ```
 
-> **Sem NTP.** O `app17-7` sincronizava o relógio por NTP para carimbar cada
+> **Sem NTP.** O app de coleta sincronizava o relógio por NTP para carimbar cada
 > janela com `ts_epoch_ms`. Ele precisava: as janelas iam para um BANCO, onde
 > o tempo é o eixo e a ordem importa. Aqui a janela vale **agora** — é medida,
 > classificada e respondida em menos de um segundo, e depois não serve para
@@ -339,7 +339,7 @@ Três linhas nessa função não são óbvias:
 O `delay(500)` aqui é aceitável pelo mesmo motivo do teste de saídas: isto roda
 no `setup()`, antes de a amostragem de 100 Hz começar.
 
-**O MQTT.** Igual ao do `app17-7`, com **uma linha nova** — o `subscribe`, que
+**O MQTT.** Igual ao do app de coleta, com **uma linha nova** — o `subscribe`, que
 é o que faz este app receber a resposta:
 
 ```cpp
@@ -437,10 +437,10 @@ Troque o `Serial.printf` da etapa 3 por:
       indice = 0;
 ```
 
-> **O que NÃO vai no payload.** O `app17-7` publicava mais quatro campos, e
+> **O que NÃO vai no payload.** O app de coleta publicava mais quatro campos, e
 > os quatro saem por motivos diferentes:
 >
-> | campo | por que existia no app17-7 | por que sai aqui |
+> | campo | por que existia na coleta | por que sai aqui |
 > |---|---|---|
 > | `label` | o gabarito humano, do botão 18 | é justamente o que estamos perguntando |
 > | `rodada` | agrupava as sessões para o split | não há treino aqui |
@@ -478,7 +478,7 @@ Uma saída por classe. A que estiver ligada é a resposta da nuvem.
 | 19 | buzzer | `anomalia` |
 | 2 | LED onboard | aceso = conectado ao broker |
 
-> Os pinos **21 e 18 eram os dois botões do `app17-7`**. Lá eles serviam para
+> Os pinos **21 e 18 eram os dois botões do app de coleta**. Lá eles serviam para
 > um humano informar a classe; aqui mostram a classe que o modelo escolheu.
 > O mesmo par de pinos troca de lado quando o app troca de papel.
 
@@ -680,7 +680,7 @@ Publique `operando` em seguida: o buzzer cala e o LED azul acende.
 
 ## Checklist de paridade
 
-Antes de acreditar numa predição, confira contra o `app17-7` que gerou o
+Antes de acreditar numa predição, confira contra o app de coleta, que gerou o
 dataset:
 
 - [ ] `#define MPU_TYPE` — o mesmo chip da coleta

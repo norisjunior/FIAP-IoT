@@ -1,4 +1,4 @@
-# Construir o fluxo n8n do app25
+# Construir o fluxo n8n
 
 Seis nós: receber as features, consultar a API, devolver a classe e avisar quando houver anomalia.
 

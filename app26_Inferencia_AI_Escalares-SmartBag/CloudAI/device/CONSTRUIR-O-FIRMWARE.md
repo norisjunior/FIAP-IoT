@@ -1,11 +1,11 @@
-# Construir o firmware do app20, do zero
+# Construir o firmware, do zero
 
-**O app19 media e guardava.** Aqui a bag mede, **pergunta** e obedece. As seis
+**O app de coleta media e guardava.** Aqui a bag mede, **pergunta** e obedece. As seis
 features são idênticas — mesmo cálculo, mesmas unidades, mesma ordem. Divergir
 em qualquer uma faz o modelo errar sem avisar, porque ele foi treinado com os
-números do app19.
+números do app de coleta.
 
-**Repare no que sai: os dois botões.** No app19 eles existiam porque aquilo era
+**Repare no que sai: os dois botões.** No app de coleta eles existiam porque aquilo era
 um **gerador de dataset**, e uma pessoa rotulava cada amostra apertando COLETA.
 Aqui quem rotula é o modelo. Sem humano no meio, não há o que apertar — e o
 GPIO 27, que era o botão COLETA, vira saída.
@@ -20,11 +20,11 @@ Três iterações. Cada uma compila e roda.
 
 ## Iteração 0 — A base
 
-Copie a pasta `device` do app19 e renomeie o `.ino` para
-`app20-SmartBag-Inferencia.ino`. Ele precisa estar rodando as quatro iterações
-do guia de firmware do app19 antes de continuar.
+Copie a pasta `device` do app de coleta e renomeie o `.ino` para
+`SmartBag-Inferencia.ino`. Ele precisa estar rodando as quatro iterações
+do guia de firmware do app de coleta antes de continuar.
 
-**Paridade com o app19** — o que **não pode** mudar:
+**Paridade com o app de coleta** — o que **não pode** mudar:
 
 | O quê | Valor |
 |---|---|
@@ -53,7 +53,7 @@ e errado.
 **O que entra:** um segundo LED, o tópico `cmd`, a callback e o prazo de
 validade da resposta.
 
-O `ESP32SensorsLED.hpp` sai pela mesma razão que o app15 nunca o teve: dois
+O `ESP32SensorsLED.hpp` sai pela mesma razão que o NexoLog nunca o teve: dois
 `pinMode` e dois `digitalWrite` resolvem, e um módulo com um pino global não
 serve para duas saídas.
 
@@ -64,7 +64,7 @@ serve para duas saídas.
 Tire os botões e tudo que dependia deles. O `loop()` fica com três relógios —
 DHT, MPU e envio — e mais nada de estado.
 
-**a) O baseline muda de lugar.** No app19 ele era calculado ao iniciar a coleta,
+**a) O baseline muda de lugar.** No app de coleta ele era calculado ao iniciar a coleta,
 porque havia um botão. Aqui vai no `setup()`, uma vez:
 
 ```cpp
@@ -102,7 +102,7 @@ seria entregar a resposta junto com a pergunta.
   }
 ```
 
-No app19 um `null` ia para o InfluxDB e o Colab descartava a linha depois. Aqui
+No app de coleta um `null` ia para o InfluxDB e o Colab descartava a linha depois. Aqui
 não há depois: ou existem as seis, ou não há pergunta a fazer. E zero seria o
 pior substituto possível — é um valor plausível para qualquer uma das seis, e o
 modelo o trataria como medida boa.
@@ -118,8 +118,8 @@ Compile e confira no `mosquitto_sub`:
 ## Iteração 2 — Os dois LEDs
 
 ```cpp
-const uint8_t LED_REVISAR = 21;   // era o LED de coleta do app19
-const uint8_t LED_OK = 27;        // era o botao COLETA do app19
+const uint8_t LED_REVISAR = 21;   // era o LED de coleta do app de coleta
+const uint8_t LED_OK = 27;        // era o botao COLETA do app de coleta
 ```
 
 No `setup()`, os dois `pinMode`, e um teste que você apaga depois — ou deixa,
@@ -144,7 +144,7 @@ ausência de informação: ele significa "a nuvem não respondeu", e é por isso
 
 ## Iteração 3 — A classe chegando
 
-**a) O tópico e a callback**, como no app15:
+**a) O tópico e a callback**, como no NexoLog:
 
 ```cpp
 #define MQTT_SUB_TOPIC "FIAPIoT/smartbag/equipe01/cmd"

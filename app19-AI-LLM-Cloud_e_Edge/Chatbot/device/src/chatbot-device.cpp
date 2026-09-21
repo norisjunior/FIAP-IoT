@@ -1,4 +1,4 @@
-/* app19-chatbot-device — o ESP32 mede, pergunta para a nuvem e obedece.
+/* chatbot-device — o ESP32 mede, pergunta para a nuvem e obedece.
 
    Este firmware é o do app anterior, sem uma linha diferente: publica a janela
    de 100 amostras @ 100 Hz em FIAPIoT/motor/multiclasse e a classe prevista
@@ -67,7 +67,7 @@ PubSubClient mqttClient(wifiClient);
 #define SDA_PIN      22
 #define SCL_PIN      23
 /* Uma saída por classe: a que estiver ligada é a resposta da nuvem.
-   Repare que 21 e 18 eram os BOTÕES do app17-7 — os pinos com que um humano
+   Repare que 21 e 18 eram os BOTÕES do app de coleta — os pinos com que um humano
    rotulava agora mostram o rótulo que o modelo escolheu. */
 #define LED_AZUL      4   // operando
 #define LED_AMARELO  21   // inclinado_frente
@@ -81,7 +81,7 @@ MPU_TYPE mpu;
 
 calData calib = { 0 };
 
-/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão do app17-7) ---- */
+/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão da coleta) ---- */
 const int FS_HZ          = 100;
 const int AMOSTRA_MS     = 1000 / FS_HZ;      // 10 ms
 const int TAMANHO_JANELA = FS_HZ;             // 100 amostras = 1 s
@@ -336,7 +336,7 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
 }
 
 /* ---- Publica a janela: só o que o modelo precisa ----
-   Não vai timestamp. No app17-7 ele existia porque as janelas iam para um
+   Não vai timestamp. Na coleta ele existia porque as janelas iam para um
    BANCO, onde o tempo é o eixo e a ordem importa. Aqui a janela vale agora:
    é medida, classificada e respondida em menos de um segundo, e depois não
    serve para mais nada. Sem timestamp no payload, o NTP também sai. */

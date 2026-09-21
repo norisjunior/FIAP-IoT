@@ -1,10 +1,10 @@
-/* app20-SmartBag-Inferencia — a bag mede, pergunta para a nuvem e obedece.
+/* SmartBag-Inferencia — a bag mede, pergunta para a nuvem e obedece.
 
-   As seis features sao as MESMAS do app19, com o mesmo calculo e as mesmas
+   As seis features sao as MESMAS do app de coleta, com o mesmo calculo e as mesmas
    unidades: temperatura, umidade, delta_distancia, luz, mov_max e incl_max.
    Divergir aqui faz o modelo errar sem avisar.
 
-   O que sumiu em relacao ao app19: os dois BOTOES. La eles existiam porque
+   O que sumiu em relacao ao app de coleta: os dois BOTOES. La eles existiam porque
    aquilo era um GERADOR DE DATASET, onde uma pessoa rotulava cada amostra.
    Aqui quem rotula e o modelo, entao nao ha o que apertar. O GPIO 27, que era
    o botao COLETA, virou saida: de entrada do rotulo humano para saida do
@@ -14,7 +14,7 @@
        REVISAR_ENTREGA   LED vermelho (21)
        tudo apagado      a nuvem nao respondeu
 
-   O LED 21 e o mesmo pino do alerta do app15. La quem acendia era um limiar
+   O LED 21 e o mesmo pino do alerta do NexoLog. La quem acendia era um limiar
    desenhado no Node-RED; aqui e um modelo treinado. O caminho e o mesmo, a
    decisao e que mudou de natureza.
 */
@@ -43,8 +43,8 @@ const uint8_t ECHO_PIN = 18;
 const uint8_t SCL_PIN = 23;
 const uint8_t SDA_PIN = 22;
 const uint8_t LDR_PIN = 35;
-const uint8_t LED_REVISAR = 21;   // era o LED de coleta do app19
-const uint8_t LED_OK = 27;        // era o botao COLETA do app19
+const uint8_t LED_REVISAR = 21;   // era o LED de coleta do app de coleta
+const uint8_t LED_OK = 27;        // era o botao COLETA do app de coleta
 
 /* ---- Config Wi-Fi e MQTT ---- */
 const char* WIFI_SSID = "Wokwi-GUEST";

@@ -1,4 +1,4 @@
-# app18 / EdgeAI — a mesma decisão, dentro do ESP32
+# EdgeAI — a mesma decisão, dentro do ESP32
 
 A pasta `CloudAI/` deste app coloca o modelo na nuvem: a janela sai por MQTT,
 atravessa o n8n e a FastAPI, e a classe volta por outro tópico. Aqui o modelo
@@ -35,7 +35,7 @@ ele. A pilha Wi-Fi + TCP + MQTT custava cerca de 474 KB; a floresta de 15
 ## 1) Treinar a floresta
 
 [`colab/treinamento_rf_edge.ipynb`](colab/treinamento_rf_edge.ipynb) lê **o mesmo
-dataset** do `app17-7` no InfluxDB, com o mesmo `SELECT` e o mesmo corte por
+dataset** da coleta no InfluxDB, com o mesmo `SELECT` e o mesmo corte por
 rodada, e gera três arquivos — o mesmo modelo, em três formatos:
 
 | Arquivo | Serve para |
@@ -44,7 +44,7 @@ rodada, e gera três arquivos — o mesmo modelo, em três formatos:
 | `ModeloMotorScaler.hpp` | a média e o desvio de cada feature, para o ESP32 |
 | `modelo_motor_rf.pkl` | o Pipeline inteiro, para Python |
 
-O `.pkl` é treinado com os rótulos em **texto**, igual ao do `app17-7`, então
+O `.pkl` é treinado com os rótulos em **texto**, igual ao da coleta, então
 roda na API do `CloudAI` sem adaptação nenhuma — basta colocá-lo em
 `CloudAI/api/` e subir apontando para ele:
 
@@ -62,7 +62,7 @@ sintéticos que vieram no projeto:
 
 ```text
 EdgeAI/device/src/
-├── app18-edge-inferencia-rf.cpp
+├── inferencia-na-borda.cpp
 ├── ModeloMotorRF.hpp        ← gerado no Colab
 └── ModeloMotorScaler.hpp    ← gerado no Colab
 ```

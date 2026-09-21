@@ -1,4 +1,4 @@
-# Construir o fluxo do app20 no n8n, do zero
+# Construir o fluxo no n8n, do zero
 
 Duas iterações. Cada uma roda.
 
@@ -9,7 +9,7 @@ O n8n aqui é uma **ponte**, não um decisor. Ele não sabe o que é `mov_max` n
 qual limiar importa — pega o que chegou por MQTT, entrega à API, e devolve a
 resposta por MQTT. Quem decide é a floresta.
 
-Antes de começar: a API do app20 respondendo em `http://localhost:8000/docs`
+Antes de começar: a API respondendo em `http://localhost:8000/docs`
 ([CONSTRUIR-A-API.md](../api/CONSTRUIR-A-API.md)) e o firmware publicando
 ([CONSTRUIR-O-FIRMWARE.md](../device/CONSTRUIR-O-FIRMWARE.md)).
 
@@ -109,7 +109,7 @@ mensagem. Desligado, vai só o texto da classe.
 
 Mandamos `class` e não `code`. O firmware compara nomes porque, no Serial, ler
 `REVISAR_ENTREGA` diz mais que ler `1`. O `code` continua na resposta HTTP para
-comparar com o app21, que trabalha com o inteiro.
+comparar com o app da floresta embarcada, que trabalha com o inteiro.
 
 **Deploy** e ative o workflow.
 

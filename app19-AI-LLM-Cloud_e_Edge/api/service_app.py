@@ -1,7 +1,7 @@
-# service_app.py - app25: o modelo multiclasse do motor vira servico.
+# service_app.py - o modelo multiclasse do motor vira servico.
 #
 # Recebe UMA janela de features (1 s @ 100 Hz) ja calculada a bordo pelo
-# app17-7 e devolve a classe. E o MESMO codigo do app24 com uma feature a mais
+# da coleta e devolve a classe. E o MESMO codigo da API de escalares, com uma
 # na lista: a API nao sabe quantas classes existem - ela devolve o nome que o
 # modelo aprendeu.
 
@@ -12,7 +12,7 @@ import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-app = FastAPI(title="app25 - IMU multiclasse: 4 estados do motor")
+app = FastAPI(title="IMU multiclasse: 4 estados do motor")
 
 print("\n" + "=" * 60)
 print("Iniciando a API de estado do motor (multiclasse)")
@@ -60,7 +60,7 @@ class JanelaMotor(BaseModel):
 @app.get("/")
 def raiz():
     return {
-        "servico": "app25 - estado do motor (multiclasse)",
+        "servico": "estado do motor (multiclasse)",
         "modelo": type(modelo[-1]).__name__,
         "features": FEATURES,
         "classes": list(modelo.classes_),
