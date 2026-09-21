@@ -62,10 +62,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\")\n  |> last()"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\")\n  |> last()"
                       }
                     },
                     "refId": "A",
@@ -161,10 +161,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"umid\")\n  |> last()"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"umid\")\n  |> last()"
                       }
                     },
                     "refId": "A",
@@ -260,10 +260,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dist\")\n  |> last()"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dist\")\n  |> last()"
                       }
                     },
                     "refId": "A",
@@ -355,10 +355,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"movimentacao\")\n  |> last()"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"movimentacao\")\n  |> last()"
                       }
                     },
                     "refId": "A",
@@ -454,10 +454,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\" or r[\"_field\"] == \"umid\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\" or r[\"_field\"] == \"umid\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
                       }
                     },
                     "refId": "A",
@@ -595,10 +595,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"movimentacao\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"movimentacao\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
                       }
                     },
                     "refId": "A",
@@ -715,10 +715,10 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "ffyc8x2884irkf"
+                        "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexologteste1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dist\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dist\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
                       }
                     },
                     "refId": "A",
@@ -939,6 +939,22 @@
       "fiscalYearStartMonth": 0
     },
     "title": "NexoLog - Medições",
-    "variables": []
+    "variables": [
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "bucket",
+          "label": "Bucket",
+          "description": "O nome do seu bucket no InfluxDB Cloud.",
+          "current": {
+            "text": "SEU_BUCKET",
+            "value": "SEU_BUCKET"
+          },
+          "query": "SEU_BUCKET",
+          "hide": "dontHide",
+          "skipUrlSync": false
+        }
+      }
+    ]
   }
 }

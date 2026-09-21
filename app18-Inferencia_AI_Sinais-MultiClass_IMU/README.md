@@ -1,8 +1,14 @@
-# app25 — Inferência na nuvem: estado do motor (multiclasse)
+# app25 — Estado do motor (multiclasse): na nuvem e na borda
 
-Recebe por MQTT uma janela de features do `app17-7`, classifica com o `.pkl` e
-devolve a classe no tópico de comando. Quatro classes: `operando`,
-`inclinado_frente`, `inclinado_tras` e `anomalia`.
+A mesma janela de features do `app17-7`, classificada de dois jeitos. Quatro
+classes: `operando`, `inclinado_frente`, `inclinado_tras` e `anomalia`.
+
+| Pasta | Modelo | Quem decide |
+|---|---|---|
+| `CloudAI/` | a MLP do `app17-7`, num `.pkl` | a nuvem, e o ESP32 obedece |
+| `EdgeAI/` | uma Random Forest embarcada | o próprio ESP32, sem rede |
+
+As seções 1 a 4 são o caminho da nuvem; a seção 5 aponta para a borda.
 
 ```text
 ESP32 → MQTT → n8n → API FastAPI (.pkl) → n8n → MQTT → ESP32
@@ -12,7 +18,7 @@ ESP32 → MQTT → n8n → API FastAPI (.pkl) → n8n → MQTT → ESP32
 ## 1) O modelo
 
 `app17-7-MultiClassAccFeaturesInflux/colab/treinamento_multiclasse.ipynb` gera o
-`modelo_motor_multiclasse.pkl`. Copie o arquivo para `api/`.
+`modelo_motor_multiclasse.pkl`. Copie o arquivo para `CloudAI/api/`.
 
 ## 2) A API
 
@@ -43,10 +49,10 @@ Resposta, com as probabilidades arredondadas:
 
 ## 3) O fluxo n8n
 
-Importe `n8n/Fluxo-n8n-predict.json` (n8n em `http://localhost:5678`) e
+Importe `CloudAI/n8n/Fluxo-n8n-predict.json` (n8n em `http://localhost:5678`) e
 selecione as credenciais: MQTT nos dois nós de MQTT e Telegram no nó de alerta.
 
-Passo a passo: [Construir o fluxo n8n](n8n/CONSTRUIR-O-FLUXO.md).
+Passo a passo: [Construir o fluxo n8n](CloudAI/n8n/CONSTRUIR-O-FLUXO.md).
 
 | # | Nó | Configuração |
 |---|---|---|
@@ -91,10 +97,25 @@ LED onboard aceso = conectado ao broker.
 No Wokwi não há como inclinar o MPU6050: só `operando` e `anomalia` têm
 equivalente no simulador.
 
+## 5) A mesma janela, sem nuvem
+
+[`EdgeAI/`](EdgeAI/README.md) traz o outro extremo: a mesma janela, as mesmas 8
+features e as mesmas 4 saídas, mas com uma **Random Forest embarcada** decidindo
+dentro do ESP32. Sai o MQTT, sai o n8n, sai a API — e a resposta cai de ~1 s
+para poucos microssegundos.
+
+Nada do que está acima muda: o `CloudAI/` continua valendo inteiro. O
+`EdgeAI/` é uma segunda leitura do mesmo problema, com um modelo novo treinado a
+partir do mesmo dataset do `app17-7`.
+
 ## Estrutura
 
 ```text
-api/       service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
-device/    firmware (publica a janela, assina o tópico de comando)
-n8n/       Fluxo-n8n-predict.json
+CloudAI/   o modelo na nuvem
+  api/       service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
+  device/    firmware (publica a janela, assina o tópico de comando)
+  n8n/       Fluxo-n8n-predict.json
+EdgeAI/    o modelo na borda
+  colab/     treinamento da Random Forest
+  device/    firmware sem rede + os dois .hpp do modelo
 ```
