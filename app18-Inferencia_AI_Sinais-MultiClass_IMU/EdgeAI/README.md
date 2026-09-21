@@ -102,7 +102,7 @@ No Serial, uma janela por segundo:
   mean_ax=0.418  mean_ay=-0.006  mean_az=0.909
   std_ax=0.031   std_ay=0.028   std_az=0.035
   std_mag=0.040  p2p_mag=0.187
-  MODELO:  1 -> inclinado_frente
+  PREDIÇÃO:  1 -> inclinado_frente
   Inferencia: 6 us
 ----------------------
 ```

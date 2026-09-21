@@ -248,9 +248,9 @@ int classificarJanela(const float features[8]) {
   Serial.printf("  std_mag=%.3f  p2p_mag=%.3f\r\n", features[6], features[7]);
 
   if (classe >= 0 && classe < 4) {
-    Serial.printf("  MODELO:  %d -> %s\r\n", classe, NOMES_CLASSES[classe]);
+    Serial.printf("  PREDIÇÃO:  %d -> %s\r\n", classe, NOMES_CLASSES[classe]);
   } else {
-    Serial.printf("  MODELO:  %d -> indice fora da faixa\r\n", classe);
+    Serial.printf("  PREDIÇÃO:  %d -> indice fora da faixa\r\n", classe);
   }
   Serial.printf("  Inferencia: %lu us\r\n", duracao);
   Serial.println("----------------------");
