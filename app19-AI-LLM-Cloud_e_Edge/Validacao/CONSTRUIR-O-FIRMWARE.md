@@ -1,13 +1,17 @@
-# Construir o firmware da borda, do zero
+# Construir o firmware da validação, do zero
 
-Cinco etapas. A cada uma, o arquivo compila e faz mais uma coisa.
+Seis etapas. A cada uma, o arquivo compila e faz mais uma coisa.
 
 O que este firmware faz: mede o acelerômetro, fecha uma janela de 1 s, calcula
-8 features, padroniza, entrega a uma Random Forest que mora na própria flash e
-acende a saída da classe prevista. Não há um único `if` sobre vibração ou
-inclinação — e também não há rede nenhuma.
+8 features, padroniza, entrega a uma Random Forest que mora na própria flash,
+acende a saída da classe prevista **e publica a janela junto com a decisão que
+tomou**. Não há um único `if` sobre vibração ou inclinação.
 
-Comece com `device/src/app18-edge-inferencia-rf.cpp` vazio.
+As cinco primeiras etapas montam um dispositivo que decide sozinho. A sexta dá
+voz a ele — sem tirar a autonomia: mesmo com a rede fora do ar, as cinco
+primeiras continuam funcionando.
+
+Comece com `device/src/app19-validacao-device.cpp` vazio.
 
 ---
 
@@ -39,7 +43,7 @@ JSON e não há texto: entra um vetor de 8 posições e sai um número de 0 a 3.
 Posição errada e número errado não causam erro de compilação — causam predição
 errada, calada.
 
-O `platformio.ini` já vem pronto. Tem uma biblioteca só, porque não há mais rede:
+O `platformio.ini` já vem pronto, com as bibliotecas das duas metades:
 
 ```ini
 [env:esp32]
@@ -48,11 +52,12 @@ framework = arduino
 board = esp32dev
 lib_deps =
     https://github.com/LiquidCGS/FastIMU.git#1.3.0
+    knolleary/PubSubClient @ ^2.8
+    bblanchon/ArduinoJson @ ^7.4.1
 ```
 
-Compare com o `platformio.ini` da versão com API: saíram o `PubSubClient` e o
-`ArduinoJson`. Ninguém precisa falar com um broker nem montar um JSON quando a
-resposta nasce dentro da placa.
+O `FastIMU` lê o sensor, o `PubSubClient` fala MQTT e o `ArduinoJson` monta o
+JSON. O modelo não aparece aqui: ele é um header em `src/`, não uma biblioteca.
 
 ---
 
@@ -311,10 +316,13 @@ outras, logo abaixo do `NOMES_CLASSES`:
 int  classificarJanela(const float features[8]);
 void acionarSaida(int classe);
 void apagarTodasAsSaidas();
+void publicarJanela(const float features[8], int classe);
+void conectarWiFi();
+void conectarMQTT();
 ```
 
-As duas últimas são da etapa 5; declare-as agora e o arquivo já fica pronto
-para ela.
+Só a primeira é desta etapa: as duas seguintes são da etapa 5 e as três últimas
+da etapa 6. Declare todas agora e o arquivo já fica pronto para elas.
 
 E a função que faz o trabalho — duas linhas de inferência, o resto é impressão.
 Repare que ela **devolve** a classe e não acende nada: quem decide o que fazer
@@ -455,16 +463,176 @@ saída é a memória do dispositivo, exatamente como era na versão com API. A
 diferença é que lá o índice chegava do outro lado do mundo, e aqui ele nasce
 dentro da placa.
 
-**O estado "tudo apagado" praticamente sumiu.** Na versão com API, tudo apagado
-queria dizer "a nuvem não respondeu" — e isso acontecia sempre que o Wi-Fi, o
-broker, o n8n ou a API caíssem. Aqui só existe no primeiro segundo, antes de
-fechar a primeira janela. Depois disso há sempre uma saída acesa, e é ela que
-mostra que o dispositivo está vivo, já que não há mais tráfego de rede para
-observar. O LED onboard, que indicava conexão com o broker, também não faz mais
-sentido e saiu.
+**O estado "tudo apagado" praticamente sumiu.** Na versão em que a nuvem
+decidia, tudo apagado queria dizer "a nuvem não respondeu" — e isso acontecia
+sempre que o Wi-Fi, o broker, o n8n ou a API caíssem. Aqui só existe no
+primeiro segundo, antes de fechar a primeira janela. Depois disso há sempre uma
+saída acesa.
 
 **Confira:** ao ligar, os três LEDs acendem em sequência e o buzzer dá um bipe.
 Depois, uma saída acesa por segundo, trocando conforme você move o motor.
+
+Neste ponto o firmware está **completo como dispositivo de borda**: ele decide
+e age, sozinho. A etapa que vem não muda nada disso — só acrescenta a voz.
+
+---
+
+## Etapa 6 — Contar para a nuvem o que decidiu
+
+Objetivo: publicar a janela e a predição, para o n8n poder conferir.
+
+O que **não** vai existir aqui: `subscribe`, `callback`, tópico de comando. O
+dispositivo não espera resposta de ninguém — ele já respondeu. É a diferença de
+papel em relação ao app da nuvem, e ela cabe numa frase: lá o device
+**pergunta**, aqui ele **conta**.
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+
+/* ---- Rede: use (A) Wokwi OU (B) ESP32 físico ---- */
+// ---- (A) Wokwi ----
+// const char* WIFI_SSID     = "Wokwi-GUEST";
+// const char* WIFI_PASSWORD = "";
+// #define MQTT_SERVER "host.wokwi.internal"
+
+// ---- (B) ESP32 físico ----
+const char* WIFI_SSID     = "SUA_REDE";
+const char* WIFI_PASSWORD = "SUA_SENHA";
+#define MQTT_SERVER "192.168.0.100"   // IP da máquina com a plataforma
+
+WiFiClient wifiClient;
+
+#define MQTT_PORT      1883
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/validacao"
+#define MQTT_CLIENT_ID "IoTDevValidacaoMotor001"
+PubSubClient mqttClient(wifiClient);
+
+#define LED_ONBOARD   2   // aceso = conectado ao broker
+```
+
+**O tópico é NOVO**, e isso não é detalhe de gosto. Se fosse
+`FIAPIoT/motor/multiclasse`, o fluxo da outra aplicação deste app reagiria a
+estas mensagens também: ele responderia no tópico de comando e as duas
+aplicações se embolariam no mesmo dispositivo.
+
+No `setup()`, depois do teste das saídas:
+
+```cpp
+  pinMode(LED_ONBOARD,  OUTPUT);
+  digitalWrite(LED_ONBOARD, LOW);
+
+  conectarWiFi();
+
+  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setKeepAlive(60);
+  mqttClient.setSocketTimeout(30);
+  mqttClient.setBufferSize(512);
+  // Sem setCallback: este firmware não escuta nada. Ele decide e conta.
+
+  Serial.println("Sistema pronto. Decide aqui, e publica o que decidiu.");
+  Serial.printf("  Publica em: %s\r\n\r\n", MQTT_PUB_TOPIC);
+```
+
+No topo do `loop()`, a manutenção da conexão:
+
+```cpp
+  if (!mqttClient.connected()) {
+    conectarMQTT();
+  }
+  mqttClient.loop();
+
+  digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
+```
+
+E no fecho da janela, **depois** de decidir e acender:
+
+```cpp
+      int classe = classificarJanela(features);
+      acionarSaida(classe);
+      publicarJanela(features, classe);
+```
+
+A ordem aqui é uma decisão de projeto, não um acaso: **decidir e agir vêm
+primeiro, publicar vem por último**. Com o broker fora do ar, o `publish()`
+falha e o motor continua sendo monitorado do mesmo jeito. O que para é a
+conferência, não o monitoramento.
+
+As três funções:
+
+```cpp
+/* ---- Publica a janela E a predição da borda ---- */
+void publicarJanela(const float features[8], int classe) {
+  JsonDocument doc;
+  doc["device"]         = MQTT_CLIENT_ID;
+  doc["predicao_borda"] = (classe >= 0 && classe < 4) ? NOMES_CLASSES[classe] : "desconhecida";
+  doc["mean_ax"] = serialized(String(features[0], 3));
+  doc["mean_ay"] = serialized(String(features[1], 3));
+  doc["mean_az"] = serialized(String(features[2], 3));
+  doc["std_ax"]  = serialized(String(features[3], 3));
+  doc["std_ay"]  = serialized(String(features[4], 3));
+  doc["std_az"]  = serialized(String(features[5], 3));
+  doc["std_mag"] = serialized(String(features[6], 3));
+  doc["p2p_mag"] = serialized(String(features[7], 3));
+
+  String buffer;
+  serializeJson(doc, buffer);
+
+  if (!mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str())) {
+    Serial.println("MQTT: falha no envio");
+  }
+}
+
+/* ---- WiFi ---- */
+void conectarWiFi() {
+  Serial.printf("Conectando ao WiFi %s", WIFI_SSID);
+  // TxPower reduzido: evita brownout/reboot ao ligar o rádio nesta placa.
+  WiFi.mode(WIFI_STA);
+  WiFi.setTxPower(WIFI_POWER_2dBm);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print('.');
+  }
+  Serial.println("");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+/* ---- MQTT ----
+   Sem subscribe: não há tópico de comando para assinar. */
+void conectarMQTT() {
+  while (!mqttClient.connected()) {
+    Serial.printf("Conectando ao MQTT Broker %s...", MQTT_SERVER);
+    if (mqttClient.connect(MQTT_CLIENT_ID)) {
+      Serial.println(" Conectado!");
+    } else {
+      Serial.printf(" Falha rc=%d. Tentando em 5s...\r\n", mqttClient.state());
+      delay(5000);
+    }
+  }
+}
+```
+
+### Por que a predição vai como nome, e não como número
+
+Dentro do firmware a classe é um índice — `0` a `3` — porque é isso que o
+`predict()` devolve. No JSON ela vira **texto**, porque do outro lado a API
+também responde texto. Comparar `"operando"` com `"operando"` dispensa qualquer
+tabela de tradução no meio do caminho, e uma tabela no meio do caminho é mais
+um lugar onde a ordem das classes pode ser trocada sem ninguém perceber.
+
+**Confira:** o LED onboard acende ao conectar, e cada janela vira uma linha no
+broker. Sem o n8n, sem a API e sem banco nenhum:
+
+```bash
+mosquitto_sub -h localhost -t "FIAPIoT/motor/validacao" -v
+```
+
+Deve aparecer um JSON por segundo, com as oito features e a `predicao_borda`.
 
 ---
 
@@ -484,6 +652,8 @@ dataset:
 - [ ] a ordem de `features[8]` igual à ordem de `FEATURES` no Colab
 - [ ] `NOMES_CLASSES[4]` igual à linha que o Colab imprimiu
 - [ ] os dois `.hpp` são do **mesmo** treino
+- [ ] o tópico é `FIAPIoT/motor/validacao`, e não o da outra aplicação
+- [ ] a `predicao_borda` sai no JSON como **nome**, não como índice
 - [ ] montagem física do sensor na mesma orientação da coleta
 
 O último item não está no código e é o que mais quebra na prática: girar o
@@ -493,7 +663,8 @@ trocadas, suspeite da montagem antes de suspeitar do modelo.
 
 ## Teste por partes
 
-Sem rede, o caminho é curto — e cada degrau isola uma peça:
+Na ordem, parando no primeiro que falhar. Os quatro primeiros degraus não
+precisam de rede, de n8n nem de banco:
 
 1. **Os dois `.hpp` são do mesmo treino?** É a única coisa que não dá erro de
    compilação quando está errada. Na dúvida, rode o Colab de novo e traga os
@@ -504,7 +675,20 @@ Sem rede, o caminho é curto — e cada degrau isola uma peça:
 4. **A decisão:** o Serial mostra o índice e o nome. Se o número está certo e o
    LED errado acende, o problema é a etapa 5; se o número está errado, é o
    modelo ou a paridade.
+5. **A publicação**, sem n8n e sem API:
+   ```bash
+   mosquitto_sub -h localhost -t "FIAPIoT/motor/validacao" -v
+   ```
+   Um JSON por segundo, com as oito features e a `predicao_borda`.
+6. **A API, sozinha**, com um dos JSON que você acabou de ver:
+   ```bash
+   curl -X POST http://localhost:8000/predict      -H "Content-Type: application/json"      -d '{"mean_ax":-0.124,"mean_ay":-0.014,"mean_az":0.879,"std_ax":0.248,"std_ay":0.133,"std_az":0.225,"std_mag":0.203,"p2p_mag":0.781}'
+   ```
+7. **O fluxo inteiro:** as execuções no n8n e, no banco,
+   `SELECT * FROM motor_validacao ORDER BY created_at DESC LIMIT 5;`
+
+O degrau 5 é o que separa os dois mundos: se ele passa e o 7 falha, o
+dispositivo está impecável e o problema está no n8n, na API ou no banco.
 
 No Wokwi não há como inclinar o MPU: só `operando` e `anomalia` têm equivalente
-no simulador. Em compensação, aqui não é preciso configurar Wi-Fi nenhum — o
-firmware roda inteiro sem rede.
+no simulador. O ciclo completo até o PostgreSQL, esse funciona inteiro.

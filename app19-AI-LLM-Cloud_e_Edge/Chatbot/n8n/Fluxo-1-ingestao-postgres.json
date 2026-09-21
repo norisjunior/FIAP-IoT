@@ -1,0 +1,175 @@
+{
+  "name": "app19 - Ingestao do motor no PostgreSQL",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/motor/multiclasse",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "f3744deb-ff15-4e30-9423-13d4967c2525",
+      "name": "FIAPIoT/motor/multiclasse",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const dados = typeof $json.message === \"string\"\n    ? JSON.parse($json.message)\n    : $json.message;\n\nreturn { json: dados };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4bc64035-0ae7-4dc8-bf20-9ae2a543f047",
+      "name": "Code (gera JSON)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "76fe1973-1d02-4288-a062-ceeed6073702",
+      "name": "Predict Motor"
+    },
+    {
+      "parameters": {
+        "topic": "FIAPIoT/motor/multiclasse/cmd",
+        "sendInputData": false,
+        "message": "={{ $json.class }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        460,
+        -100
+      ],
+      "id": "e368a163-b53f-483b-b6e6-10ead574b8a9",
+      "name": "FIAPIoT/motor/multiclasse/cmd",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Timestamp e periodo no fuso de Sao Paulo. O PERIODO e o truque desta\n// aplicacao: gravado agora, ele faz \"ontem a noite\" virar um WHERE comum\n// na hora do chat, sem o LLM precisar fazer conta de data.\nconst agora = new Date().toLocaleString(\"sv-SE\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour12: false\n});\n\nconst hora = Number(new Date().toLocaleString(\"en-US\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour: \"numeric\",\n  hour12: false\n}));\n\nlet periodo = \"madrugada\";\nif (hora >= 6 && hora < 12) periodo = \"manhã\";\nelse if (hora >= 12 && hora < 18) periodo = \"tarde\";\nelse if (hora >= 18) periodo = \"noite\";\n\nconst classe = $input.first().json.class;\n\nreturn [{ json: { classe, timestamp_medicao: agora, periodo } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        120
+      ],
+      "id": "87badd8a-3797-4580-9aaf-17bb46795d66",
+      "name": "Formata para o banco"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS motor_medicoes (\n  id SERIAL PRIMARY KEY,\n  classe TEXT,\n  timestamp_medicao TEXT,\n  periodo TEXT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO motor_medicoes (classe, timestamp_medicao, periodo)\nVALUES ('{{ $json.classe }}', '{{ $json.timestamp_medicao }}', '{{ $json.periodo }}');\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        680,
+        120
+      ],
+      "id": "90ff499b-89ee-4db7-8b2b-e2fe50b81968",
+      "name": "Armazena a predicao",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIAPIoT/motor/multiclasse": {
+      "main": [
+        [
+          {
+            "node": "Code (gera JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (gera JSON)": {
+      "main": [
+        [
+          {
+            "node": "Predict Motor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict Motor": {
+      "main": [
+        [
+          {
+            "node": "FIAPIoT/motor/multiclasse/cmd",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Formata para o banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata para o banco": {
+      "main": [
+        [
+          {
+            "node": "Armazena a predicao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5a54b825-d196-42f3-8649-a79f55d1529b",
+  "meta": {
+    "instanceId": "app19-AI-LLM-Cloud_e_Edge"
+  },
+  "id": "0845d29e-4d13-4de8-96b8-5a1193ae1ac3",
+  "tags": []
+}

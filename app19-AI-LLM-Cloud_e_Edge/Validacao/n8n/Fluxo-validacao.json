@@ -1,0 +1,148 @@
+{
+  "name": "app19 - Validacao: borda x nuvem",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/motor/validacao",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "dcba4d8e-c26b-443c-9f50-2e6d4b5745ff",
+      "name": "FIAPIoT/motor/validacao",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const dados = typeof $json.message === \"string\"\n    ? JSON.parse($json.message)\n    : $json.message;\n\nreturn { json: dados };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5f6b5443-fa3f-4ea5-b193-d22febbbdc7b",
+      "name": "Code (gera JSON)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "037d8273-3606-4ce1-b1f2-a7a3a569c0f9",
+      "name": "Predict Motor (nuvem)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Timestamp e periodo no fuso de Sao Paulo. O PERIODO e o truque desta\n// aplicacao: gravado agora, ele faz \"ontem a noite\" virar um WHERE comum\n// na hora do chat, sem o LLM precisar fazer conta de data.\nconst agora = new Date().toLocaleString(\"sv-SE\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour12: false\n});\n\nconst hora = Number(new Date().toLocaleString(\"en-US\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour: \"numeric\",\n  hour12: false\n}));\n\nlet periodo = \"madrugada\";\nif (hora >= 6 && hora < 12) periodo = \"manhã\";\nelse if (hora >= 12 && hora < 18) periodo = \"tarde\";\nelse if (hora >= 18) periodo = \"noite\";\n\n// A resposta da API esta no item atual; a predicao da borda ficou para tras,\n// no no que leu o MQTT. E por isso que ela e buscada pelo nome do no.\nconst nuvem = $input.first().json.class;\nconst borda = $('Code (gera JSON)').first().json.predicao_borda;\n\nreturn [{\n  json: {\n    predicao_borda: borda,\n    predicao_nuvem: nuvem,\n    concordam: borda === nuvem,\n    timestamp_medicao: agora,\n    periodo\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "2c7dc506-78fe-4fb2-a037-68a65445348d",
+      "name": "Compara borda e nuvem"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS motor_validacao (\n  id SERIAL PRIMARY KEY,\n  predicao_borda TEXT,\n  predicao_nuvem TEXT,\n  concordam BOOLEAN,\n  timestamp_medicao TEXT,\n  periodo TEXT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO motor_validacao (predicao_borda, predicao_nuvem, concordam, timestamp_medicao, periodo)\nVALUES ('{{ $json.predicao_borda }}', '{{ $json.predicao_nuvem }}', {{ $json.concordam }}, '{{ $json.timestamp_medicao }}', '{{ $json.periodo }}');\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        660,
+        0
+      ],
+      "id": "7336f9ae-7abb-44e1-91dc-a762d14bd904",
+      "name": "Armazena a comparacao",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIAPIoT/motor/validacao": {
+      "main": [
+        [
+          {
+            "node": "Code (gera JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code (gera JSON)": {
+      "main": [
+        [
+          {
+            "node": "Predict Motor (nuvem)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict Motor (nuvem)": {
+      "main": [
+        [
+          {
+            "node": "Compara borda e nuvem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compara borda e nuvem": {
+      "main": [
+        [
+          {
+            "node": "Armazena a comparacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0fd7d98e-311c-487d-9279-674daf5b3daa",
+  "meta": {
+    "instanceId": "app19-AI-LLM-Cloud_e_Edge"
+  },
+  "id": "82eef017-c043-455c-9ae3-e881b817044c",
+  "tags": []
+}
