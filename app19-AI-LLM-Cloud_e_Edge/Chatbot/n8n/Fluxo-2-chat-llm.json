@@ -1,0 +1,185 @@
+{
+  "name": "app19 - Chat com o agente LLM",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Olá! 👋\nSou o FIoT. Pergunte como está o motor.",
+        "options": {
+          "subtitle": "IoT + ML + n8n + LLM",
+          "title": "FIoT Agent - Estado do motor"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "85a54978-39c9-4370-9ee5-f693a112a562",
+      "name": "When chat message received"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Você é um assistente de manutenção de um motor industrial.\n\nO motor é monitorado por um sensor de vibração, e um modelo de machine learning\nclassifica cada segundo em uma destas quatro classes:\n- operando: motor ligado, nivelado, vibração normal\n- inclinado_frente: motor tombado para a frente\n- inclinado_tras: motor tombado para trás\n- anomalia: vibração fora do normal\n\nCONTEXTO TEMPORAL IMPORTANTE:\n- Data atual: {{ $now.format('yyyy-LL-dd') }}\n- Hora atual: {{ $now.format('HH:mm') }}\n- Dia da semana: {{ $now.format('EEEE') }}\n\nPERÍODOS DO DIA:\n- madrugada: 00:00 às 05:59\n- manhã: 06:00 às 11:59\n- tarde: 12:00 às 17:59\n- noite: 18:00 às 23:59\n\nPara perguntas sobre **\"agora\"** ou **\"neste momento\"**, use a ferramenta **motor_agora**.\n\nQuando o usuário perguntar sobre um **período específico** (ex: \"ontem à noite\",\n\"hoje de manhã\"), use a ferramenta **motor_historico** com os parâmetros no\nformato: \"AAAA-MM-DD, periodo\"\n\nExemplos:\n- \"Como estava nesta madrugada?\" → \"{{ $now.format('yyyy-LL-dd') }}, madrugada\"\n- \"E ontem à noite?\" → \"{{ $now.minus({days: 1}).format('yyyy-LL-dd') }}, noite\"\n\nLIMITAÇÕES\n- Não invente estados. Responda somente com o que as ferramentas devolverem.\n- Se a ferramenta não devolver nada, diga que não há medição para aquele período.\n\nO QUE FAZER COM CADA RESPOSTA\n- operando: está tudo bem, não é preciso agir.\n- inclinado_frente ou inclinado_tras: peça para conferir a fixação do motor.\n- anomalia: recomende parar o motor e chamar a manutenção.\n\nFORMATO DA RESPOSTA\n- Mesmo que você receba a resposta em JSON, responda em texto, sem formato de código.\n- Seja cortês e direto."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        40,
+        0
+      ],
+      "id": "4fe67fa0-9a16-4029-8668-bd50e6b3aa09",
+      "name": "FIoT Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:1b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        220
+      ],
+      "id": "05fcb748-b51e-4c85-9486-ba93f30c5051",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "pkHJYvheWV0vK657",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        100,
+        220
+      ],
+      "id": "bdfe1764-45dc-4b0f-a2f7-4964274752a2",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta se chama \"motor_agora\" e responde qual e o estado do motor AGORA, neste instante. Use para \"agora\", \"neste momento\", \"atualmente\". Ela devolve a medicao mais recente.",
+        "operation": "executeQuery",
+        "query": "SELECT classe, timestamp_medicao, periodo\nFROM motor_medicoes\nORDER BY created_at DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        260,
+        220
+      ],
+      "id": "9f3e74f3-1fdc-4d52-9b49-393fa3456fc0",
+      "name": "motor_agora",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta consulta o estado do motor em uma data e periodo do passado. Sempre envie Query_Parameters como uma string no formato: \"AAAA-MM-DD, periodo\", por exemplo: \"2026-09-21, madrugada\".\nO campo periodo deve ser uma destas palavras exatas: madrugada, manhã, tarde, noite.\n\n**NÃO USE ESTA FERRAMENTA PARA RESPONDER COMO O MOTOR ESTÁ AGORA.**",
+        "operation": "executeQuery",
+        "query": "SELECT classe,\n       timestamp_medicao,\n       periodo\nFROM motor_medicoes\nWHERE DATE(timestamp_medicao::timestamp) = $1\n  AND periodo = $2\nORDER BY created_at DESC\nLIMIT 1;\n",
+        "options": {
+          "queryReplacement": "={{ $fromAI('Query_Parameters', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        220
+      ],
+      "id": "cd0b389b-1ef1-4607-8208-fdd49323324a",
+      "name": "motor_historico",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "motor_agora": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "motor_historico": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9c639e7d-ceab-4830-a8e9-968212ec340b",
+  "meta": {
+    "instanceId": "app19-AI-LLM-Cloud_e_Edge"
+  },
+  "id": "3b256d56-ee6f-4fbf-9a75-cbb25a7df0ad",
+  "tags": []
+}
