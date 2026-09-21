@@ -300,10 +300,29 @@ const char* NOMES_CLASSES[4] = { "anomalia", "inclinado_frente",
                                  "inclinado_tras", "operando" };
 ```
 
-E a função que faz o trabalho — duas linhas de inferência, o resto é impressão:
+Antes da função, **o protótipo**. Este arquivo é um `.cpp`, e não um `.ino`: o
+Arduino gera os protótipos sozinho nos `.ino`, o C++ não. Como a
+`classificarJanela()` é chamada dentro do `loop()` e escrita depois dele, sem
+esta linha o compilador reclama que ela não foi declarada. Coloque junto das
+outras, logo abaixo do `NOMES_CLASSES`:
 
 ```cpp
-void classificarJanela(const float features[8]) {
+/* ---- Protótipos ---- */
+int  classificarJanela(const float features[8]);
+void acionarSaida(int classe);
+void apagarTodasAsSaidas();
+```
+
+As duas últimas são da etapa 5; declare-as agora e o arquivo já fica pronto
+para ela.
+
+E a função que faz o trabalho — duas linhas de inferência, o resto é impressão.
+Repare que ela **devolve** a classe e não acende nada: quem decide o que fazer
+com o número é o `loop()`. Separadas assim, dá para trocar a saída sem tocar na
+inferência:
+
+```cpp
+int classificarJanela(const float features[8]) {
   float padronizado[8];
 
   uint32_t t0 = micros();
@@ -325,10 +344,20 @@ void classificarJanela(const float features[8]) {
   }
   Serial.printf("  Inferencia: %lu us\r\n", duracao);
   Serial.println("----------------------");
+
+  return classe;
 }
 ```
 
-Troque o `Serial.printf` da etapa 3 por `classificarJanela(features);`.
+No `loop()`, troque o `Serial.printf` da etapa 3 pela chamada:
+
+```cpp
+      classificarJanela(features);
+```
+
+O retorno é ignorado **por enquanto** — nesta etapa quem mostra a classe é o
+`Serial.printf` de dentro da função. Na etapa 5 ele passa a ser guardado e
+entregue à saída.
 
 **A ordem importa e é sempre esta:** ler as 8 features → `Scaler::standardize()` →
 `predict()`. Chamar `predict()` com os valores crus compila, roda, e responde
@@ -377,9 +406,18 @@ aqui, o problema é o fio, não a floresta:
   digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
   digitalWrite(LED_VERMELHO, HIGH); delay(400); digitalWrite(LED_VERMELHO, LOW);
   tone(BUZZER, 500, 250); noTone(BUZZER);   // buzzer passivo: precisa de frequencia
+
+  Serial.println("Sistema pronto. Uma janela por segundo, sem rede nenhuma.");
+  Serial.println("  Saidas (uma por classe):");
+  Serial.printf("    GPIO %2d  LED azul     = operando\r\n",         LED_AZUL);
+  Serial.printf("    GPIO %2d  LED amarelo  = inclinado_frente\r\n", LED_AMARELO);
+  Serial.printf("    GPIO %2d  LED vermelho = inclinado_tras\r\n",   LED_VERMELHO);
+  Serial.printf("    GPIO %2d  BUZZER       = anomalia\r\n\r\n",     BUZZER);
 ```
 
-E as duas funções, chamadas no fim de `classificarJanela()`:
+E as duas funções que acendem. Elas são o **outro lado** da separação feita na
+etapa 4: a `classificarJanela()` responde qual é a classe, a `acionarSaida()`
+decide o que fazer com ela.
 
 ```cpp
 void acionarSaida(int classe) {
@@ -400,6 +438,14 @@ void apagarTodasAsSaidas() {
   digitalWrite(LED_VERMELHO, LOW);
   digitalWrite(BUZZER,       LOW);
 }
+```
+
+E, no `loop()`, a chamada da etapa 4 passa a guardar o retorno e entregá-lo à
+saída — as duas linhas que fecham o firmware:
+
+```cpp
+      int classe = classificarJanela(features);
+      acionarSaida(classe);
 ```
 
 ### Duas coisas a reparar aqui

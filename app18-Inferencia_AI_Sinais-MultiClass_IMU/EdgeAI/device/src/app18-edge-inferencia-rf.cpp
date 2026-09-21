@@ -94,7 +94,7 @@ const char* NOMES_CLASSES[4] = { "anomalia", "inclinado_frente",
                                  "inclinado_tras", "operando" };
 
 /* ---- Protótipos ---- */
-void classificarJanela(const float features[8]);
+int  classificarJanela(const float features[8]);
 void acionarSaida(int classe);
 void apagarTodasAsSaidas();
 
@@ -213,7 +213,11 @@ void loop() {
       // A ORDEM deste vetor é a ordem das colunas no treino. É o contrato do
       // modelo: x[0] é mean_ax porque mean_ax era a primeira coluna no Colab.
       float features[8] = { mx, my, mz, sx, sy, sz, stdMag, p2p };
-      classificarJanela(features);
+
+      // Uma função responde QUAL é a classe; a outra decide o que fazer com
+      // ela. Separadas, dá para trocar a saída sem tocar na inferência.
+      int classe = classificarJanela(features);
+      acionarSaida(classe);
 
       indice = 0;
     }
@@ -224,8 +228,11 @@ void loop() {
    Onde antes havia um publish, uma viagem pela rede e um callback, agora há
    uma padronização e uma varredura de 15 árvores. O micros() está aqui para
    você mostrar o número em aula: a nuvem respondia em ~1 s; isto responde em
-   microssegundos, e sem Wi-Fi. */
-void classificarJanela(const float features[8]) {
+   microssegundos, e sem Wi-Fi.
+
+   Esta função só RESPONDE: devolve o índice da classe e não mexe em pino
+   nenhum. Quem acende é a acionarSaida(), chamada pelo loop. */
+int classificarJanela(const float features[8]) {
   float padronizado[8];
 
   uint32_t t0 = micros();
@@ -248,7 +255,7 @@ void classificarJanela(const float features[8]) {
   Serial.printf("  Inferencia: %lu us\r\n", duracao);
   Serial.println("----------------------");
 
-  acionarSaida(classe);
+  return classe;
 }
 
 /* ---- Acende SÓ a saída da classe prevista ----
