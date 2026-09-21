@@ -1298,16 +1298,19 @@ Em cada um, remova o indicado. Não acrescente nada.
 
 ## Anexo — o que existe no repositório
 
-O `app25` já está pronto e bate com estes slides.
+O `app25` já está pronto e bate com estes slides. Ele hoje mora em duas pastas
+irmãs, e **estes slides tratam só da `CloudAI/`**:
 
 ```text
-app25-Inferencia-AI-API_Sinais-MultiClass_IMU/
-├── api/          service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
-├── device/       firmware + CONSTRUIR-O-FIRMWARE.md (guia em 7 etapas)
-└── n8n/          Fluxo-n8n-predict.json  (5 nós, pronto para importar)
+app18-Inferencia_AI_Sinais-MultiClass_IMU/
+├── CloudAI/          o que estes slides cobrem
+│   ├── api/          service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
+│   ├── device/       firmware + CONSTRUIR-O-FIRMWARE.md (guia em 7 etapas)
+│   └── n8n/          Fluxo-n8n-predict.json  (5 nós, pronto para importar)
+└── EdgeAI/           a mesma janela, com Random Forest embarcada e sem rede
 ```
 
-O `device/CONSTRUIR-O-FIRMWARE.md` monta o firmware do zero em sete etapas,
+O `CloudAI/device/CONSTRUIR-O-FIRMWARE.md` monta o firmware do zero em sete etapas,
 com a tabela de paridade do slide 5.2 marcada ao longo do código — serve de
 apoio ao HANDS ON.
 
@@ -1335,7 +1338,8 @@ não espera o alerta.
   README e o fluxo Node-RED do treinamento
 - `app17-GerarDatasetSinais_IMU/app17-7-MultiClassAccFeaturesInflux/colab/treinamento_multiclasse.ipynb`
   — o notebook do Colab (MLPClassifier, InfluxDB via Flux)
-- `app25-Inferencia-AI-API_Sinais-MultiClass_IMU/` — API, firmware, fluxo n8n
+- `app18-Inferencia_AI_Sinais-MultiClass_IMU/CloudAI/` — API, firmware, fluxo n8n
+- `DECISÕES - app18 CloudAI e EdgeAI.md` — registro curto das decisões, inclusive da EdgeAI
 - `app28-Inferencia-AI-Cloud_Escalares_AQI/App-Fluxo_n8n/` — o padrão de fluxo
   n8n que a turma já conhece
 - `IoT - Aula 18 e 19 - Automação LLM IoT ML.pptx` — a plataforma e o n8n
