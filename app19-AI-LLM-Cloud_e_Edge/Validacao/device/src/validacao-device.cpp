@@ -1,48 +1,47 @@
-/* app18-edge-inferencia-rf — a mesma decisão, agora dentro do ESP32.
+/* validacao-device — o dispositivo decide sozinho E conta o que decidiu.
 
-   A janela é a mesma do app17-7: 100 amostras a 100 Hz, as mesmas 8 features,
-   as mesmas 4 classes, as mesmas 4 saídas. Muda só QUEM decide.
+   Este firmware é a soma das duas metades do app anterior: a inferência que
+   roda na flash, com a Random Forest, mais o Wi-Fi e o MQTT que antes só
+   existiam na versão com API.
 
-   Na versão com API, a janela virava JSON, saía pelo MQTT, atravessava n8n e
-   FastAPI, e a classe voltava por outro tópico. Aqui a janela não sai da placa:
-   ela é padronizada pelo Scaler e entregue à Random Forest que mora na flash.
+   A diferença de papel é o ponto da aplicação:
 
-       Scaler::standardize(bruto, padronizado);     // mesma conta do treino
-       int classe = modeloRF.predict(padronizado);  // a floresta, em if/else
+     versão com API   o device PERGUNTA e obedece. Sem rede, ele não sabe nada.
+     versão da borda  o device DECIDE e não fala com ninguém.
+     este             o device DECIDE, acende a saída, e REPORTA o que decidiu.
 
-   Repare no que sumiu: WiFi.h, PubSubClient, ArduinoJson, os dois tópicos, o
-   IP do broker, a reconexão, o callback. E repare no que NÃO sumiu: nada do
-   caminho do dado. As funções de feature são as mesmas, letra por letra, e é
-   por isso que o modelo treinado com o dataset do app17-7 funciona aqui — ele
-   recebe exatamente os números que viu no treino.
+   Repare no que não existe aqui: subscribe, callback, tópico de comando. O
+   device não espera resposta de ninguém — ele já respondeu. A janela sai pelo
+   MQTT junto com a predição da borda, e quem quiser conferir que confira.
+
+   Do outro lado, o n8n pega essa mesma janela, pergunta à MLP que roda na
+   nuvem, e guarda as duas respostas no PostgreSQL. Se a rede cair, o motor
+   continua sendo monitorado: só a conferência para.
 
        operando          LED azul      (4)
        inclinado_frente  LED amarelo  (21)
        inclinado_tras    LED vermelho (18)
        anomalia          buzzer       (19)
-
-   Não há mais o estado "tudo apagado = a nuvem não respondeu": aqui sempre há
-   resposta. Depois da primeira janela, uma saída está sempre acesa — e é essa
-   saída que mostra que o dispositivo está vivo, já que não há mais tráfego de
-   rede para observar.
-
-   O LED onboard também sai: ele indicava conexão com o broker, e não há broker.
+       LED onboard        (2)   aceso = conectado ao broker
 */
 /*
 PARA USAR NO WOKWI:
+- Ajustar as credenciais WiFi e o IP do MQTT_SERVER (ou usar as linhas comentadas do Wokwi abaixo)
 - Ajustar #define MPU_TYPE:
   - #define MPU_TYPE MPU6050
 - Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);` (trava no Wokwi, FIFO ausente)
 - As classes de inclinação não têm equivalente fiel no simulador (não há como
-  inclinar o MPU6050 do Wokwi); serve para ver a inferência rodando e o tempo
-  que ela leva.
-- Não é preciso configurar Wi-Fi: este firmware não usa rede nenhuma.
+  inclinar o MPU6050 do Wokwi).
 */
 
 #include <Arduino.h>
 #include "FastIMU.h"
 #include <Wire.h>
 #include <math.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
 
 /* ---- O modelo, em dois arquivos gerados pelo Colab ----
    Os dois SEMPRE do mesmo treino: o scaler guarda a média e o desvio de cada
@@ -54,14 +53,36 @@ PARA USAR NO WOKWI:
 
 Eloquent::ML::Port::RandomForest modeloRF;
 
+/* ---- Rede: use (A) Wokwi OU (B) ESP32 físico ---- */
+// ---- (A) Wokwi (padrão) ----
+// const char* WIFI_SSID     = "Wokwi-GUEST";
+// const char* WIFI_PASSWORD = "";
+// #define MQTT_SERVER "host.wokwi.internal"
+
+// ---- (B) ESP32 físico ----
+const char* WIFI_SSID     = "NorisIoT";
+const char* WIFI_PASSWORD = "Secure10T";
+#define MQTT_SERVER "172.16.10.101"   // IP da máquina com a plataforma
+
+WiFiClient wifiClient;
+
+/* ---- MQTT: só publicação ----
+   Um tópico só, e é de saída. O tópico é NOVO, diferente do usado no app da
+   nuvem: se fosse o mesmo, o fluxo daquele app reagiria a estas mensagens
+   também e os dois se embolariam. */
+#define MQTT_PORT      1883
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/validacao"
+#define MQTT_CLIENT_ID "IoTDevValidacaoMotor001"
+PubSubClient mqttClient(wifiClient);
+
 /* ---- Pinos ---- */
 #define SDA_PIN      22
 #define SCL_PIN      23
-/* Uma saída por classe, como na versão com API. */
 #define LED_AZUL      4   // operando
 #define LED_AMARELO  21   // inclinado_frente
 #define LED_VERMELHO 18   // inclinado_tras
 #define BUZZER       19   // anomalia
+#define LED_ONBOARD   2   // aceso = conectado ao broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
 #define MPU_TYPE MPU6500
@@ -69,7 +90,7 @@ MPU_TYPE mpu;
 
 calData calib = { 0 };
 
-/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão do app17-7) ---- */
+/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão da coleta) ---- */
 const int FS_HZ          = 100;
 const int AMOSTRA_MS     = 1000 / FS_HZ;      // 10 ms
 const int TAMANHO_JANELA = FS_HZ;             // 100 amostras = 1 s
@@ -83,13 +104,10 @@ int indice = 0;
 uint32_t tempoAnterior = 0;
 
 /* ---- Os nomes das classes, NA ORDEM DO scikit-learn ----
-   O predict() devolve um número: 0, 1, 2 ou 3. Quem dá nome a esse número é
-   este vetor, e a ordem é a de classes_, que o scikit-learn devolve sempre em
-   ordem ALFABÉTICA — não na ordem em que a gente pensa nas classes. Por isso
-   anomalia é o índice 0. O Colab imprime esta linha pronta na seção 10.
-
-   Trocar duas linhas aqui não gera erro nenhum — só faz o motor inclinado
-   acender o LED errado para sempre. */
+   O predict() devolve um número: 0, 1, 2 ou 3. A ordem é a de classes_, que o
+   scikit-learn devolve sempre em ordem ALFABÉTICA. Por isso anomalia é o
+   índice 0. Aqui o nome importa duas vezes: acende a saída certa e vai no JSON
+   para a nuvem comparar. */
 const char* NOMES_CLASSES[4] = { "anomalia", "inclinado_frente",
                                  "inclinado_tras", "operando" };
 
@@ -97,10 +115,13 @@ const char* NOMES_CLASSES[4] = { "anomalia", "inclinado_frente",
 int  classificarJanela(const float features[8]);
 void acionarSaida(int classe);
 void apagarTodasAsSaidas();
+void publicarJanela(const float features[8], int classe);
+void conectarWiFi();
+void conectarMQTT();
 
 /* =========================== Features ===========================
    As 8 que o modelo recebe: mean_* (orientação), std_* e std_mag (vibração)
-   e p2p_mag (pior caso da janela). Idênticas às do app17-7 — é esse "idênticas"
+   e p2p_mag (pior caso da janela). Idênticas às da coleta — é esse "idênticas"
    que faz o modelo valer aqui. */
 float calcMean(float arr[], int n) {
   float soma = 0;
@@ -158,28 +179,40 @@ void setup() {
   pinMode(LED_AMARELO,  OUTPUT);
   pinMode(LED_VERMELHO, OUTPUT);
   pinMode(BUZZER,       OUTPUT);
+  pinMode(LED_ONBOARD,  OUTPUT);
 
   apagarTodasAsSaidas();
+  digitalWrite(LED_ONBOARD, LOW);
 
   // Teste de ligação: acende uma saída por vez, para você conferir se cada
-  // componente está no pino certo ANTES de depender do modelo. Se o LED
-  // amarelo não acender aqui, o problema é o fio — não a floresta.
+  // componente está no pino certo ANTES de depender do modelo.
   Serial.println("Testando as saidas...");
   digitalWrite(LED_AZUL,     HIGH); delay(400); digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
   digitalWrite(LED_VERMELHO, HIGH); delay(400); digitalWrite(LED_VERMELHO, LOW);
   tone(BUZZER, 500, 250); noTone(BUZZER);   // buzzer passivo: precisa de frequencia
 
-  Serial.println("Sistema pronto. Uma janela por segundo, sem rede nenhuma.");
-  Serial.println("  Saidas (uma por classe):");
-  Serial.printf("    GPIO %2d  LED azul     = operando\r\n",         LED_AZUL);
-  Serial.printf("    GPIO %2d  LED amarelo  = inclinado_frente\r\n", LED_AMARELO);
-  Serial.printf("    GPIO %2d  LED vermelho = inclinado_tras\r\n",   LED_VERMELHO);
-  Serial.printf("    GPIO %2d  BUZZER       = anomalia\r\n\r\n",     BUZZER);
+  conectarWiFi();
+
+  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setKeepAlive(60);
+  mqttClient.setSocketTimeout(30);
+  mqttClient.setBufferSize(512);
+  // Sem setCallback: este firmware não escuta nada. Ele decide e conta.
+
+  Serial.println("Sistema pronto. Decide aqui, e publica o que decidiu.");
+  Serial.printf("  Publica em: %s\r\n\r\n", MQTT_PUB_TOPIC);
 }
 
 /* ============================== LOOP =============================== */
 void loop() {
+  if (!mqttClient.connected()) {
+    conectarMQTT();
+  }
+  mqttClient.loop();
+
+  digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
+
   // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
     // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o atraso
@@ -210,14 +243,14 @@ void loop() {
       float stdMag = calcStd(mag_buf, TAMANHO_JANELA, mMag);
       float p2p    = calcPtP(mag_buf, TAMANHO_JANELA);
 
-      // A ORDEM deste vetor é a ordem das colunas no treino. É o contrato do
-      // modelo: x[0] é mean_ax porque mean_ax era a primeira coluna no Colab.
+      // A ORDEM deste vetor é a ordem das colunas no treino.
       float features[8] = { mx, my, mz, sx, sy, sz, stdMag, p2p };
 
-      // Uma função responde QUAL é a classe; a outra decide o que fazer com
-      // ela. Separadas, dá para trocar a saída sem tocar na inferência.
+      // Primeiro decide e age. Publicar vem depois, e de propósito: se o
+      // broker estiver fora do ar, o motor continua sendo monitorado.
       int classe = classificarJanela(features);
       acionarSaida(classe);
+      publicarJanela(features, classe);
 
       indice = 0;
     }
@@ -225,11 +258,6 @@ void loop() {
 }
 
 /* ---- A inferência: duas linhas, e o resto é impressão ----
-   Onde antes havia um publish, uma viagem pela rede e um callback, agora há
-   uma padronização e uma varredura de 15 árvores. O micros() está aqui para
-   você mostrar o número em aula: a nuvem respondia em ~1 s; isto responde em
-   microssegundos, e sem Wi-Fi.
-
    Esta função só RESPONDE: devolve o índice da classe e não mexe em pino
    nenhum. Quem acende é a acionarSaida(), chamada pelo loop. */
 int classificarJanela(const float features[8]) {
@@ -258,10 +286,7 @@ int classificarJanela(const float features[8]) {
   return classe;
 }
 
-/* ---- Acende SÓ a saída da classe prevista ----
-   A saída fica ligada até a próxima janela fechar, um segundo depois: ela é a
-   memória do dispositivo, exatamente como era na versão com API. A diferença é
-   que lá o índice chegava do outro lado do mundo; aqui ele nasce aqui dentro. */
+/* ---- Acende SÓ a saída da classe prevista ---- */
 void acionarSaida(int classe) {
   apagarTodasAsSaidas();
 
@@ -274,11 +299,69 @@ void acionarSaida(int classe) {
   }
 }
 
-/* ---- Apaga as quatro saídas ----
-   Chamada antes de acender a nova, para nunca ficarem duas ligadas. */
+/* ---- Apaga as quatro saídas ---- */
 void apagarTodasAsSaidas() {
   digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  LOW);
   digitalWrite(LED_VERMELHO, LOW);
   digitalWrite(BUZZER,       LOW);
+}
+
+/* ---- Publica a janela E a predição da borda ----
+   As oito features vão para a nuvem rodar o modelo dela em cima dos MESMOS
+   números, e predicao_borda vai junto para a comparação ser possível. Sem ela
+   a nuvem responderia no vácuo: haveria uma predição só, e nada a conferir.
+
+   Vai o nome da classe, não o índice: do outro lado, a API devolve o nome
+   também, e comparar texto com texto dispensa qualquer tabela de tradução. */
+void publicarJanela(const float features[8], int classe) {
+  JsonDocument doc;
+  doc["device"]         = MQTT_CLIENT_ID;
+  doc["predicao_borda"] = (classe >= 0 && classe < 4) ? NOMES_CLASSES[classe] : "desconhecida";
+  doc["mean_ax"] = serialized(String(features[0], 3));
+  doc["mean_ay"] = serialized(String(features[1], 3));
+  doc["mean_az"] = serialized(String(features[2], 3));
+  doc["std_ax"]  = serialized(String(features[3], 3));
+  doc["std_ay"]  = serialized(String(features[4], 3));
+  doc["std_az"]  = serialized(String(features[5], 3));
+  doc["std_mag"] = serialized(String(features[6], 3));
+  doc["p2p_mag"] = serialized(String(features[7], 3));
+
+  String buffer;
+  serializeJson(doc, buffer);
+
+  if (!mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str())) {
+    Serial.println("MQTT: falha no envio");
+  }
+}
+
+/* ---- WiFi ---- */
+void conectarWiFi() {
+  Serial.printf("Conectando ao WiFi %s", WIFI_SSID);
+  // TxPower reduzido: evita brownout/reboot ao ligar o rádio nesta placa.
+  WiFi.mode(WIFI_STA);
+  WiFi.setTxPower(WIFI_POWER_2dBm);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print('.');
+  }
+  Serial.println("");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+/* ---- MQTT ----
+   Sem subscribe: não há tópico de comando para assinar. */
+void conectarMQTT() {
+  while (!mqttClient.connected()) {
+    Serial.printf("Conectando ao MQTT Broker %s...", MQTT_SERVER);
+    if (mqttClient.connect(MQTT_CLIENT_ID)) {
+      Serial.println(" Conectado!");
+    } else {
+      Serial.printf(" Falha rc=%d. Tentando em 5s...\r\n", mqttClient.state());
+      delay(5000);
+    }
+  }
 }

@@ -1,11 +1,11 @@
-# app25 — Estado do motor (multiclasse): na nuvem e na borda
+# Estado do motor (multiclasse): na nuvem e na borda
 
-A mesma janela de features do `app17-7`, classificada de dois jeitos. Quatro
+A mesma janela de features da coleta, classificada de dois jeitos. Quatro
 classes: `operando`, `inclinado_frente`, `inclinado_tras` e `anomalia`.
 
 | Pasta | Modelo | Quem decide |
 |---|---|---|
-| `CloudAI/` | a MLP do `app17-7`, num `.pkl` | a nuvem, e o ESP32 obedece |
+| `CloudAI/` | a MLP treinada na coleta, num `.pkl` | a nuvem, e o ESP32 obedece |
 | `EdgeAI/` | uma Random Forest embarcada | o próprio ESP32, sem rede |
 
 As seções 1 a 4 são o caminho da nuvem; a seção 5 aponta para a borda.
@@ -17,7 +17,7 @@ ESP32 → MQTT → n8n → API FastAPI (.pkl) → n8n → MQTT → ESP32
 
 ## 1) O modelo
 
-`app17-7-MultiClassAccFeaturesInflux/colab/treinamento_multiclasse.ipynb` gera o
+O notebook `treinamento_multiclasse.ipynb`, do app de coleta, gera o
 `modelo_motor_multiclasse.pkl`. Copie o arquivo para `CloudAI/api/`.
 
 ## 2) A API
@@ -90,7 +90,7 @@ Ajuste no `.cpp` o Wi-Fi e o `MQTT_SERVER` antes de gravar.
 
 Uma saída por classe, e ela **fica** ligada: o dispositivo mantém a última
 decisão recebida até a próxima chegar. Os pinos 21 e 18 eram os dois botões do
-`app17-7` — de entrada do rótulo humano viraram saída do rótulo do modelo.
+app de coleta — de entrada do rótulo humano viraram saída do rótulo do modelo.
 
 LED onboard aceso = conectado ao broker.
 
@@ -106,7 +106,7 @@ para poucos microssegundos.
 
 Nada do que está acima muda: o `CloudAI/` continua valendo inteiro. O
 `EdgeAI/` é uma segunda leitura do mesmo problema, com um modelo novo treinado a
-partir do mesmo dataset do `app17-7`.
+partir do mesmo dataset da coleta.
 
 ## Estrutura
 

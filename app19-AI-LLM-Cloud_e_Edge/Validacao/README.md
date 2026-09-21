@@ -1,4 +1,4 @@
-# app19 / Validacao — a borda continua concordando com a nuvem?
+# Validacao — a borda continua concordando com a nuvem?
 
 O dispositivo decide sozinho, com a Random Forest que mora na flash dele. Isso é
 ótimo: responde em microssegundos e funciona sem rede. Mas levanta uma pergunta

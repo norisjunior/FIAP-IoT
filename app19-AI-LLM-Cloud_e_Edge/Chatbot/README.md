@@ -1,4 +1,4 @@
-# app19 / Chatbot — perguntar ao motor em português
+# Chatbot — perguntar ao motor em português
 
 O dispositivo continua fazendo exatamente o que fazia: mede a janela, publica,
 recebe a classe de volta e acende a saída. O que muda é que agora **alguém

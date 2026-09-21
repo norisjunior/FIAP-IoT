@@ -1,8 +1,8 @@
-# app19 — Smart Delivery Bag: sensor fusion
+# Smart Delivery Bag: sensor fusion
 
 Coletar → rotular → treinar RF e MLP → exportar os modelos.
 
-O app15 fechou a parte de **plataforma**: o NexoLog media, publicava e obedecia a um
+O NexoLog fechou a parte de **plataforma**: o NexoLog media, publicava e obedecia a um
 limiar desenhado no Node-RED. Daqui em diante o limiar sai de cena. A mesma bag, com dois
 sensores a mais, passa a gerar um **dataset rotulado por gente**, e quem decide vira um
 modelo treinado.
@@ -11,25 +11,25 @@ modelo treinado.
 |---|---|
 | `device/` | ESP32, PlatformIO e Wokwi |
 | `NodeRED/` | MQTT → InfluxDB. Só transporte, sem decisão e sem dashboard |
-| `colab/app19_coleta_e_rotulagem.ipynb` | Consulta SQL, rótulos e CSV |
-| `colab/app19_treinamento_smartbag_rf.ipynb` | RF: `.pkl`, header micromlgen e scaler |
-| `colab/app19_treinamento_smartbag_mlp.ipynb` | MLP: `.tflite`, header e scaler |
+| `colab/coleta_e_rotulagem.ipynb` | Consulta SQL, rótulos e CSV |
+| `colab/treinamento_smartbag_rf.ipynb` | RF: `.pkl`, header micromlgen e scaler |
+| `colab/treinamento_smartbag_mlp.ipynb` | MLP: `.tflite`, header e scaler |
 
 Sem n8n e sem Grafana neste app. Aqui não há notificação para mandar nem histórico para
-mostrar — o destino do dado é um CSV de treinamento. O n8n volta no app20, como ponte da
+mostrar — o destino do dado é um CSV de treinamento. O n8n volta no app de inferência na nuvem, como ponte da
 inferência.
 
 ## A trilha
 
 | App | O que roda | Onde |
 |---|---|---|
-| **app19** | coleta e treinamento | ESP32 + Colab |
-| app20 | a **mesma RF**, servida por API | FastAPI, via n8n |
-| app21 | a **mesma RF**, embarcada | ESP32, micromlgen |
-| app22 | a MLP, embarcada | ESP32, TFLite |
+| **este app** | coleta e treinamento | ESP32 + Colab |
+| app de inferência na nuvem | a **mesma RF**, servida por API | FastAPI, via n8n |
+| app da floresta embarcada | a **mesma RF**, embarcada | ESP32, micromlgen |
+| app da MLP embarcada | a MLP, embarcada | ESP32, TFLite |
 
-São dois eixos, um de cada vez. **app20 → app21** troca *onde* o modelo roda, mantendo o
-modelo. **app21 → app22** troca *o modelo*, mantendo a borda. Se os dois mudassem juntos,
+São dois eixos, um de cada vez. **app de inferência na nuvem → app da floresta embarcada** troca *onde* o modelo roda, mantendo o
+modelo. **app da floresta embarcada → app da MLP embarcada** troca *o modelo*, mantendo a borda. Se os dois mudassem juntos,
 nenhuma comparação diria nada.
 
 ## Executar
@@ -56,7 +56,7 @@ nenhuma comparação diria nada.
    rodada/situação e baixe `smartbag_dataset.csv`.
 8. Envie **o mesmo CSV** aos dois Colabs de treinamento.
 
-Uma rodada é uma volta completa pelas sete situações, como no app17-7. Depois da última,
+Uma rodada é uma volta completa pelas sete situações, como no app de coleta do motor. Depois da última,
 o botão azul volta à primeira e incrementa `rodada`. Parar e iniciar mantém rodada e
 situação e reinicia os máximos. O Serial só exibe dados — este firmware não assina nada.
 
@@ -83,8 +83,8 @@ chegou e o Influx pula campo nulo; o Colab remove as linhas incompletas.
 CLASSES = ["ENTREGA_OK", "REVISAR_ENTREGA"]   # 0 e 1
 ```
 
-O índice **é** o código. É o inteiro que o `predict()` do micromlgen devolve no app21, e
-o lado em que a sigmoide da MLP decide no app22. Os notebooks gravam esse mapa nos
+O índice **é** o código. É o inteiro que o `predict()` do micromlgen devolve no app da floresta embarcada, e
+o lado em que a sigmoide da MLP decide no app da MLP embarcada. Os notebooks gravam esse mapa nos
 metadados; os firmwares de inferência leem dali, não de memória.
 
 ## Saídas dos Colabs
@@ -104,18 +104,18 @@ silenciosamente pelo lado errado.
 `StandardScaler` são os mesmos. Os dois imprimem média e escala justamente para você
 conferir. Na MLP o scaler é necessidade — `luz` chega a 4095 e `mov_max` fica abaixo de
 20, e sem normalizar a luz domina o gradiente. Na RF ele está ali por simetria com o
-app22 e com o app30: árvore compara uma feature por vez com um limiar, e escala não muda
+app da MLP embarcada e com o app de ocupação com micromlgen: árvore compara uma feature por vez com um limiar, e escala não muda
 a ordem. O que não pode é treinar numa escala e inferir em outra.
 
-Os notebooks não trazem dataset nem modelo pré-treinados. Como no app17-7, a última
+Os notebooks não trazem dataset nem modelo pré-treinados. Como no app de coleta do motor, a última
 rodada fica no teste e as anteriores no treino, igual nos dois modelos. Ao reiniciar o
 ESP32, `rodada` volta a 1: não misture execuções no mesmo CSV.
 
 ## Referências
 
-Firmware e plataforma vêm do app15. O protocolo de botões, rodada e split por grupo vem
-do app17-7; o padrão de API e a pinagem de versões, do app18. Como extensão, o app30 traz
-RF embarcada com scaler e o app31 traz MicroTFLite.
+Firmware e plataforma vêm do NexoLog. O protocolo de botões, rodada e split por grupo vem
+do app de coleta do motor; o padrão de API e a pinagem de versões, do app do motor. Como extensão, o app de ocupação com micromlgen traz
+RF embarcada com scaler e o app de TensorFlow Lite traz MicroTFLite.
 
 LDR lido direto com `analogRead()`, inclusive nos extremos 0 e 4095. O controle do
 [componente Wokwi](https://docs.wokwi.com/parts/wokwi-photoresistor-sensor) continua em

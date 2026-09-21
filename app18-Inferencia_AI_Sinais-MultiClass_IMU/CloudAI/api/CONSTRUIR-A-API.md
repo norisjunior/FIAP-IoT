@@ -1,4 +1,4 @@
-# Construir a API do app25, do zero
+# Construir a API, do zero
 
 A API recebe as 8 features de uma janela do ESP32, consulta o modelo treinado
 e devolve a classe e as probabilidades em JSON.
@@ -88,7 +88,7 @@ import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-app = FastAPI(title="app25 - IMU multiclasse: 4 estados do motor")
+app = FastAPI(title="IMU multiclasse: 4 estados do motor")
 
 MODELO_ARQUIVO = os.getenv("MODELO_ARQUIVO", "modelo_motor_multiclasse.pkl")
 modelo = joblib.load(MODELO_ARQUIVO)
@@ -146,7 +146,7 @@ Campos extras, como `device`, são ignorados por padrão.
 @app.get("/")
 def raiz():
     return {
-        "servico": "app25 - estado do motor (multiclasse)",
+        "servico": "estado do motor (multiclasse)",
         "modelo": type(modelo[-1]).__name__,
         "features": FEATURES,
         "classes": list(modelo.classes_),

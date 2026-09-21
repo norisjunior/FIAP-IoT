@@ -7,7 +7,7 @@ O que este firmware faz: mede o acelerômetro, fecha uma janela de 1 s, calcula
 acende a saída da classe prevista. Não há um único `if` sobre vibração ou
 inclinação — e também não há rede nenhuma.
 
-Comece com `device/src/app18-edge-inferencia-rf.cpp` vazio.
+Comece com `device/src/inferencia-na-borda.cpp` vazio.
 
 ---
 
@@ -18,7 +18,7 @@ produzidos por um firmware específico, com uma configuração específica de
 sensor. **Se a inferência produzir os números de outro jeito, o modelo recebe
 features fora da distribuição em que foi treinado — e erra sem avisar.**
 
-Nove coisas precisam ser idênticas às do `app17-7`, que gerou o dataset. Elas
+Nove coisas precisam ser idênticas às do app de coleta, que gerou o dataset. Elas
 aparecem marcadas com **⚖ paridade** ao longo do guia:
 
 | # | O quê | Valor |
@@ -470,7 +470,7 @@ Depois, uma saída acesa por segundo, trocando conforme você move o motor.
 
 ## Checklist de paridade
 
-Antes de acreditar numa predição, confira contra o `app17-7`, que gerou o
+Antes de acreditar numa predição, confira contra o app de coleta, que gerou o
 dataset:
 
 - [ ] `#define MPU_TYPE` — o mesmo chip da coleta

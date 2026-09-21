@@ -1,15 +1,15 @@
-# Construir o fluxo do app19 no Node-RED, do zero
+# Construir o fluxo no Node-RED, do zero
 
 Duas iterações. Cada uma roda.
 
 1. A amostra da bag chegando no debug.
 2. A mesma amostra gravada no InfluxDB.
 
-No app15 o Node-RED **decidia** — dois switches em série e um comando de volta para o
-ESP32. Aqui ele não decide nada: o app19 é um **gerador de dataset**, e quem vai decidir
+No NexoLog o Node-RED **decidia** — dois switches em série e um comando de volta para o
+ESP32. Aqui ele não decide nada: este app é um **gerador de dataset**, e quem vai decidir
 é o modelo, depois de treinado. O fluxo é só transporte.
 
-Firmware do app19 gravado e publicando:
+Firmware deste app gravado e publicando:
 [CONSTRUIR-O-FIRMWARE.md](../device/CONSTRUIR-O-FIRMWARE.md).
 
 Plataforma no ar: entre no diretório `IoT-platform` que você recebeu e rode
@@ -22,7 +22,7 @@ Sobem Mosquitto, Node-RED, n8n, InfluxDB e Grafana juntos. Editor do Node-RED em
 http://localhost:1880, com **admin / FIAPIoT**. Para parar, `docker compose down` na
 mesma pasta — nunca com remoção de volumes, ou os fluxos somem.
 
-> Desative os fluxos do app14/app15 antes de ativar este. Eles assinam outro tópico, mas
+> Desative os fluxos do NexoLog/NexoLog antes de ativar este. Eles assinam outro tópico, mas
 > deixar três fluxos ligados no mesmo Node-RED só atrapalha a leitura do debug.
 
 ---
@@ -83,13 +83,13 @@ continua útil). Name `Campos e tags`:
 
 ```javascript
 // device, rodada e situacao saem dos campos e viram tags. Mandar nos dois
-// lugares e conflito de schema, como no app15.
+// lugares e conflito de schema, como no NexoLog.
 const {device, rodada, situacao, ...campos} = msg.payload;
 msg.payload = [campos, {device, rodada: String(rodada), situacao}];
 return msg;
 ```
 
-É a **mesma função do app15**, com duas tags a mais. O `influxdb out` espera
+É a **mesma função do NexoLog**, com duas tags a mais. O `influxdb out` espera
 `[campos, tags]`: o primeiro objeto vira os valores medidos, o segundo vira as etiquetas
 pelas quais você filtra depois.
 
@@ -119,7 +119,7 @@ exportação sempre remove. Cada aluno cola o dele.
 > local, e ele serve muito bem para dashboard — mas o Colab de coleta consulta com
 > **SQL**, pelo `InfluxDBClient3`, e essa API só existe no InfluxDB v3 (Cloud). Apontar
 > este nó para `influxdb:8086` grava normalmente e só quebra lá na frente, no Colab, com
-> um erro que não menciona versão nenhuma. Da `IoT-platform`, o app19 usa o Mosquitto e o
+> um erro que não menciona versão nenhuma. Da `IoT-platform`, este app usa o Mosquitto e o
 > Node-RED.
 
 Deploy e colete de novo.
@@ -129,7 +129,7 @@ Deploy e colete de novo.
 - [ ] `rodada` e `situacao` aparecem como tags, não como colunas de valor
 
 **Campo `null` é simplesmente pulado na escrita** — as outras cinco features do mesmo
-segundo entram normalmente. Isso foi conferido no app15; a função não precisa filtrar
+segundo entram normalmente. Isso foi conferido no NexoLog; a função não precisa filtrar
 nada.
 
 | Deu errado | Onde olhar |
@@ -154,5 +154,5 @@ separação é no nome da measurement, não numa convenção que alguém precisa
 
 Duas rodadas completas das sete situações, sem reiniciar o ESP32 — o protocolo está no
 [Guia-SmartBag.md](../Guia-SmartBag.md). Depois,
-[app19_coleta_e_rotulagem.ipynb](../colab/app19_coleta_e_rotulagem.ipynb) consulta esta
+[coleta_e_rotulagem.ipynb](../colab/coleta_e_rotulagem.ipynb) consulta esta
 measurement por SQL, rotula pela situação e exporta o CSV.

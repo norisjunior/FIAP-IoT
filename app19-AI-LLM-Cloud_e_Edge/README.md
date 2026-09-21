@@ -1,4 +1,4 @@
-# app19 — O dado deixa de ser descartado
+# O dado deixa de ser descartado
 
 Até aqui, cada janela do motor era classificada e esquecida. A predição acendia
 um LED e acabava ali: não havia como perguntar *"como o motor estava ontem à

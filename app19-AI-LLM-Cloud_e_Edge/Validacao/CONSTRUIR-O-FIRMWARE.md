@@ -11,7 +11,7 @@ As cinco primeiras etapas montam um dispositivo que decide sozinho. A sexta dá
 voz a ele — sem tirar a autonomia: mesmo com a rede fora do ar, as cinco
 primeiras continuam funcionando.
 
-Comece com `device/src/app19-validacao-device.cpp` vazio.
+Comece com `device/src/validacao-device.cpp` vazio.
 
 ---
 
@@ -22,7 +22,7 @@ produzidos por um firmware específico, com uma configuração específica de
 sensor. **Se a inferência produzir os números de outro jeito, o modelo recebe
 features fora da distribuição em que foi treinado — e erra sem avisar.**
 
-Nove coisas precisam ser idênticas às do `app17-7`, que gerou o dataset. Elas
+Nove coisas precisam ser idênticas às do app de coleta, que gerou o dataset. Elas
 aparecem marcadas com **⚖ paridade** ao longo do guia:
 
 | # | O quê | Valor |
@@ -638,7 +638,7 @@ Deve aparecer um JSON por segundo, com as oito features e a `predicao_borda`.
 
 ## Checklist de paridade
 
-Antes de acreditar numa predição, confira contra o `app17-7`, que gerou o
+Antes de acreditar numa predição, confira contra o app de coleta, que gerou o
 dataset:
 
 - [ ] `#define MPU_TYPE` — o mesmo chip da coleta
