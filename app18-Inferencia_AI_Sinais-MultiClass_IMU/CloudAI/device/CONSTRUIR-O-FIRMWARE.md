@@ -93,7 +93,8 @@ void setup() {
   /* ⚖ paridade 4 — calibra na posição de uso, com o motor PARADO.
      Os offsets entram em todas as leituras: calibrar inclinado desloca
      mean_ax/ay/az de todas as classes de uma vez.
-     No Wokwi, comente esta linha: trava (FIFO ausente). */
+     No Wokwi, COMENTE esta linha: o simulador não tem a FIFO do MPU e o
+     ESP32 aborta com "Guru Meditation: IntegerDivideByZero". */
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
   mpu.calibrateAccelGyro(&calib);

@@ -137,7 +137,12 @@ void setup() {
 
   Serial.println("Mantenha o sensor parado e nivelado para calibrar...");
   delay(2000);
-  mpu.calibrateAccelGyro(&calib);   // habilite no ESP32 físico; trava no Wokwi (FIFO ausente)
+  // ---- ATENÇÃO: no Wokwi, COMENTE a linha abaixo ----
+  // O simulador não implementa a FIFO do MPU, e o FastIMU divide pela contagem
+  // de pacotes lidos dela. Com zero pacotes o ESP32 ABORTA, logo depois da
+  // mensagem acima, com "Guru Meditation Error: IntegerDivideByZero".
+  // No ESP32 físico ela é necessária: é o que zera o viés do sensor.
+  mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
 
   Serial.println("MPU iniciado");

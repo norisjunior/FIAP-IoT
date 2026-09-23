@@ -113,7 +113,8 @@ Para montar o firmware do zero, em cinco etapas que compilam:
 No Wokwi a **inclinação** sai: o MPU6050 tem controle de aceleração em X, Y e Z.
 A `anomalia` não, porque ela é vibração e o controle parado deixa as 100
 amostras da janela idênticas. Troque o `#define MPU_TYPE` para `MPU6050` e
-comente a linha `mpu.calibrateAccelGyro(&calib);`, que trava no simulador.
+comente a linha `mpu.calibrateAccelGyro(&calib);` — sem isso o ESP32 aborta no
+simulador, com "Guru Meditation: IntegerDivideByZero".
 
 ## Estrutura
 

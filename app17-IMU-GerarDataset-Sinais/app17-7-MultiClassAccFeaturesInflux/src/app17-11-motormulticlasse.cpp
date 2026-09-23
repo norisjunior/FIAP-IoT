@@ -6,7 +6,9 @@ PARA USAR NO WOKWI:
 - Ajustar as credenciais WiFi e o IP do MQTT_SERVER (ou usar as linhas comentadas do Wokwi abaixo)
 - Ajustar #define MPU_TYPE:
   - #define MPU_TYPE MPU6050
-- Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);` (trava no Wokwi, FIFO ausente)
+- Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);` — sem isso o ESP32
+  ABORTA com "Guru Meditation Error: IntegerDivideByZero" (o Wokwi não tem a
+  FIFO do MPU)
 - As classes de INCLINAÇÃO saem no simulador: o MPU6050 do Wokwi tem controle
   de aceleração em X, Y e Z. Ajuste até o Serial mostrar mean_az perto de 0,91
   e mean_ax perto de ±0,42, que é o que 25 graus produzem.
@@ -177,7 +179,12 @@ void setup() {
 
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
-  mpu.calibrateAccelGyro(&calib);   // habilite no ESP32 físico; trava no Wokwi (FIFO ausente)
+  // ---- ATENÇÃO: no Wokwi, COMENTE a linha abaixo ----
+  // O simulador não implementa a FIFO do MPU, e o FastIMU divide pela contagem
+  // de pacotes lidos dela. Com zero pacotes o ESP32 ABORTA, logo depois da
+  // mensagem acima, com "Guru Meditation Error: IntegerDivideByZero".
+  // No ESP32 físico ela é necessária: é o que zera o viés do sensor.
+  mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
 
   Serial.println("MPU iniciado");

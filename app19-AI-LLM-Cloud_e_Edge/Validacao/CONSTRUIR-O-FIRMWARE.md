@@ -105,7 +105,9 @@ void setup() {
 
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
-  mpu.calibrateAccelGyro(&calib);   // ⚖ paridade 4 — comente esta linha no Wokwi
+  // ⚖ paridade 4. No Wokwi, COMENTE a linha abaixo: o simulador não tem a FIFO
+  // do MPU e o ESP32 aborta com "Guru Meditation Error: IntegerDivideByZero".
+  mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
 
   Serial.println("MPU iniciado");
