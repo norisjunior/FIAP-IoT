@@ -105,7 +105,9 @@ void setup() {
 
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
-  mpu.calibrateAccelGyro(&calib);   // ⚖ paridade 4 — comente esta linha no Wokwi
+  // ⚖ paridade 4. No Wokwi, COMENTE a linha abaixo: o simulador não tem a FIFO
+  // do MPU e o ESP32 aborta com "Guru Meditation Error: IntegerDivideByZero".
+  mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
 
   Serial.println("MPU iniciado");
@@ -690,5 +692,7 @@ precisam de rede, de n8n nem de banco:
 O degrau 5 é o que separa os dois mundos: se ele passa e o 7 falha, o
 dispositivo está impecável e o problema está no n8n, na API ou no banco.
 
-No Wokwi não há como inclinar o MPU: só `operando` e `anomalia` têm equivalente
-no simulador. O ciclo completo até o PostgreSQL, esse funciona inteiro.
+No Wokwi dá para reproduzir a **inclinação**, com o controle de aceleração do
+MPU6050 em X, Y e Z. O que **não** sai é a `anomalia`, que é vibração: com o
+controle parado as 100 amostras da janela ficam idênticas e `std_*` e `p2p_mag`
+dão zero. O ciclo completo até o PostgreSQL, esse funciona inteiro.

@@ -1,0 +1,14 @@
+# As quatro primeiras linhas sao as MESMAS da primeira celula do notebook de
+# treinamento. numpy e scikit-learn sao as que quebram o joblib.load do
+# preprocess_aqi.pkl se divergirem; tensorflow e keras, o load do .keras.
+#
+# tensorflow 2.20, numpy 2.1 e pandas 2.2.3 sao os primeiros com wheel para
+# Python 3.13.
+tensorflow==2.20.0
+keras==3.10.0
+scikit-learn==1.5.2
+joblib==1.4.2
+pandas==2.2.3
+numpy==2.1.0
+fastapi==0.115.4
+uvicorn[standard]==0.32.0

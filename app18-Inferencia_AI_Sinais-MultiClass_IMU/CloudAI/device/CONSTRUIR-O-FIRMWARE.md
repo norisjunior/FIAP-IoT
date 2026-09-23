@@ -93,7 +93,8 @@ void setup() {
   /* ⚖ paridade 4 — calibra na posição de uso, com o motor PARADO.
      Os offsets entram em todas as leituras: calibrar inclinado desloca
      mean_ax/ay/az de todas as classes de uma vez.
-     No Wokwi, comente esta linha: trava (FIFO ausente). */
+     No Wokwi, COMENTE esta linha: o simulador não tem a FIFO do MPU e o
+     ESP32 aborta com "Guru Meditation: IntegerDivideByZero". */
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
   mpu.calibrateAccelGyro(&calib);
@@ -727,6 +728,8 @@ provavelmente o `Send Input Data`.
 > a cada resposta `anomalia` da API, mesmo se a classe se repetir.
 > Publicar diretamente em `.../cmd` testa apenas a saída do ESP32, sem acionar o Telegram.
 
-No Wokwi não há como inclinar o MPU: só `operando` e `anomalia` têm
-equivalente no simulador. O ciclo MQTT → n8n → API → MQTT, esse funciona
-inteiro.
+No Wokwi dá para reproduzir a **inclinação**: o MPU6050 tem controle de
+aceleração em X, Y e Z. Ajuste até o Serial mostrar `mean_az ≈ 0,91` e
+`mean_ax ≈ ±0,42`. O que **não** sai é a `anomalia`, que é vibração: com o
+controle parado, as 100 amostras da janela ficam idênticas e `std_*` e
+`p2p_mag` dão zero. O ciclo MQTT → n8n → API → MQTT, esse funciona inteiro.
