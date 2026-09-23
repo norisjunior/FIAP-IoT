@@ -51,7 +51,11 @@
         0
       ],
       "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f004",
-      "name": "Predict Motor"
+      "name": "Predict Motor",
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "parameters": {
@@ -129,6 +133,28 @@
           "name": "Telegram - FIAPIoTBot"
         }
       }
+    },
+    {
+      "parameters": {
+        "chatId": "6239670426",
+        "text": "=⚠️ A predição falhou.\nO motor continua medindo, mas ninguém está classificando.\n\nErro: {{ $json.error?.message || $json.error || 'sem detalhe' }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        288
+      ],
+      "id": "00703832-8734-451e-8262-192b9c2d6a93",
+      "name": "FALHA: a API nao respondeu",
+      "webhookId": "d0791e0c-2c8a-41f2-a108-a6ba0064bb9c",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -165,6 +191,13 @@
           },
           {
             "node": "E anomalia?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FALHA: a API nao respondeu",
             "type": "main",
             "index": 0
           }

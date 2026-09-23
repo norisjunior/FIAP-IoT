@@ -58,14 +58,22 @@ Passo a passo: [Construir o fluxo n8n](CloudAI/n8n/CONSTRUIR-O-FLUXO.md).
 |---|---|---|
 | 1 | `MQTT Trigger` | topic `FIAPIoT/motor/multiclasse` |
 | 2 | `Code` | *Run Once for Each Item* — converte a mensagem em JSON |
-| 3 | `HTTP Request` | `POST http://host.docker.internal:8000/predict`, body JSON `{{ $json }}` |
+| 3 | `HTTP Request` | `POST http://host.docker.internal:8000/predict`, body JSON `{{ $json }}`, com **On Error: continue using error output** |
 | 4 | `MQTT` | topic `FIAPIoT/motor/multiclasse/cmd`, **Send Input Data: OFF**, message `{{ $json.class }}` |
 | 5 | `IF` | `{{ $json.class }}` é igual a `anomalia` |
 | 6 | `Telegram` | conectado à saída **true** do IF |
+| 7 | `Telegram` | conectado à **saída de erro** do nó 3 |
 
-Os nós **4 e 5 saem diretamente do nó 3**. Todas as classes voltam ao ESP32;
-o Telegram recebe um alerta a cada predição `anomalia`, inclusive repetida.
-A validação das oito features fica na API.
+Os nós **4 e 5 saem diretamente do nó 3**, em paralelo: o alerta nunca atrasa
+o LED. Todas as classes voltam ao ESP32.
+
+O nó **7 sai da saída de erro** do nó 3. Sem ele, a API fora do ar não avisa
+ninguém: o ESP32 continua publicando e o LED **fica aceso na classe velha**,
+parecendo um sistema que funciona.
+
+O Telegram recebe um alerta a cada predição `anomalia`, **inclusive repetida**:
+uma anomalia de meio minuto manda meia dúzia de mensagens. É assim de
+propósito — o alerta parar poderia ser lido como problema resolvido.
 
 - **Send Input Data desligado:** o ESP32 espera somente o nome da classe.
 - **URL:** com n8n no Docker Desktop e API no Windows, use `host.docker.internal`.
