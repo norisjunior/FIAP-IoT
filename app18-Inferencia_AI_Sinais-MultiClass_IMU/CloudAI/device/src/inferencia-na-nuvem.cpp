@@ -29,8 +29,12 @@ PARA USAR NO WOKWI:
 - Ajustar #define MPU_TYPE:
   - #define MPU_TYPE MPU6050
 - Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);` (trava no Wokwi, FIFO ausente)
-- As classes de inclinação não têm equivalente fiel no simulador (não há como
-  inclinar o MPU6050 do Wokwi); serve para testar o loop MQTT -> API -> MQTT.
+- As classes de INCLINAÇÃO saem no simulador: o MPU6050 do Wokwi tem controle
+  de aceleração em X, Y e Z. Ajuste até o Serial mostrar mean_az perto de 0,91
+  e mean_ax perto de ±0,42, que é o que 25 graus produzem.
+- A ANOMALIA não sai. Ela é vibração, e com o controle parado as 100 amostras
+  da janela ficam idênticas: std_* e p2p_mag dão zero.
+- Ainda assim serve para testar o loop MQTT -> API -> MQTT.
 */
 
 #include <Arduino.h>

@@ -727,6 +727,8 @@ provavelmente o `Send Input Data`.
 > a cada resposta `anomalia` da API, mesmo se a classe se repetir.
 > Publicar diretamente em `.../cmd` testa apenas a saída do ESP32, sem acionar o Telegram.
 
-No Wokwi não há como inclinar o MPU: só `operando` e `anomalia` têm
-equivalente no simulador. O ciclo MQTT → n8n → API → MQTT, esse funciona
-inteiro.
+No Wokwi dá para reproduzir a **inclinação**: o MPU6050 tem controle de
+aceleração em X, Y e Z. Ajuste até o Serial mostrar `mean_az ≈ 0,91` e
+`mean_ax ≈ ±0,42`. O que **não** sai é a `anomalia`, que é vibração: com o
+controle parado, as 100 amostras da janela ficam idênticas e `std_*` e
+`p2p_mag` dão zero. O ciclo MQTT → n8n → API → MQTT, esse funciona inteiro.

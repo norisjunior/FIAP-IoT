@@ -505,6 +505,9 @@ Sem rede, o caminho é curto — e cada degrau isola uma peça:
    LED errado acende, o problema é a etapa 5; se o número está errado, é o
    modelo ou a paridade.
 
-No Wokwi não há como inclinar o MPU: só `operando` e `anomalia` têm equivalente
-no simulador. Em compensação, aqui não é preciso configurar Wi-Fi nenhum — o
-firmware roda inteiro sem rede.
+No Wokwi dá para reproduzir a **inclinação**, com o controle de aceleração do
+MPU6050 em X, Y e Z: ajuste até o Serial mostrar `mean_az ≈ 0,91` e
+`mean_ax ≈ ±0,42`. O que **não** sai é a `anomalia`, que é vibração — com o
+controle parado as 100 amostras da janela ficam idênticas, e `std_*` e
+`p2p_mag` dão zero. Em compensação, aqui não é preciso configurar Wi-Fi
+nenhum — o firmware roda inteiro sem rede.

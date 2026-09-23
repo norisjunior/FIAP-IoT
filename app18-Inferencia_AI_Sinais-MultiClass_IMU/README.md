@@ -94,8 +94,9 @@ app de coleta — de entrada do rótulo humano viraram saída do rótulo do mode
 
 LED onboard aceso = conectado ao broker.
 
-No Wokwi não há como inclinar o MPU6050: só `operando` e `anomalia` têm
-equivalente no simulador.
+No Wokwi a **inclinação** sai, pelo controle de aceleração do MPU6050. A
+`anomalia` não: ela é vibração, e o controle parado deixa as 100 amostras da
+janela idênticas.
 
 ## 5) A mesma janela, sem nuvem
 
