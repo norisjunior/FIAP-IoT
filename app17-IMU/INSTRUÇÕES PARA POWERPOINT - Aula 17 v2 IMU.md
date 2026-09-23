@@ -2,11 +2,15 @@
 
 Arquivo alvo: `IoT - Aula 17 v2 - Machine Leaning com dados IoT parte 4 - IMU Multiclasse.pptx`
 
+> **O deck está construído — 41 slides.** As Seções 0 a 9 abaixo são o registro
+> de como ele foi montado, e não precisam ser aplicadas de novo. O que está em
+> aberto é a **Seção 10**, que alinha os slides com o estado atual dos apps.
+
 ## Como usar
 
 1. Abra o PowerPoint com o assistente.
 2. Cole o **Bloco fixo** uma vez, no início da conversa.
-3. Depois cole **uma seção por vez, na ordem**. Confira antes de seguir.
+3. Depois cole **um item por vez**, na ordem. Confira antes de seguir.
 
 > Cada seção usa como âncora o **título da divisória**, não o número do slide.
 > A **Seção 0** existe para dar nomes únicos às divisórias — hoje três delas se
@@ -17,27 +21,15 @@ Arquivo alvo: `IoT - Aula 17 v2 - Machine Leaning com dados IoT parte 4 - IMU Mu
 
 ## Estado atual do arquivo
 
-**14 slides**, o esqueleto mínimo. Estrutura hoje:
+**41 slides, montados.** As Seções 0 a 9 partiram de um esqueleto de 14 slides
+herdado do deck de AQI e o transformaram neste. Ficam aqui como registro: se
+alguma delas precisar ser refeita, o texto está pronto.
 
-| # | O que é | Situação |
-|---|---|---|
-| 1–3 | capa, capa da disciplina, agenda (*Sinais*) | manter |
-| 4 | divisória **Aplicação IoT apoiada por ML** | manter |
-| 5 | divisória **ML: Classificação multiclasse** | manter |
-| 6 | Estudo de caso — as 4 classes do equipamento | **já em IMU**, manter |
-| 7 | Problema de negócio + features do MPU | **já em IMU**, só o título diz "AQI" |
-| 8 | divisória **ML: Classificação multiclasse** (2ª) | Seção 0 renomeia |
-| 9 | Arquitetura — resíduo do AQI ("INFO: Aceitável / CRÍTICO: Perigoso") | **Seção 2 substitui** |
-| 10 | divisória **ML: Classificação multiclasse** (3ª) | Seção 0 renomeia |
-| 11 | As peças — ainda AQI (12 sensores, Flask, Telegram) | **Seção 4 substitui** |
-| 12 | divisória **HANDS ON!** | manter |
-| 13 | divisória **Recap** | Seção 8 reescreve |
-| 14 | encerramento / copyright | manter |
+A tabela de 14 slides que existia nesta seção descrevia aquele esqueleto e não
+corresponde mais a nada — foi removida.
 
-Os slides 6 e 7 **já falam de IMU** — o conteúdo está certo. Nenhuma seção os
-reescreve; a Seção 0 só corrige o título do 7.
-
-Resultado final previsto: **37 slides**.
+O que está em aberto é a **Seção 10**, que alinha o deck com o estado atual dos
+apps. Ela não cria nem apaga slide: corrige cinco pontos que envelheceram.
 
 ---
 
@@ -75,26 +67,29 @@ O CASO - motor com acelerômetro
 - Nenhuma das duas famílias sozinha resolve as 4 classes.
 
 OS DOIS PIPELINES - é a espinha dorsal da aula inteira
-Treinamento (já feito, app17-7):
+Treinamento (já feito, na aula de coleta):
   ESP32 -> MQTT Broker -> Node-RED -> InfluxDB -> Colab -> MLPClassifier (.pkl)
-Inferência (o que vamos construir, app25):
+Inferência (o que vamos construir, na nuvem):
   ESP32 -> MQTT Broker -> n8n -> FastAPI (.pkl) -> n8n -> MQTT Broker -> ESP32
 
 ONDE ESTA AULA FICA NA TRILHA
 - Aula 14: dataset com SINAIS - acelerômetro, janela, features. É a aula
-  em que o app17-7 nasceu.
+  em que o app de coleta nasceu.
 - Aula 17 v2 (esta): treinar o multiclasse e colocá-lo para inferir.
 - Aulas 18 e 19 (próximas): o mesmo n8n ganha PostgreSQL e um agente LLM.
   Nesta aula o n8n aparece SÓ como orquestrador - nada de LLM ainda.
 
 O QUE JÁ FOI VISTO SOBRE n8n - não repita do zero
-- Na aula do app28 (AQI) a turma já montou um fluxo n8n com MQTT Trigger,
+- Na aula de qualidade do ar a turma já montou um fluxo n8n com MQTT Trigger,
   nó Code, nó IF e HTTP Request. O n8n em si já é conhecido.
 - O que é NOVO aqui: o fluxo VOLTA para o dispositivo por MQTT, em vez de
   terminar num alerta de Telegram. O ESP32 é agora consumidor da predição.
 
 NUNCA CITE
 - o caso AQI / qualidade do ar, os 12 poluentes, o Flask
+- NÚMERO DE APP em slide nenhum. Os apps são renumerados de tempos em
+  tempos e o número envelhece. Diga o que o app FAZ: "a coleta", "a
+  inferência na nuvem", "a inferência na borda".
 Tudo isso é da versão anterior deste arquivo e está sendo substituído.
 Onde o AQI aparecer, é para trocar - nunca para manter ao lado.
 EXCEÇÃO: o Telegram continua no fluxo, mas com outro papel - no AQI ele
@@ -164,6 +159,7 @@ COMO VAMOS TRABALHAR
 | 7 | O fluxo n8n | após a Seção 6, antes de **HANDS ON!** | 6 |
 | 8 | Roteiro e Recap | após **HANDS ON!** e na divisória **Recap** | 3 |
 | **9** | **Correções** | deck já montado, 40 slides | −1 (apaga um) |
+| **10** | **Alinhar com os apps** | deck montado, 41 slides | 0 (só corrige) |
 
 ---
 
@@ -276,7 +272,7 @@ VISUAL PRINCIPAL - FLUXO HORIZONTAL de 6 caixas com setas, ocupando a
 largura do slide. Numere as etapas de 1 a 6 e use ANIMAÇÃO por etapas:
 
   1 ESP32          2 MQTT Broker     3 Node-RED
-  app17-7          Mosquitto         monta o ponto
+  a coleta         Mosquitto         monta o ponto
   8 features       tópico            e grava
   + label          .../multiclasse
         |                |                 |
@@ -516,10 +512,10 @@ SLIDE 4.1 - Título: "Dois pipelines, a mesma origem"
 VISUAL PRINCIPAL - DOIS FLUXOS HORIZONTAIS empilhados, um sobre o outro,
 alinhados pelas duas primeiras caixas:
 
-  TREINAMENTO (app17-7) - feito:
+  TREINAMENTO (a coleta) - feito:
   ESP32 -> MQTT -> Node-RED -> InfluxDB -> Colab -> .pkl
 
-  INFERÊNCIA (app25) - agora:
+  INFERÊNCIA (na nuvem) - agora:
   ESP32 -> MQTT -> n8n -> FastAPI (.pkl) -> n8n -> MQTT -> ESP32
 
 Desenhe um RETÂNGULO TRACEJADO em volta das duas primeiras caixas de cada
@@ -637,7 +633,7 @@ este. A mudança visual é pequena de propósito: o aluno tende a achar que
 mudar - elas são o contrato com o .pkl.
 
 O ts_epoch_ms merece uma pausa, porque é o menos óbvio dos quatro. No
-app17-7 as janelas iam para um BANCO DE SÉRIES TEMPORAIS, onde o tempo
+na coleta as janelas iam para um BANCO DE SÉRIES TEMPORAIS, onde o tempo
 literalmente é o eixo: sem carimbo não dá para ordenar, nem para saber
 quando cada rodada aconteceu. Aqui a janela é medida, classificada e
 respondida em menos de um segundo, e depois não serve para mais nada -
@@ -728,7 +724,7 @@ na cor certa:
 | —       | tudo apagado | a nuvem ainda não respondeu |
 
 Ao lado da tabela, uma NOTA em destaque:
-"21 e 18 eram os dois BOTÕES do app17-7. Os pinos com que um humano rotulava
+"21 e 18 eram os dois BOTÕES do app de coleta. Os pinos com que um humano rotulava
 agora mostram o rótulo que o modelo escolheu."
 
 DESTAQUE no rodapé:
@@ -1107,7 +1103,7 @@ CAIXA lateral, VERDE, "sinal de que funcionou":
     MODELO:  anomalia -> BUZZER
 
 MARCADORES (2):
-- Repositório: app25-Inferencia-AI-API_Sinais-MultiClass_IMU
+- Repositório: a pasta CloudAI do app de inferência do motor
 - Erro? Volte ao slide "Testar por partes".
 
 NOTAS: reservar tempo para o passo 3 - são TRÊS credenciais a selecionar
@@ -1124,7 +1120,7 @@ Título: "O que mudou de ponta a ponta"
 
 VISUAL PRINCIPAL - TABELA de 6 linhas, três colunas:
 
-|                  | Treinamento (app17-7)   | Inferência (app25)      |
+|                  | Treinamento (a coleta)  | Inferência (na nuvem)   |
 | Quem rotula      | um humano, botão 18     | o modelo                |
 | Orquestração     | Node-RED                | n8n                     |
 | Destino do dado  | InfluxDB                | FastAPI                 |
@@ -1296,23 +1292,249 @@ Em cada um, remova o indicado. Não acrescente nada.
   está no slide.
 ```
 
+## Seção 10 — Alinhar com os apps
+
+Os apps mudaram depois que o deck foi montado. São **cinco correções**, todas
+ancoradas pelo **título do slide**. Nenhum slide é criado ou apagado.
+
+A **10.1** e a **10.5** reescrevem conteúdo — a 10.5 mexe em três slides, porque
+o fluxo do n8n mudou de desenho. As outras três são troca de texto.
+
+> **Por que a 10.1 existe.** O notebook de treinamento passou a ler o InfluxDB
+> por **SQL**, pelo cliente do InfluxDB 3. O slide ainda mostra **Flux**. Quem
+> copiar o slide não roda o notebook.
+
+```
+SEÇÃO 10. Cinco correções, ancoradas pelo TÍTULO do slide. Nenhum
+slide novo, nenhum apagado. Aplique na ordem.
+
+--------------------------------------------------------------------
+10.1 - O CÓDIGO DO COLAB: DE FLUX PARA SQL
+
+Slide com o título "Do InfluxDB para o DataFrame".
+
+SUBSTITUA o bloco de código inteiro por:
+
+    from influxdb_client_3 import InfluxDBClient3
+    import pandas as pd
+
+    INFLUX_URL    = "https://us-east-1-1.aws.cloud2.influxdata.com"
+    INFLUX_TOKEN  = "SEU_TOKEN_INFLUX_CLOUD"
+    INFLUX_BUCKET = "IoTSensores"   # o "database" no InfluxDB 3
+    MEASUREMENT   = "vibracao_multiclasse"
+
+    client = InfluxDBClient3(host=INFLUX_URL, token=INFLUX_TOKEN,
+                             database=INFLUX_BUCKET)
+
+    sql = f'''
+    SELECT time, "label", "rodada", {colunas}
+    FROM "{MEASUREMENT}"
+    WHERE time >= now() - INTERVAL '30 days'
+    ORDER BY time
+    '''
+
+    df = client.query(query=sql, language="sql").to_pandas()
+
+APAGUE a linha INFLUX_ORG, se ela aparecer: a organização é usada na
+ESCRITA, pelo Node-RED. Para ler por SQL bastam host, token e database.
+
+TROQUE a nota lateral que hoje diz "sem o pivot, cada feature vira uma
+LINHA. Com ele, vira uma COLUNA." por:
+
+    no Flux cada field vinha numa linha e exigia pivot(). No SQL,
+    tag volta texto e field volta número, já em coluna.
+
+MANTENHA o resto do slide: o split por rodada, os três blocos
+rodada 1 / rodada 2 / rodada 3 e as três notas de rodapé.
+
+--------------------------------------------------------------------
+10.2 - "MODELO" VIRA "PREDIÇÃO"
+
+O firmware passou a imprimir PREDIÇÃO no Monitor Serial.
+
+Slide "Roteiro da prática": no bloco "sinal de que funcionou",
+troque as duas linhas
+
+    MODELO: operando   -> LED azul
+    MODELO: anomalia   -> BUZZER
+
+por
+
+    PREDIÇÃO: operando  -> LED azul
+    PREDIÇÃO: anomalia  -> BUZZER
+
+Slide "O que mudou de ponta a ponta": se "MODELO:" aparecer em
+alguma célula, troque por "PREDIÇÃO:".
+
+--------------------------------------------------------------------
+10.3 - O PONTEIRO DE REPOSITÓRIO
+
+Slide "Roteiro da prática", última linha, hoje:
+
+    Repositório: app25-Inferencia-AI-API_Sinais-MultiClass_IMU
+
+A pasta não existe mais. TROQUE por:
+
+    Repositório: a pasta CloudAI do app de inferência do motor
+
+--------------------------------------------------------------------
+10.4 - TIRAR O NÚMERO DOS APPS
+
+Os apps foram renumerados e os números não são mais confiáveis.
+Em TRÊS slides, troque o número pelo que o app FAZ:
+
+Slide "O pipeline de treinamento": no primeiro bloco, onde está
+"ESP32 / app17-7", deixe só "ESP32 / a coleta".
+
+Slide "Dois pipelines, a mesma origem": os dois cabeçalhos
+
+    TREINAMENTO (app17-7) - feito
+    INFERÊNCIA (app25) - agora
+
+viram
+
+    TREINAMENTO (a coleta) - feito
+    INFERÊNCIA (na nuvem) - agora
+
+Slide "O que mudou de ponta a ponta": o cabeçalho da tabela
+
+    Treinamento (app17-7) | Inferência (app25)
+
+vira
+
+    Treinamento (a coleta) | Inferência (na nuvem)
+
+--------------------------------------------------------------------
+10.5 - O FLUXO MUDOU: SAIU UM NÓ, ENTROU OUTRO
+
+O fluxo continua com SETE nós, mas dois deles são outros. Saiu o IF
+que validava as oito features; entrou um segundo Telegram, ligado à
+saída de ERRO do Predict.
+
+(a) Slide "n8n: sete nós, dois destinos"
+
+TROQUE o título por:   n8n: sete nós, três destinos
+
+APAGUE o bloco "IF / valida" da fileira de cima: o Code passa a
+ligar direto no HTTP Request.
+
+No ramo do meio, o bloco "Code / filtra a virada" vira:
+    IF / é anomalia?
+
+A legenda "ramo de baixo - só na virada p/ anomalia" vira:
+    ramo do meio - em toda janela de anomalia
+
+ACRESCENTE um terceiro ramo, saindo do HTTP Request para baixo:
+    Telegram / a API não respondeu
+com a legenda:
+    ramo de baixo - quando a própria predição falha
+
+A frase de rodapé "O mesmo resultado vai para duas plateias com
+pressas diferentes: a máquina quer a cada segundo, a pessoa quer
+quando muda." vira:
+    Três destinos: o LED a cada segundo, a pessoa quando há
+    anomalia, e a pessoa de novo quando nem a predição sai.
+
+(b) Slide "Nós 3 e 4: validar e chamar o modelo"
+
+TROQUE o título por:   Nós 3 e 4: chamar o modelo e tratar a falha
+
+APAGUE o bloco do IF com a expressão .every(...). Esse nó não
+existe mais.
+
+No lugar dele, ponha a aba Settings do HTTP Request:
+    Retry On Fail   ligado - Max Tries 3, Wait 1000 ms
+    On Error        Continue (using error output)
+
+MANTENHA o bloco do HTTP Request como está.
+
+A nota de rodapé "Uma janela truncada vira NaN e derruba a API com
+500." vira:
+    O NaN não chega até aqui: ele quebraria o JSON e o nó Code
+    morreria antes. O que este nó trata é a API fora do ar.
+
+(c) Slide "O segundo destino: avisar uma pessoa"
+
+Este é o que mais muda.
+
+APAGUE o bloco de código do $getWorkflowStaticData inteiro.
+APAGUE a nota "2 mensagens, não 30. Só a VIRADA para anomalia
+dispara o alerta." e as duas notas de rodapé sobre
+$getWorkflowStaticData e return [].
+
+No lugar do código, ponha a condição do IF:
+    {{ $json.class }}  is equal to  anomalia
+
+Na linha do tempo, onde hoje há duas marcações de Telegram, marque
+uma por segundo enquanto durar a anomalia.
+
+TROQUE "Telegram / a pessoa - apenas quando muda" por
+"Telegram / a pessoa - enquanto durar".
+
+ACRESCENTE duas notas de rodapé:
+    Repetir é proposital: o alerta parar poderia ser lido como
+    problema resolvido.
+
+    Há um terceiro destino, na saída de erro do HTTP Request: se a
+    API cair, o LED do ESP32 FICA ACESO na última classe recebida e
+    o sistema parece funcionando. É esse silêncio que o segundo
+    Telegram quebra.
+
+```
+
+---
+
+## Fora deste deck
+
+Três correções de uma linha, nos outros dois arquivos.
+
+**`IoT - Aula 18 e 19 - Automação LLM IoT ML.pptx`**
+
+| Slide | O quê |
+|---|---|
+| "Plataforma IoT" (o dos links) | os dois links apontam para uma pasta que não existe: o app do AQI é o **app20**, e o caminho interno mudou para `CloudAI/` e `api/` |
+| "Resumo – Parte 3" | diz **Flask**; o serviço é **FastAPI**, e sempre foi |
+| "Resumo – Parte 5" | lista três tools; o fluxo tem **duas** — `aqi_atual` e `aqi_historico`. A `aqi_horario` não existe |
+| "Resumo – Parte 1" | o tópico está escrito `FIAPIoT/dados/aqui`; o firmware publica em **`FIAPIoT/aqi/dados`** |
+
+**`IoT - Aula 20 - AIoT e serialização de modelos de ML.pptx`**
+
+| Slide | O quê |
+|---|---|
+| "Hands On - Serialização" (o do link) | aponta para `app19_ML_Occupancy`, que não existe — e hoje o número 19 é outro app |
+
+## Ainda não verificado
+
+O aviso de que **"no Wokwi não há como inclinar o MPU"** estava errado em nove
+lugares do repositório e já foi corrigido lá: a **inclinação sai** (o MPU6050 do
+simulador tem controle de aceleração em X, Y e Z); o que **não sai é a
+anomalia**, porque ela é vibração e o controle parado deixa as 100 amostras da
+janela idênticas.
+
+Se essa frase aparecer em algum destes decks, ela precisa da mesma correção. Não
+conferi os slides quanto a isso.
+
 ## Anexo — o que existe no repositório
 
-O `app25` já está pronto e bate com estes slides. Ele hoje mora em duas pastas
-irmãs, e **estes slides tratam só da `CloudAI/`**:
+O app da inferência do motor já está pronto e bate com estes slides. Ele mora
+em duas pastas irmãs, e **estes slides tratam só da `CloudAI/`**:
 
 ```text
-app18-Inferencia_AI_Sinais-MultiClass_IMU/
+<app da inferência do motor>/
 ├── CloudAI/          o que estes slides cobrem
 │   ├── api/          service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
-│   ├── device/       firmware + CONSTRUIR-O-FIRMWARE.md (guia em 7 etapas)
-│   └── n8n/          Fluxo-n8n-predict.json  (5 nós, pronto para importar)
+│   ├── device/       firmware + o guia, em sete etapas
+│   └── n8n/          o fluxo pronto para importar, sete nós
 └── EdgeAI/           a mesma janela, com Random Forest embarcada e sem rede
 ```
 
-O `CloudAI/device/CONSTRUIR-O-FIRMWARE.md` monta o firmware do zero em sete etapas,
-com a tabela de paridade do slide 5.2 marcada ao longo do código — serve de
-apoio ao HANDS ON.
+O guia do firmware, em `CloudAI/device/`, monta o arquivo do zero em sete
+etapas, com a tabela de paridade do slide 5.2 marcada ao longo do código —
+serve de apoio ao HANDS ON.
+
+> **Os nomes das pastas mudam.** A trilha já foi renumerada duas vezes, e por
+> isso este anexo descreve os apps pelo que eles fazem. Procure a pasta cujo
+> nome contenha `Sinais-MultiClass_IMU`.
 
 Parâmetros do fluxo n8n, caso precise montar à mão:
 
@@ -1334,12 +1556,14 @@ não espera o alerta.
 
 ## Fontes
 
-- `app17-IMU/app17-7-MultiClassAccFeaturesInfluxDevkitv1MOTOR/` — firmware,
-  README e o fluxo Node-RED do treinamento
-- `app17-GerarDatasetSinais_IMU/app17-7-MultiClassAccFeaturesInflux/colab/treinamento_multiclasse.ipynb`
-  — o notebook do Colab (MLPClassifier, InfluxDB via Flux)
-- `app18-Inferencia_AI_Sinais-MultiClass_IMU/CloudAI/` — API, firmware, fluxo n8n
-- `DECISÕES - app18 CloudAI e EdgeAI.md` — registro curto das decisões, inclusive da EdgeAI
-- `app28-Inferencia-AI-Cloud_Escalares_AQI/App-Fluxo_n8n/` — o padrão de fluxo
-  n8n que a turma já conhece
+Descritas pelo que são: os nomes das pastas mudam quando a trilha é renumerada.
+
+- **O app de coleta do motor** — firmware, README e o fluxo Node-RED do
+  treinamento, mais o notebook `treinamento_multiclasse.ipynb`, que hoje lê o
+  InfluxDB por **SQL** (a Seção 10.1 corrige o slide que ainda mostra Flux)
+- **O app da inferência do motor**, pasta `CloudAI/` — API, firmware e fluxo n8n
+- `DECISÕES - app da inferência do motor.md`, nesta mesma pasta — o registro
+  curto das decisões, inclusive as da borda
+- **O app de qualidade do ar**, pasta `CloudAI/n8n/` — o padrão de fluxo que a
+  turma já conhece
 - `IoT - Aula 18 e 19 - Automação LLM IoT ML.pptx` — a plataforma e o n8n
