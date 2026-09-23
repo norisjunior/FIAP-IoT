@@ -229,6 +229,49 @@ próxima de `1`. A classe e os valores dependem do modelo carregado.
 **Teste a validação:** remova `std_mag` e envie novamente. A resposta deve
 ser `422`, indicando o campo ausente. Depois restaure o JSON completo.
 
+### Testar pelo terminal, sem o navegador
+
+O terminal do `uvicorn` fica ocupado enquanto a API roda. **Abra um segundo
+terminal** para os testes abaixo.
+
+> **Use `curl.exe`, com o `.exe`.** No PowerShell, `curl` sozinho é um apelido
+> para `Invoke-WebRequest`, que não entende `-X` nem `-d` do mesmo jeito. O
+> `.exe` chama o curl de verdade, que vem com o Windows.
+
+Motor nivelado e com vibração normal:
+
+```powershell
+curl.exe -s -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d '{"mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.030,"std_ay":0.028,"std_az":0.032,"std_mag":0.035,"p2p_mag":0.16}'
+```
+
+Resposta: `"class":"operando"`.
+
+Agora o mesmo motor nivelado, mas **tremendo** — só os `std_*` e o `p2p_mag`
+mudam:
+
+```powershell
+curl.exe -s -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d '{"mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.450,"std_ay":0.300,"std_az":0.400,"std_mag":0.420,"p2p_mag":1.60}'
+```
+
+Resposta: `"class":"anomalia"`.
+
+Os dois JSON têm **as mesmas três primeiras features** — a orientação é
+idêntica. O que muda é a vibração, e é só isso que separa `operando` de
+`anomalia`. É a tabela das duas famílias de feature, agora com o modelo
+respondendo.
+
+E o campo que falta, para ver a recusa:
+
+```powershell
+curl.exe -s -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d '{"mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.030,"std_ay":0.028,"std_az":0.032,"p2p_mag":0.16}'
+```
+
+Sem o `std_mag`, a resposta é `422` com `"type":"missing"`. O Pydantic recusa
+antes de o modelo ver qualquer coisa.
+
+No Git Bash, no WSL ou no Linux, as mesmas três chamadas funcionam com `curl`
+sem o `.exe` — ali não existe o apelido do PowerShell.
+
 ## Etapa 8 — Conectar ao n8n
 
 No fluxo fornecido, o nó **HTTP Request** usa:
