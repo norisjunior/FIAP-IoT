@@ -85,23 +85,22 @@ comparar texto com texto dispensa qualquer tabela de tradução no meio.
 ## 2) O fluxo de ingestão
 
 Importe `n8n/Fluxo-1-ingestao-postgres.json` e configure as credenciais de
-**MQTT** e **PostgreSQL**. São quatro nós depois do gatilho:
+**MQTT** e **PostgreSQL**. São três nós depois do gatilho:
 
 | # | Nó | O que faz |
 |---|---|---|
-| 1 | `FIAPIoT/motor/validacao` | recebe a janela e a predição da borda |
-| 2 | `Code (gera JSON)` | converte a mensagem MQTT em JSON |
-| 3 | `Predict Motor (nuvem)` | `POST` para a API, que ignora os campos a mais |
-| 4 | `Compara borda e nuvem` | monta as duas predições e o `concordam` |
-| 5 | `Armazena a comparacao` | cria a tabela se não existir e insere |
+| 1 | `FIAPIoT/motor/validacao` | recebe a janela e a predição da borda, já como objeto (**JSON Parse Body**) |
+| 2 | `Predict Motor (nuvem)` | `POST` do `message` para a API, que ignora os campos a mais |
+| 3 | `Compara borda e nuvem` | monta as duas predições e o `concordam` |
+| 4 | `Armazena a comparacao` | cria a tabela se não existir e insere |
 
-No nó 4 há um detalhe que vale explicar em voz alta: depois do `POST`, o item
+No nó 3 há um detalhe que vale explicar em voz alta: depois do `POST`, o item
 que circula é a **resposta da API** — a predição da borda ficou para trás. Por
 isso ela é buscada pelo nome do nó:
 
 ```js
 const nuvem = $input.first().json.class;
-const borda = $('Code (gera JSON)').first().json.predicao_borda;
+const borda = $('FIAPIoT/motor/validacao').first().json.message.predicao_borda;
 ```
 
 ### A tabela
@@ -195,7 +194,7 @@ concordância?"*, ele devolveria um número plausível e errado — **modelo de
 linguagem não conta**. O `COUNT(*) FILTER` roda no banco, e o LLM fica só com o
 trabalho que é dele: escolher a ferramenta e escrever a frase.
 
-É a mesma decisão do `concordam`, calculado no nó 4 da ingestão e gravado
+É a mesma decisão do `concordam`, calculado no nó 3 da ingestão e gravado
 pronto: **trabalho feito antes é trabalho que o LLM não precisa acertar.**
 
 E a *system message* vai um passo além da tradução: ela traz as faixas de
@@ -225,8 +224,8 @@ vira tautologia: mesmo modelo, mesmos números, mesma resposta, para sempre.
 mostra se o dispositivo está publicando.
 
 **A API recusa o corpo.** Ela ignora `device` e `predicao_borda` e lê só as oito
-features. Se estiver recusando, é o JSON que chegou quebrado — veja o que o nó 2
-produziu.
+features. Se estiver recusando, é o JSON que chegou quebrado — veja se o `message` do
+nó 1 abriu em campos ou ficou como texto.
 
 **Os LEDs acendem mas nada é gravado.** É o comportamento esperado quando o
 broker está fora do ar: o dispositivo decide primeiro e publica depois, de

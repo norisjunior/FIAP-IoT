@@ -41,22 +41,21 @@ Importe `n8n/Fluxo-1-ingestao-postgres.json` e configure as credenciais de
 
 | # | Nó | O que faz |
 |---|---|---|
-| 1 | `FIAPIoT/motor/multiclasse` | recebe a janela |
-| 2 | `Code (gera JSON)` | converte a mensagem MQTT em JSON |
-| 3 | `Predict Motor` | `POST` para a API |
-| 4 | `FIAPIoT/motor/multiclasse/cmd` | devolve a classe ao ESP32 |
-| 5 | `Formata para o banco` | calcula o carimbo de tempo e o **período** |
-| 6 | `Armazena a predicao` | cria a tabela se não existir e insere |
+| 1 | `FIAPIoT/motor/multiclasse` | recebe a janela, já como objeto (**JSON Parse Body**) |
+| 2 | `Predict Motor` | `POST` do `message` para a API |
+| 3 | `FIAPIoT/motor/multiclasse/cmd` | devolve a classe ao ESP32 |
+| 4 | `Formata para o banco` | calcula o carimbo de tempo e o **período** |
+| 5 | `Armazena a predicao` | cria a tabela se não existir e insere |
 
-Os nós **4 e 5 saem os dois do nó 3**, em paralelo: o ESP32 não espera a
+Os nós **3 e 4 saem os dois do nó 2**, em paralelo: o ESP32 não espera a
 gravação no banco para acender o LED.
 
-Comparado ao fluxo do app anterior, são **dois nós a mais** — o 5 e o 6. Todo o
+Comparado ao fluxo do app anterior, são **dois nós a mais** — o 4 e o 5. Todo o
 resto é idêntico.
 
 ### O período é o truque da aplicação
 
-O nó 5 grava, além da classe, uma palavra: `madrugada`, `manhã`, `tarde` ou
+O nó 4 grava, além da classe, uma palavra: `madrugada`, `manhã`, `tarde` ou
 `noite`. Parece detalhe, e é o que faz o chat funcionar.
 
 Sem ela, *"como estava ontem à noite?"* obrigaria o modelo de linguagem a
@@ -144,5 +143,5 @@ importação — elas são a única instrução que o agente tem para escolher.
 **A API não responde.** Do n8n em contêiner, `localhost` é o próprio contêiner.
 A URL precisa ser `http://host.docker.internal:8000/predict`.
 
-**O horário sai errado.** O nó 5 fixa `America/Sao_Paulo`. Se o seu fuso for
+**O horário sai errado.** O nó 4 fixa `America/Sao_Paulo`. Se o seu fuso for
 outro, é lá que se muda — em um lugar só.

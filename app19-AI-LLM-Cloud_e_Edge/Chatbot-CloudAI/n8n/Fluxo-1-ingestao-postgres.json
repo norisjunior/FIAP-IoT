@@ -4,7 +4,9 @@
     {
       "parameters": {
         "topics": "FIAPIoT/motor/multiclasse",
-        "options": {}
+        "options": {
+          "jsonParseBody": true
+        }
       },
       "type": "n8n-nodes-base.mqttTrigger",
       "typeVersion": 1,
@@ -23,31 +25,17 @@
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const dados = typeof $json.message === \"string\"\n    ? JSON.parse($json.message)\n    : $json.message;\n\nreturn { json: dados };\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        0,
-        0
-      ],
-      "id": "4bc64035-0ae7-4dc8-bf20-9ae2a543f047",
-      "name": "Code (gera JSON)"
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "http://host.docker.internal:8000/predict",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $json }}",
+        "jsonBody": "={{ $json.message }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        220,
+        0,
         0
       ],
       "id": "76fe1973-1d02-4288-a062-ceeed6073702",
@@ -63,7 +51,7 @@
       "type": "n8n-nodes-base.mqtt",
       "typeVersion": 1,
       "position": [
-        460,
+        240,
         -100
       ],
       "id": "e368a163-b53f-483b-b6e6-10ead574b8a9",
@@ -82,7 +70,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        460,
+        240,
         120
       ],
       "id": "87badd8a-3797-4580-9aaf-17bb46795d66",
@@ -97,7 +85,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        680,
+        460,
         120
       ],
       "id": "90ff499b-89ee-4db7-8b2b-e2fe50b81968",
@@ -113,17 +101,6 @@
   "pinData": {},
   "connections": {
     "FIAPIoT/motor/multiclasse": {
-      "main": [
-        [
-          {
-            "node": "Code (gera JSON)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code (gera JSON)": {
       "main": [
         [
           {
