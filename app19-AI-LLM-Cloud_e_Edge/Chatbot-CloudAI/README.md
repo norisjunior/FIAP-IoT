@@ -94,7 +94,7 @@ Importe `n8n/Fluxo-2-chat-llm.json` e configure as credenciais de **Ollama** e
 | `Ollama Chat Model` | o modelo de linguagem (`llama3.2:1b`) |
 | `Simple Memory` | lembra as mensagens anteriores da conversa |
 | `motor_agora` | `SELECT ... ORDER BY created_at DESC LIMIT 1` |
-| `motor_historico` | `SELECT ... WHERE data = $1 AND periodo = $2` |
+| `motor_historico` | `SELECT classe, periodo, COUNT(*) ... WHERE data = $1 AND periodo = $2 GROUP BY classe, periodo` |
 
 Ative o fluxo e abra a URL que o nó de chat mostra.
 
@@ -108,6 +108,23 @@ Ele não escolhe por adivinhação: a escolha está escrita em dois lugares.
 - Na ***system message*** do agente, que recebe a data e a hora de hoje já
   resolvidas pelo n8n e traz dois exemplos prontos de conversão.
 
+### O histórico chega contado
+
+Um período tem milhares de janelas, uma por segundo. Mandar todas para o
+`llama3.2:1b` e perguntar *"quantas falhas?"* seria pedir que um modelo de
+linguagem contasse, e ele não conta. Por isso o `motor_historico` agrupa e
+conta no banco, e o agente recebe no máximo quatro linhas:
+
+| classe | periodo | ocorrencias |
+|---|---|---|
+| operando | madrugada | 3412 |
+| anomalia | madrugada | 27 |
+
+A *system message* completa a leitura com duas regras: **falha é a classe
+`anomalia`**, e uma classe que não aparece no resultado teve **zero**
+ocorrências. Sem a segunda, uma madrugada sem anomalia simplesmente não traz
+a linha `anomalia`, e um modelo pequeno tende a inventar um número.
+
 O modelo de linguagem não sabe que dia é hoje. Quem sabe é o n8n, e por isso a
 data entra na *system message* em vez de o LLM ter de deduzir.
 
@@ -117,7 +134,7 @@ Com o ESP32 rodando e o fluxo de ingestão ativo, espere alguns segundos e
 pergunte no chat:
 
 - *"Como está o motor agora?"* → usa `motor_agora`
-- *"E como estava hoje de manhã?"* → usa `motor_historico`
+- *"Quantas falhas o motor teve nesta madrugada?"* → usa `motor_historico`
 - *"Preciso fazer alguma coisa?"* → usa a memória da conversa e a orientação
   da *system message*
 
