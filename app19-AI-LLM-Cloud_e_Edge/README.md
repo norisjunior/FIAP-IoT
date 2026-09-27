@@ -9,8 +9,8 @@ diferentes:
 
 | Pasta | O que guarda | Para quê |
 |---|---|---|
-| [`Chatbot/`](Chatbot/README.md) | a predição da nuvem, a cada segundo | perguntar em linguagem natural como o motor está, ou como estava |
-| [`Validacao/`](Validacao/README.md) | a predição da **borda** e a da **nuvem**, lado a lado | medir se o modelo pequeno do dispositivo continua concordando com o modelo da nuvem |
+| [`Chatbot-CloudAI/`](Chatbot-CloudAI/README.md) | a predição da nuvem, a cada segundo | perguntar em linguagem natural como o motor está, ou como estava |
+| [`Chatbot-EdgeAI/`](Chatbot-EdgeAI/README.md) | a predição da **borda** e a da **nuvem**, lado a lado | medir se o modelo pequeno do dispositivo continua concordando com o modelo da nuvem |
 
 As duas aplicações usam a mesma API, que está em [`api/`](api/) e serve a rede
 neural treinada com o dataset do motor.
@@ -76,13 +76,17 @@ curl -X POST http://localhost:8000/predict \
 ## Estrutura
 
 ```text
-api/          service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
-Chatbot/      device/ (publica a janela) · n8n/ (ingestão + chat)
-Validacao/    device/ (decide e publica) · n8n/ (compara borda e nuvem)
+api/               service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
+Chatbot-CloudAI/   device/ (publica a janela) · n8n/ (ingestão + chat)
+Chatbot-EdgeAI/    device/ (decide e publica) · n8n/ (ingestão da comparação + chat)
 ```
 
 ## Por onde começar
 
-A `Chatbot/` primeiro: ela reaproveita o firmware que você já conhece e o que
-muda está todo no n8n. A `Validacao/` traz um firmware novo — o primeiro deste
-curso que **decide sozinho e ainda assim fala com a nuvem**.
+A `Chatbot-CloudAI/` primeiro: ela reaproveita o firmware que você já conhece e
+o que muda está todo no n8n. A `Chatbot-EdgeAI/` traz um firmware novo — o
+primeiro deste curso que **decide sozinho e ainda assim fala com a nuvem**.
+
+As duas têm a mesma forma: um fluxo que ingere sem parar e um fluxo de chat com
+um agente LLM. O que muda é a pergunta que o agente responde — *como o motor
+está* de um lado, *o modelo da borda ainda é confiável* do outro.

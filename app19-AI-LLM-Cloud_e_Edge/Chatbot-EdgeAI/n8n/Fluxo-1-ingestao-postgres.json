@@ -1,5 +1,5 @@
 {
-  "name": "app19 - Validacao: borda x nuvem",
+  "name": "app19 - Ingestao da comparacao borda x nuvem no PostgreSQL",
   "nodes": [
     {
       "parameters": {

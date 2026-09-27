@@ -1,0 +1,219 @@
+{
+  "name": "app19 - Chat com o agente LLM: a borda concorda com a nuvem?",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Olá! 👋\nSou o FIoT. Pergunte se o modelo da borda ainda concorda com a nuvem.",
+        "options": {
+          "subtitle": "IoT + Edge AI + n8n + LLM",
+          "title": "FIoT Agent - Validação da borda"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "6b1d2c4e-8f30-4a71-9c52-1ad4e7b90f33",
+      "name": "When chat message received"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Você é um assistente de qualidade de modelos de machine learning.\n\nUm motor industrial é monitorado por um ESP32 que classifica cada segundo de\nvibração em uma destas quatro classes:\n- operando: motor ligado, nivelado, vibração normal\n- inclinado_frente: motor tombado para a frente\n- inclinado_tras: motor tombado para trás\n- anomalia: vibração fora do normal\n\nExistem DOIS modelos classificando a mesma janela:\n- a BORDA: uma Random Forest pequena, que roda na flash do ESP32 e decide sozinha\n- a NUVEM: uma rede neural maior, que roda numa API e serve apenas de referência\n\nA nuvem não manda em nada. Ela só confere. Seu trabalho é dizer o quanto os dois\nconcordam, porque é isso que mostra se o modelo pequeno da ponta continua confiável.\n\nCONTEXTO TEMPORAL IMPORTANTE:\n- Data atual: {{ $now.format('yyyy-LL-dd') }}\n- Hora atual: {{ $now.format('HH:mm') }}\n- Dia da semana: {{ $now.format('EEEE') }}\n\nPERÍODOS DO DIA:\n- madrugada: 00:00 às 05:59\n- manhã: 06:00 às 11:59\n- tarde: 12:00 às 17:59\n- noite: 18:00 às 23:59\n\nPara perguntas sobre a concordância **em geral** (\"a borda está confiável?\",\n\"qual a taxa de concordância?\"), use a ferramenta **concordancia_geral**.\n\nQuando o usuário perguntar sobre um **período específico** (ex: \"ontem à noite\",\n\"hoje de manhã\"), use a ferramenta **concordancia_periodo** com os parâmetros no\nformato: \"AAAA-MM-DD, periodo\"\n\nExemplos:\n- \"E nesta madrugada?\" -> \"{{ $now.format('yyyy-LL-dd') }}, madrugada\"\n- \"E ontem à noite?\" -> \"{{ $now.minus({days: 1}).format('yyyy-LL-dd') }}, noite\"\n\nPara saber **quais classes se confundiram**, use a ferramenta **onde_discordam**.\n\nLIMITAÇÕES\n- Não invente números e não faça contas. As ferramentas já devolvem a taxa calculada.\n- Repita o número exatamente como a ferramenta devolveu.\n- Se a ferramenta não devolver nada, diga que não há comparação para aquele período.\n\nCOMO LER A TAXA\n- acima de 95%: a borda está acompanhando a nuvem, não é preciso agir.\n- entre 85% e 95%: vale observar, e olhar em quais classes está discordando.\n- abaixo de 85%: recomende retreinar o modelo da borda com dados novos.\n\nFORMATO DA RESPOSTA\n- Mesmo que você receba a resposta em JSON, responda em texto, sem formato de código.\n- Seja cortês e direto."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        40,
+        0
+      ],
+      "id": "c07a5b19-4d62-4e08-83f1-6b9a2c5de714",
+      "name": "FIoT Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:1b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        220
+      ],
+      "id": "1f8e63a5-95b7-4c20-a6d8-0e3b47cf5182",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "pkHJYvheWV0vK657",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        100,
+        220
+      ],
+      "id": "a4d905c7-2b61-4f38-8e0a-7c1b6d94ef25",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta se chama \"concordancia_geral\" e responde o quanto o modelo da borda concorda com o da nuvem, considerando TODAS as janelas gravadas. Use para \"a borda esta confiavel?\", \"qual a taxa de concordancia?\", \"em geral\". Ela devolve janelas, concordaram e taxa_pct, ja calculados.",
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*)                                      AS janelas,\n       COUNT(*) FILTER (WHERE concordam)             AS concordaram,\n       ROUND(100.0 * COUNT(*) FILTER (WHERE concordam)\n             / NULLIF(COUNT(*), 0), 1)               AS taxa_pct\nFROM motor_validacao;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        260,
+        220
+      ],
+      "id": "3e7c1420-6a8d-4b95-9f13-58e0c6a7bd49",
+      "name": "concordancia_geral",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta devolve a taxa de concordancia entre a borda e a nuvem em uma data e periodo do passado. Sempre envie Query_Parameters como uma string no formato: \"AAAA-MM-DD, periodo\", por exemplo: \"2026-09-21, madrugada\".\nO campo periodo deve ser uma destas palavras exatas: madrugada, manhã, tarde, noite.\n\n**NÃO USE ESTA FERRAMENTA PARA A TAXA GERAL, SEM PERIODO.**",
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*)                                      AS janelas,\n       COUNT(*) FILTER (WHERE concordam)             AS concordaram,\n       ROUND(100.0 * COUNT(*) FILTER (WHERE concordam)\n             / NULLIF(COUNT(*), 0), 1)               AS taxa_pct\nFROM motor_validacao\nWHERE DATE(timestamp_medicao::timestamp) = $1\n  AND periodo = $2;\n",
+        "options": {
+          "queryReplacement": "={{ $fromAI('Query_Parameters', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        220
+      ],
+      "id": "8b2f95d3-7c04-41ae-b628-9d3a1f60c587",
+      "name": "concordancia_periodo",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta se chama \"onde_discordam\" e mostra QUAIS classes a borda e a nuvem confundiram entre si, da mais frequente para a menos frequente. Use quando o usuario perguntar \"onde erra\", \"em que classes discordam\", \"qual a confusao\". Ela devolve predicao_borda, predicao_nuvem e vezes.",
+        "operation": "executeQuery",
+        "query": "SELECT predicao_borda,\n       predicao_nuvem,\n       COUNT(*) AS vezes\nFROM motor_validacao\nWHERE NOT concordam\nGROUP BY 1, 2\nORDER BY 3 DESC\nLIMIT 5;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        580,
+        220
+      ],
+      "id": "d5a80e61-3b47-4c92-8107-6f2be9d34a70",
+      "name": "onde_discordam",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "concordancia_geral": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "concordancia_periodo": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "onde_discordam": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7c4f1e85-0d39-4a62-b5c8-92e1a7f03b6d",
+  "meta": {
+    "instanceId": "app19-AI-LLM-Cloud_e_Edge"
+  },
+  "id": "f1c9a740-58b2-4e63-9d05-3a7e6b184c29",
+  "tags": []
+}
