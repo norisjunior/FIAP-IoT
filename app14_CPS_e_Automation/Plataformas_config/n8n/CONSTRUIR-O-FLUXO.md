@@ -85,17 +85,17 @@ workflow achar os números.
 ```
 NexoLog | {{ $json.message.device }}
 Tampa aberta
-Distância: {{ $json.message.dist.toFixed(1) }} cm
+Distância: {{ $json.message.dist }} cm
 ```
 
 Trocando as duas últimas linhas em cada um:
 
 | Nó | Título | Linha do valor |
 |---|---|---|
-| `Texto: temperatura alta` | Temperatura alta | `Temperatura: {{ $json.message.temp.toFixed(1) }} °C` |
-| `Texto: umidade alta` | Umidade alta | `Umidade: {{ $json.message.umid.toFixed(1) }} %` |
-| `Texto: tampa aberta` | Tampa aberta | `Distância: {{ $json.message.dist.toFixed(1) }} cm` |
-| `Texto: movimentação brusca` | Movimentação brusca | `Movimentação: {{ $json.message.movimentacao.toFixed(2) }} m/s²` |
+| `Texto: temperatura alta` | Temperatura alta | `Temperatura: {{ $json.message.temp }} °C` |
+| `Texto: umidade alta` | Umidade alta | `Umidade: {{ $json.message.umid }} %` |
+| `Texto: tampa aberta` | Tampa aberta | `Distância: {{ $json.message.dist }} cm` |
+| `Texto: movimentação brusca` | Movimentação brusca | `Movimentação: {{ $json.message.movimentacao }} m/s²` |
 
 **c) Um nó Telegram**, action `Send a Text Message`. Os quatro Set ligam **nele**:
 

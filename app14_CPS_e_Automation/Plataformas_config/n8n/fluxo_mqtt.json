@@ -156,7 +156,7 @@
             {
               "id": "80b33175-33dd-4052-81a6-0db52a8cb81a",
               "name": "texto",
-              "value": "=NexoLog | {{ $json.message.device }}\nTemperatura alta\nTemperatura: {{ $json.message.temp.toFixed(1) }} °C",
+              "value": "=NexoLog | {{ $json.message.device }}\nTemperatura alta\nTemperatura: {{ $json.message.temp }} °C",
               "type": "string"
             }
           ]
@@ -180,7 +180,7 @@
             {
               "id": "1a94c41f-da3e-4b1f-a655-29a969ae4a77",
               "name": "texto",
-              "value": "=NexoLog | {{ $json.message.device }}\nUmidade alta\nUmidade: {{ $json.message.umid.toFixed(1) }} %",
+              "value": "=NexoLog | {{ $json.message.device }}\nUmidade alta\nUmidade: {{ $json.message.umid }} %",
               "type": "string"
             }
           ]
@@ -204,7 +204,7 @@
             {
               "id": "20743689-cff7-4ac9-bb24-a276ffb3eda3",
               "name": "texto",
-              "value": "=NexoLog | {{ $json.message.device }}\nTampa aberta\nDistância: {{ $json.message.dist.toFixed(1) }} cm",
+              "value": "=NexoLog | {{ $json.message.device }}\nTampa aberta\nDistância: {{ $json.message.dist }} cm",
               "type": "string"
             }
           ]
@@ -228,7 +228,7 @@
             {
               "id": "15e7d2b7-3258-43cb-962a-8ecf0061f1b5",
               "name": "texto",
-              "value": "=NexoLog | {{ $json.message.device }}\nMovimentação brusca\nMovimentação: {{ $json.message.movimentacao.toFixed(2) }} m/s²",
+              "value": "=NexoLog | {{ $json.message.device }}\nMovimentação brusca\nMovimentação: {{ $json.message.movimentacao }} m/s²",
               "type": "string"
             }
           ]
