@@ -60,14 +60,14 @@ Eloquent::ML::Port::RandomForest modeloRF;
 
 /* ---- Rede: use (A) Wokwi OU (B) ESP32 físico ---- */
 // ---- (A) Wokwi (padrão) ----
-// const char* WIFI_SSID     = "Wokwi-GUEST";
-// const char* WIFI_PASSWORD = "";
-// #define MQTT_SERVER "host.wokwi.internal"
+const char* WIFI_SSID     = "Wokwi-GUEST";
+const char* WIFI_PASSWORD = "";
+#define MQTT_SERVER "host.wokwi.internal"
 
 // ---- (B) ESP32 físico ----
-const char* WIFI_SSID     = "NorisIoT";
-const char* WIFI_PASSWORD = "Secure10T";
-#define MQTT_SERVER "172.16.10.101"   // IP da máquina com a plataforma
+// const char* WIFI_SSID     = "NorisIoT";
+// const char* WIFI_PASSWORD = "Secure10T";
+// #define MQTT_SERVER "172.16.10.101"   // IP da máquina com a plataforma
 
 WiFiClient wifiClient;
 
@@ -90,7 +90,7 @@ PubSubClient mqttClient(wifiClient);
 #define LED_ONBOARD   2   // aceso = conectado ao broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
-#define MPU_TYPE MPU6500
+#define MPU_TYPE MPU6050
 MPU_TYPE mpu;
 
 calData calib = { 0 };
@@ -180,7 +180,7 @@ void setup() {
   // de pacotes lidos dela. Com zero pacotes o ESP32 ABORTA, logo depois da
   // mensagem acima, com "Guru Meditation Error: IntegerDivideByZero".
   // No ESP32 físico ela é necessária: é o que zera o viés do sensor.
-  mpu.calibrateAccelGyro(&calib);
+  // mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
 
   Serial.println("MPU iniciado");
