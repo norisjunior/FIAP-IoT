@@ -5,9 +5,6 @@
     "name": "nexolog-canvas",
     "namespace": "default",
     "uid": "9bccf39b-8cff-4256-81a0-08aff4cc8c3e",
-    "resourceVersion": "1789494595542003",
-    "generation": 7,
-    "creationTimestamp": "2026-09-15T17:16:02Z",
     "labels": {
       "grafana.app/deprecatedInternalID": "432427047157760"
     },
@@ -65,7 +62,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\" or r[\"_field\"] == \"umid\"\n                    or r[\"_field\"] == \"dist\" or r[\"_field\"] == \"movimentacao\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+                        "query": "SELECT time, temp, umid, dist, movimentacao\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawSql": "SELECT time, temp, umid, dist, movimentacao\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -777,14 +777,14 @@
       {
         "kind": "TextVariable",
         "spec": {
-          "name": "bucket",
-          "label": "Bucket",
-          "description": "O nome do seu bucket no InfluxDB Cloud.",
+          "name": "measurement",
+          "label": "Measurement",
+          "description": "A measurement que o Node-RED grava. Padrão: nexolog.",
           "current": {
-            "text": "SEU_BUCKET",
-            "value": "SEU_BUCKET"
+            "text": "nexolog",
+            "value": "nexolog"
           },
-          "query": "SEU_BUCKET",
+          "query": "nexolog",
           "hide": "dontHide",
           "skipUrlSync": false
         }

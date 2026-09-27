@@ -5,9 +5,6 @@
     "name": "nexolog-medicoes",
     "namespace": "default",
     "uid": "664e8a91-3cf9-4898-8c29-20fa8d8a0c3e",
-    "resourceVersion": "1789489658101996",
-    "generation": 5,
-    "creationTimestamp": "2026-09-15T15:15:18Z",
     "labels": {
       "grafana.app/deprecatedInternalID": "402042082918400"
     },
@@ -65,7 +62,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\")\n  |> last()"
+                        "query": "SELECT time, temp\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawSql": "SELECT time, temp\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -164,7 +164,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"umid\")\n  |> last()"
+                        "query": "SELECT time, umid\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawSql": "SELECT time, umid\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -263,7 +266,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dist\")\n  |> last()"
+                        "query": "SELECT time, dist\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawSql": "SELECT time, dist\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -358,7 +364,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: -5m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"movimentacao\")\n  |> last()"
+                        "query": "SELECT time, movimentacao\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawSql": "SELECT time, movimentacao\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -435,6 +444,153 @@
           }
         }
       },
+      "panel-8": {
+        "kind": "Panel",
+        "spec": {
+          "id": 8,
+          "title": "Última leitura",
+          "description": "Há quanto tempo chegou o último ponto. Se passar de alguns segundos, o ESP32 parou.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "influxdb",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${DS_INFLUXDB}"
+                      },
+                      "spec": {
+                        "query": "SELECT CAST(max(time) AS BIGINT) / 1000000 AS ultima\nFROM \"${measurement}\"\nWHERE time >= now() - interval '1 day'",
+                        "rawSql": "SELECT CAST(max(time) AS BIGINT) / 1000000 AS ultima\nFROM \"${measurement}\"\nWHERE time >= now() - interval '1 day'",
+                        "rawQuery": true,
+                        "editorMode": "code"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.2.1",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "dateTimeFromNow",
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "blue"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-9": {
+        "kind": "Panel",
+        "spec": {
+          "id": 9,
+          "title": "Leituras no intervalo",
+          "description": "Quantos pontos existem no intervalo do topo. Um por segundo, se o ESP32 estiver publicando.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "influxdb",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${DS_INFLUXDB}"
+                      },
+                      "spec": {
+                        "query": "SELECT count(*) AS leituras\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)",
+                        "rawSql": "SELECT count(*) AS leituras\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)",
+                        "rawQuery": true,
+                        "editorMode": "code"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.2.1",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "none",
+                  "decimals": 0,
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "text"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
       "panel-5": {
         "kind": "Panel",
         "spec": {
@@ -457,7 +613,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\" or r[\"_field\"] == \"umid\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+                        "query": "SELECT time, temp, umid\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawSql": "SELECT time, temp, umid\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -502,7 +661,7 @@
                     ]
                   },
                   "color": {
-                    "mode": "thresholds"
+                    "mode": "palette-classic"
                   },
                   "custom": {
                     "axisBorderShow": false,
@@ -543,34 +702,178 @@
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "umid NexoLogEquipe01"
+                      "options": "temp"
                     },
                     "properties": [
                       {
                         "id": "color",
                         "value": {
-                          "fixedColor": "semi-dark-purple",
-                          "mode": "fixed"
+                          "mode": "fixed",
+                          "fixedColor": "orange"
                         }
+                      },
+                      {
+                        "id": "unit",
+                        "value": "celsius"
+                      },
+                      {
+                        "id": "displayName",
+                        "value": "Temperatura"
                       }
                     ]
                   },
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "temp NexoLogEquipe01"
+                      "options": "umid"
                     },
                     "properties": [
                       {
                         "id": "color",
                         "value": {
-                          "fixedColor": "light-yellow",
-                          "mode": "fixed"
+                          "mode": "fixed",
+                          "fixedColor": "semi-dark-purple"
                         }
+                      },
+                      {
+                        "id": "unit",
+                        "value": "humidity"
+                      },
+                      {
+                        "id": "custom.axisPlacement",
+                        "value": "right"
+                      },
+                      {
+                        "id": "displayName",
+                        "value": "Umidade"
                       }
                     ]
                   }
                 ]
+              }
+            }
+          }
+        }
+      },
+      "panel-7": {
+        "kind": "Panel",
+        "spec": {
+          "id": 7,
+          "title": "Distância até a tampa",
+          "description": "Acima de 25 cm, a tampa está aberta.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "influxdb",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${DS_INFLUXDB}"
+                      },
+                      "spec": {
+                        "query": "SELECT time, dist\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawSql": "SELECT time, dist\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawQuery": true,
+                        "editorMode": "code"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.2.1",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "lastNotNull",
+                    "max"
+                  ],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 20,
+                        "color": "#EAB839"
+                      },
+                      {
+                        "value": 25,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "scheme",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 2,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "dashed"
+                    }
+                  },
+                  "unit": "lengthcm",
+                  "min": 0,
+                  "displayName": "Distância"
+                },
+                "overrides": []
               }
             }
           }
@@ -598,7 +901,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"movimentacao\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+                        "query": "SELECT time, movimentacao\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawSql": "SELECT time, movimentacao\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -621,7 +927,7 @@
                     "lastNotNull",
                     "max"
                   ],
-                  "displayMode": "table",
+                  "displayMode": "list",
                   "placement": "bottom",
                   "showLegend": true
                 },
@@ -633,8 +939,6 @@
               },
               "fieldConfig": {
                 "defaults": {
-                  "unit": "accMS2",
-                  "min": 0,
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
@@ -665,7 +969,7 @@
                     "barWidthFactor": 0.6,
                     "drawStyle": "line",
                     "fillOpacity": 10,
-                    "gradientMode": "opacity",
+                    "gradientMode": "scheme",
                     "hideFrom": {
                       "legend": false,
                       "tooltip": false,
@@ -686,9 +990,12 @@
                       "mode": "none"
                     },
                     "thresholdsStyle": {
-                      "mode": "off"
+                      "mode": "dashed"
                     }
-                  }
+                  },
+                  "unit": "accMS2",
+                  "min": 0,
+                  "displayName": "Movimentação"
                 },
                 "overrides": []
               }
@@ -696,12 +1003,12 @@
           }
         }
       },
-      "panel-7": {
+      "panel-10": {
         "kind": "Panel",
         "spec": {
-          "id": 7,
-          "title": "Distância até a tampa",
-          "description": "",
+          "id": 10,
+          "title": "Acelerômetro (x, y, z)",
+          "description": "Parada, a bag mostra a gravidade: cerca de 9,8 m/s² em um dos eixos.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -718,7 +1025,10 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"nexolog\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dist\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+                        "query": "SELECT time, accel_x, accel_y, accel_z\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawSql": "SELECT time, accel_x, accel_y, accel_z\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time",
+                        "rawQuery": true,
+                        "editorMode": "code"
                       }
                     },
                     "refId": "A",
@@ -741,7 +1051,7 @@
                     "lastNotNull",
                     "max"
                   ],
-                  "displayMode": "table",
+                  "displayMode": "list",
                   "placement": "bottom",
                   "showLegend": true
                 },
@@ -753,23 +1063,17 @@
               },
               "fieldConfig": {
                 "defaults": {
-                  "unit": "lengthcm",
-                  "min": 0,
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
                       {
                         "value": 0,
                         "color": "green"
-                      },
-                      {
-                        "value": 25,
-                        "color": "red"
                       }
                     ]
                   },
                   "color": {
-                    "mode": "thresholds"
+                    "mode": "palette-classic"
                   },
                   "custom": {
                     "axisBorderShow": false,
@@ -780,7 +1084,7 @@
                     "barAlignment": 0,
                     "barWidthFactor": 0.6,
                     "drawStyle": "line",
-                    "fillOpacity": 10,
+                    "fillOpacity": 0,
                     "gradientMode": "opacity",
                     "hideFrom": {
                       "legend": false,
@@ -789,7 +1093,7 @@
                     },
                     "insertNulls": false,
                     "lineInterpolation": "smooth",
-                    "lineWidth": 2,
+                    "lineWidth": 1,
                     "pointSize": 5,
                     "scaleDistribution": {
                       "type": "linear"
@@ -804,9 +1108,302 @@
                     "thresholdsStyle": {
                       "mode": "off"
                     }
+                  },
+                  "unit": "accMS2"
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "accel_x"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "mode": "fixed",
+                          "fixedColor": "red"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "accel_y"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "mode": "fixed",
+                          "fixedColor": "green"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "accel_z"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "mode": "fixed",
+                          "fixedColor": "blue"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-11": {
+        "kind": "Panel",
+        "spec": {
+          "id": 11,
+          "title": "Últimas leituras",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "influxdb",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${DS_INFLUXDB}"
+                      },
+                      "spec": {
+                        "query": "SELECT time, device, temp, umid, dist, movimentacao\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time DESC\nLIMIT 20",
+                        "rawSql": "SELECT time, device, temp, umid, dist, movimentacao\nFROM \"${measurement}\"\nWHERE $__timeFilter(time)\nORDER BY time DESC\nLIMIT 20",
+                        "rawQuery": true,
+                        "editorMode": "code"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "table",
+            "version": "13.2.1",
+            "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "showHeader": true,
+                "footer": {
+                  "show": false,
+                  "reducer": [
+                    "sum"
+                  ],
+                  "countRows": false,
+                  "fields": ""
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    }
                   }
                 },
-                "overrides": []
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "temp"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "celsius"
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "value": 0,
+                              "color": "green"
+                            },
+                            {
+                              "value": 25,
+                              "color": "#EAB839"
+                            },
+                            {
+                              "value": 30,
+                              "color": "red"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "mode": "thresholds"
+                        }
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "color-text"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "umid"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "humidity"
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "value": 0,
+                              "color": "green"
+                            },
+                            {
+                              "value": 60,
+                              "color": "#EAB839"
+                            },
+                            {
+                              "value": 70,
+                              "color": "red"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "mode": "thresholds"
+                        }
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "color-text"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "dist"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "lengthcm"
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "value": 0,
+                              "color": "green"
+                            },
+                            {
+                              "value": 20,
+                              "color": "#EAB839"
+                            },
+                            {
+                              "value": 25,
+                              "color": "red"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "mode": "thresholds"
+                        }
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "color-text"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "movimentacao"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "accMS2"
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "value": 0,
+                              "color": "green"
+                            },
+                            {
+                              "value": 1.5,
+                              "color": "#EAB839"
+                            },
+                            {
+                              "value": 3,
+                              "color": "red"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "mode": "thresholds"
+                        }
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "color-text"
+                        }
+                      }
+                    ]
+                  }
+                ]
               }
             }
           }
@@ -822,7 +1419,7 @@
             "spec": {
               "x": 0,
               "y": 0,
-              "width": 6,
+              "width": 5,
               "height": 7,
               "element": {
                 "kind": "ElementReference",
@@ -833,9 +1430,9 @@
           {
             "kind": "GridLayoutItem",
             "spec": {
-              "x": 6,
+              "x": 5,
               "y": 0,
-              "width": 6,
+              "width": 5,
               "height": 7,
               "element": {
                 "kind": "ElementReference",
@@ -846,7 +1443,7 @@
           {
             "kind": "GridLayoutItem",
             "spec": {
-              "x": 12,
+              "x": 10,
               "y": 0,
               "width": 4,
               "height": 7,
@@ -859,13 +1456,39 @@
           {
             "kind": "GridLayoutItem",
             "spec": {
-              "x": 16,
+              "x": 14,
               "y": 0,
-              "width": 8,
+              "width": 5,
               "height": 7,
               "element": {
                 "kind": "ElementReference",
                 "name": "panel-4"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 19,
+              "y": 0,
+              "width": 5,
+              "height": 4,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-8"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 19,
+              "y": 4,
+              "width": 5,
+              "height": 3,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-9"
               }
             }
           },
@@ -891,7 +1514,7 @@
               "height": 9,
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-6"
+                "name": "panel-7"
               }
             }
           },
@@ -900,11 +1523,37 @@
             "spec": {
               "x": 0,
               "y": 16,
-              "width": 24,
+              "width": 12,
               "height": 8,
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-7"
+                "name": "panel-6"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 12,
+              "y": 16,
+              "width": 12,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-10"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 24,
+              "width": 24,
+              "height": 9,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-11"
               }
             }
           }
@@ -943,14 +1592,14 @@
       {
         "kind": "TextVariable",
         "spec": {
-          "name": "bucket",
-          "label": "Bucket",
-          "description": "O nome do seu bucket no InfluxDB Cloud.",
+          "name": "measurement",
+          "label": "Measurement",
+          "description": "A measurement que o Node-RED grava. Padrão: nexolog.",
           "current": {
-            "text": "SEU_BUCKET",
-            "value": "SEU_BUCKET"
+            "text": "nexolog",
+            "value": "nexolog"
           },
-          "query": "SEU_BUCKET",
+          "query": "nexolog",
           "hide": "dontHide",
           "skipUrlSync": false
         }
