@@ -4,7 +4,9 @@
     {
       "parameters": {
         "topics": "FIAPIoT/motor/multiclasse",
-        "options": {}
+        "options": {
+          "jsonParseBody": true
+        }
       },
       "type": "n8n-nodes-base.mqttTrigger",
       "typeVersion": 1,
@@ -23,31 +25,17 @@
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const dados = typeof $json.message === \"string\"\n    ? JSON.parse($json.message)\n    : $json.message;\n\nreturn { json: dados };\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        208,
-        0
-      ],
-      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f002",
-      "name": "Code (gera JSON)"
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "http://host.docker.internal:8000/predict",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $json }}",
+        "jsonBody": "={{ $json.message }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        448,
+        240,
         0
       ],
       "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f004",
@@ -67,7 +55,7 @@
       "type": "n8n-nodes-base.mqtt",
       "typeVersion": 1,
       "position": [
-        688,
+        480,
         -112
       ],
       "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f005",
@@ -106,7 +94,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        688,
+        480,
         112
       ],
       "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f006",
@@ -121,7 +109,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        928,
+        720,
         112
       ],
       "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f007",
@@ -143,7 +131,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        688,
+        480,
         288
       ],
       "id": "00703832-8734-451e-8262-192b9c2d6a93",
@@ -160,17 +148,6 @@
   "pinData": {},
   "connections": {
     "FIAPIoT/motor/multiclasse": {
-      "main": [
-        [
-          {
-            "node": "Code (gera JSON)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code (gera JSON)": {
       "main": [
         [
           {

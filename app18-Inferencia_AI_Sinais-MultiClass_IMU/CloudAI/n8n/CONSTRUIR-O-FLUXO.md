@@ -1,12 +1,12 @@
 # Construir o fluxo n8n
 
-Sete nós: receber as features, consultar a API, devolver a classe, avisar
+Seis nós: receber as features, consultar a API, devolver a classe, avisar
 quando houver anomalia e avisar quando a própria predição falhar.
 
 ```text
-MQTT Trigger → Code → Predict Motor ┬(ok)──→ MQTT /cmd
-                                    ├(ok)──→ IF: E anomalia? ─true→ Telegram
-                                    └(erro)→ Telegram: a API não respondeu
+MQTT Trigger → Predict Motor ┬(ok)──→ MQTT /cmd
+                             ├(ok)──→ IF: E anomalia? ─true→ Telegram
+                             └(erro)→ Telegram: a API não respondeu
 ```
 
 ## 0 — Antes de começar
@@ -28,36 +28,21 @@ Adicione **MQTT Trigger** e configure:
 | Nome do nó | `FIAPIoT/motor/multiclasse` |
 | Credential | Sua credencial MQTT da IoT-platform |
 | Topics | `FIAPIoT/motor/multiclasse` |
+| Options | **JSON Parse Body** |
 
-O payload chega no campo `message`.
+O payload chega no campo `message`, e o **JSON Parse Body** já o entrega como
+objeto: na saída do nó, `message` abre em campos, não é um texto entre aspas.
+Por isso não há um nó Code entre o gatilho e a API.
+
+> **Não ligue `Only Message`.** Ela promete entregar só o conteúdo, mas embrulha
+> num array: o item vira `[{...}]` e a API recebe uma lista em vez da janela.
 
 Se precisar criar a credencial MQTT no n8n da IoT-platform, use Host
 `mqtt-broker`, Port `1883` e SSL desligado. Use a mesma credencial nos dois nós MQTT.
 
-## 2 — Code: transformar a mensagem em JSON
+## 2 — HTTP Request: consultar o modelo
 
-Conecte um nó **Code** ao MQTT Trigger.
-
-- Nome: `Code (gera JSON)`.
-- Language: **JavaScript**.
-- Mode: **Run Once for Each Item**.
-
-Cole:
-
-```javascript
-const dados = typeof $json.message === "string"
-    ? JSON.parse($json.message)
-    : $json.message;
-
-return { json: dados };
-```
-
-Se a mensagem for texto, `JSON.parse()` transforma em objeto.
-A API valida as oito features e ignora campos extras, como `device`.
-
-## 3 — HTTP Request: consultar o modelo
-
-Conecte um **HTTP Request** ao Code:
+Conecte um **HTTP Request** ao MQTT Trigger:
 
 | Campo | Valor |
 |---|---|
@@ -68,7 +53,10 @@ Conecte um **HTTP Request** ao Code:
 | Send Body | Ligado |
 | Body Content Type | `JSON` |
 | Specify Body | `Using JSON` |
-| JSON — modo Expression | `{{ $json }}` |
+| JSON — modo Expression | `{{ $json.message }}` |
+
+O corpo é só o `message`: o `topic` fica para trás. A API valida as oito
+features e ignora campos extras, como `device`.
 
 Essa URL considera n8n no Docker Desktop e API no Windows. Com ambos rodando
 diretamente no mesmo computador, use `http://localhost:8000/predict`.
@@ -82,14 +70,14 @@ Ainda neste nó, abra a aba **Settings** e ligue duas coisas:
 
 O `Retry` absorve o soluço: se a API demorar um instante, o nó tenta de novo em
 vez de falhar. O `On Error` faz aparecer uma **segunda saída, vermelha**, por
-onde sai o item quando as três tentativas falham. É nela que a etapa 7 se
+onde sai o item quando as três tentativas falham. É nela que a etapa 6 se
 conecta.
 
 Sem isso, uma API fora do ar derruba a execução inteira e ninguém fica sabendo.
 
 Confira na saída: `class` contém a classe e `probabilities` contém as probabilidades.
 
-## 4 — MQTT: devolver a classe ao ESP32
+## 3 — MQTT: devolver a classe ao ESP32
 
 Conecte um nó **MQTT** diretamente ao `Predict Motor`:
 
@@ -103,7 +91,7 @@ Conecte um nó **MQTT** diretamente ao `Predict Motor`:
 
 O ESP32 precisa receber somente o texto, como `operando`, sem aspas e sem o JSON inteiro.
 
-## 5 — IF: verificar se é anomalia
+## 4 — IF: verificar se é anomalia
 
 Crie uma **segunda conexão saindo do Predict Motor**, agora para um nó **IF**.
 
@@ -114,10 +102,10 @@ Crie uma **segunda conexão saindo do Predict Motor**, agora para um nó **IF**.
 | Tipo e operação | `String` → `is equal to` |
 | Valor direito — modo Fixed | `anomalia` |
 
-Deixe a saída **false** sem conexão. O MQTT do passo 4 recebe todas as classes,
+Deixe a saída **false** sem conexão. O MQTT do passo 3 recebe todas as classes,
 independentemente do resultado desse IF.
 
-## 6 — Telegram: enviar o alerta
+## 5 — Telegram: enviar o alerta
 
 Conecte a saída **true** do IF a um nó **Telegram**:
 
@@ -169,7 +157,7 @@ Só a vibração muda, e é só ela que separa as duas classes.
 > No PowerShell, troque as aspas simples por duplas e escape as internas, ou
 > rode as duas linhas no Git Bash / WSL, onde elas funcionam como estão.
 
-## 7 — Telegram: avisar que a predição falhou
+## 6 — Telegram: avisar que a predição falhou
 
 Conecte um **segundo nó Telegram** à **saída vermelha** do `Predict Motor`:
 
@@ -196,7 +184,7 @@ execuções do n8n.
 o LED **fica aceso na classe velha**, e quem olhar para a bancada vê um sistema
 que parece funcionando. É exatamente o tipo de falha que o alerta precisa cobrir.
 
-> **Uma mensagem por janela enquanto durar.** O `Retry On Fail` da etapa 3
+> **Uma mensagem por janela enquanto durar.** O `Retry On Fail` da etapa 2
 > absorve a falha passageira; uma queda longa manda um aviso por segundo. É a
 > mesma escolha do alerta de anomalia: repetir é melhor do que calar.
 
@@ -221,18 +209,19 @@ funcionar:
 | O que você publica | Onde quebra |
 |---|---|
 | `"std_mag": "NaN"` | na **API**, com 500 — é o ramo de erro que queremos |
-| `"std_mag": nan` | no nó **Code**, antes: `nan` sem aspas não é JSON válido, e o `JSON.parse()` estoura |
+| `"std_mag": nan` | no **`Predict Motor`**, antes de chamar a API: `nan` sem aspas não é JSON válido |
 | `"std_mag": null` | na **API**, com 422 — o Pydantic recusa o campo |
 
-Os três avisam alguém, mas por caminhos diferentes. Só o primeiro exercita o
-ramo que acabamos de montar; o segundo mostra que o `JSON.parse()` do nó Code
-já é uma barreira, e é por isso que não existe um nó de validação antes dele.
+Os três acabam na saída vermelha, mas só o primeiro chega a rodar o modelo. O
+segundo vale ver na aba de execução: o **JSON Parse Body** não reclama quando o
+parse falha, apenas deixa `message` como texto. O erro aparece no `Predict
+Motor`, que não consegue montar um corpo JSON a partir desse texto.
 
-## 8 — Testar
+## 7 — Testar
 
 1. Confira a API em `http://localhost:8000/`.
 2. No n8n, clique em **Execute workflow** para aguardar uma mensagem MQTT.
-3. Ligue o ESP32 e confira as features na saída do Code.
+3. Ligue o ESP32 e confira as features em `message`, na saída do MQTT Trigger.
 4. Confira a classe na saída do `Predict Motor` e a saída correspondente no ESP32.
 5. Repita o teste provocando a condição de anomalia usada no treino: o IF deve
    seguir por **true** e enviar o alerta.

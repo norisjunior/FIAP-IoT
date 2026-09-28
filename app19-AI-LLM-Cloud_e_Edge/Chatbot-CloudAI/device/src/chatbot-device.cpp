@@ -1,28 +1,28 @@
-/* validacao-device — o dispositivo decide sozinho E conta o que decidiu.
+/* chatbot-device — o ESP32 mede, pergunta para a nuvem e obedece.
 
-   Este firmware é a soma das duas metades do app anterior: a inferência que
-   roda na flash, com a Random Forest, mais o Wi-Fi e o MQTT que antes só
-   existiam na versão com API.
-
-   A diferença de papel é o ponto da aplicação:
-
-     versão com API   o device PERGUNTA e obedece. Sem rede, ele não sabe nada.
-     versão da borda  o device DECIDE e não fala com ninguém.
-     este             o device DECIDE, acende a saída, e REPORTA o que decidiu.
-
-   Repare no que não existe aqui: subscribe, callback, tópico de comando. O
-   device não espera resposta de ninguém — ele já respondeu. A janela sai pelo
-   MQTT junto com a predição da borda, e quem quiser conferir que confira.
-
-   Do outro lado, o n8n pega essa mesma janela, pergunta à MLP que roda na
-   nuvem, e guarda as duas respostas no PostgreSQL. Se a rede cair, o motor
-   continua sendo monitorado: só a conferência para.
+   Este firmware é o do app anterior, sem uma linha diferente: publica a janela
+   de 100 amostras @ 100 Hz em FIAPIoT/motor/multiclasse e a classe prevista
+   volta em FIAPIoT/motor/multiclasse/cmd. Cada classe acende UMA saída:
 
        operando          LED azul      (4)
        inclinado_frente  LED amarelo  (21)
        inclinado_tras    LED vermelho (18)
        anomalia          buzzer       (19)
-       LED onboard        (2)   aceso = conectado ao broker
+
+   O que este app acrescenta NÃO está aqui: está no fluxo do n8n, que passa a
+   guardar cada predição no PostgreSQL para o chat poder consultar depois. Do
+   ponto de vista do dispositivo, nada mudou — ele continua perguntando e
+   obedecendo, sem saber que alguém está anotando as respostas.
+
+   Repare no que não existe aqui: nenhum if sobre vibração ou inclinação,
+   nenhum limiar — e nenhum botão. O gerador de dataset tinha botões porque um
+   humano rotulava cada janela. Este é um MONITOR de condição: roda sem parar,
+   e quem rotula é o modelo.
+
+   Como a nuvem responde uma vez por segundo, a saída MANTÉM a última decisão
+   recebida até a próxima chegar. Não há temporização nenhuma no firmware: a
+   saída é a memória. Por isso quem acende os LEDs é a própria receberComando()
+   — o loop não precisa cuidar disso.
 */
 /*
 PARA USAR NO WOKWI:
@@ -37,6 +37,7 @@ PARA USAR NO WOKWI:
   e mean_ax perto de ±0,42, que é o que 25 graus produzem.
 - A ANOMALIA não sai. Ela é vibração, e com o controle parado as 100 amostras
   da janela ficam idênticas: std_* e p2p_mag dão zero.
+- Ainda assim serve para testar o loop MQTT -> API -> MQTT.
 */
 
 #include <Arduino.h>
@@ -48,49 +49,40 @@ PARA USAR NO WOKWI:
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-/* ---- O modelo, em dois arquivos gerados pelo Colab ----
-   Os dois SEMPRE do mesmo treino: o scaler guarda a média e o desvio de cada
-   feature, e os limiares da floresta estão nessa escala. Misturar o scaler de
-   uma execução com a floresta de outra não dá erro de compilação — dá predição
-   errada, em silêncio. */
-#include "ModeloMotorScaler.hpp"   // Scaler::standardize()
-#include "ModeloMotorRF.hpp"       // Eloquent::ML::Port::RandomForest
-
-Eloquent::ML::Port::RandomForest modeloRF;
-
 /* ---- Rede: use (A) Wokwi OU (B) ESP32 físico ---- */
 // ---- (A) Wokwi (padrão) ----
-// const char* WIFI_SSID     = "Wokwi-GUEST";
-// const char* WIFI_PASSWORD = "";
-// #define MQTT_SERVER "host.wokwi.internal"
+const char* WIFI_SSID     = "Wokwi-GUEST";
+const char* WIFI_PASSWORD = "";
+#define MQTT_SERVER "host.wokwi.internal"
 
 // ---- (B) ESP32 físico ----
-const char* WIFI_SSID     = "NorisIoT";
-const char* WIFI_PASSWORD = "Secure10T";
-#define MQTT_SERVER "172.16.10.101"   // IP da máquina com a plataforma
+// const char* WIFI_SSID     = "NorisIoT";
+// const char* WIFI_PASSWORD = "Secure10T";
+// #define MQTT_SERVER "172.16.10.101"   // IP da máquina com a IoT-platform
 
 WiFiClient wifiClient;
 
-/* ---- MQTT: só publicação ----
-   Um tópico só, e é de saída. O tópico é NOVO, diferente do usado no app da
-   nuvem: se fosse o mesmo, o fluxo daquele app reagiria a estas mensagens
-   também e os dois se embolariam. */
+/* ---- MQTT ---- */
 #define MQTT_PORT      1883
-#define MQTT_PUB_TOPIC "FIAPIoT/motor/validacao"
-#define MQTT_CLIENT_ID "IoTDevValidacaoMotor001"
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse"       // a janela vai por aqui
+#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/cmd"   // a classe volta por aqui
+#define MQTT_CLIENT_ID "IoTDevInferenciaMultiClasse001"
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Pinos ---- */
 #define SDA_PIN      22
 #define SCL_PIN      23
+/* Uma saída por classe: a que estiver ligada é a resposta da nuvem.
+   Repare que 21 e 18 eram os BOTÕES do app de coleta — os pinos com que um humano
+   rotulava agora mostram o rótulo que o modelo escolheu. */
 #define LED_AZUL      4   // operando
 #define LED_AMARELO  21   // inclinado_frente
 #define LED_VERMELHO 18   // inclinado_tras
 #define BUZZER       19   // anomalia
-#define LED_ONBOARD   2   // aceso = conectado ao broker
+#define LED_ONBOARD   2   // LED onboard: aceso = conectado ao broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
-#define MPU_TYPE MPU6500
+#define MPU_TYPE MPU6050
 MPU_TYPE mpu;
 
 calData calib = { 0 };
@@ -108,26 +100,18 @@ float mag_buf[TAMANHO_JANELA];
 int indice = 0;
 uint32_t tempoAnterior = 0;
 
-/* ---- Os nomes das classes, NA ORDEM DO scikit-learn ----
-   O predict() devolve um número: 0, 1, 2 ou 3. A ordem é a de classes_, que o
-   scikit-learn devolve sempre em ordem ALFABÉTICA. Por isso anomalia é o
-   índice 0. Aqui o nome importa duas vezes: acende a saída certa e vai no JSON
-   para a nuvem comparar. */
-const char* NOMES_CLASSES[4] = { "anomalia", "inclinado_frente",
-                                 "inclinado_tras", "operando" };
-
 /* ---- Protótipos ---- */
-int  classificarJanela(const float features[8]);
-void acionarSaida(int classe);
-void apagarTodasAsSaidas();
-void publicarJanela(const float features[8], int classe);
 void conectarWiFi();
 void conectarMQTT();
+void receberComando(char* topico, byte* conteudo, unsigned int tamanho);
+void apagarTodasAsSaidas();
+void publicarJanela(float mx, float my, float mz,
+                    float sx, float sy, float sz,
+                    float stdMag, float p2p);
 
 /* =========================== Features ===========================
    As 8 que o modelo recebe: mean_* (orientação), std_* e std_mag (vibração)
-   e p2p_mag (pior caso da janela). Idênticas às da coleta — é esse "idênticas"
-   que faz o modelo valer aqui. */
+   e p2p_mag (pior caso da janela). */
 float calcMean(float arr[], int n) {
   float soma = 0;
   for (int i = 0; i < n; i++) soma += arr[i];
@@ -180,11 +164,12 @@ void setup() {
   // de pacotes lidos dela. Com zero pacotes o ESP32 ABORTA, logo depois da
   // mensagem acima, com "Guru Meditation Error: IntegerDivideByZero".
   // No ESP32 físico ela é necessária: é o que zera o viés do sensor.
-  mpu.calibrateAccelGyro(&calib);
+  // mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
 
   Serial.println("MPU iniciado");
 
+  // As quatro saídas de classe, mais o LED da placa.
   pinMode(LED_AZUL,     OUTPUT);
   pinMode(LED_AMARELO,  OUTPUT);
   pinMode(LED_VERMELHO, OUTPUT);
@@ -195,7 +180,9 @@ void setup() {
   digitalWrite(LED_ONBOARD, LOW);
 
   // Teste de ligação: acende uma saída por vez, para você conferir se cada
-  // componente está no pino certo ANTES de depender do modelo.
+  // componente está no pino certo ANTES de depender do modelo. Se o LED
+  // amarelo não acender aqui, o problema é o fio — não a rede neural.
+  // Os delay() aqui não atrapalham: o setup roda uma vez, antes do loop.
   Serial.println("Testando as saidas...");
   digitalWrite(LED_AZUL,     HIGH); delay(400); digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
@@ -205,13 +192,20 @@ void setup() {
   conectarWiFi();
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setCallback(receberComando);   // é aqui que a resposta da nuvem entra
   mqttClient.setKeepAlive(60);
   mqttClient.setSocketTimeout(30);
   mqttClient.setBufferSize(512);
-  // Sem setCallback: este firmware não escuta nada. Ele decide e conta.
 
-  Serial.println("Sistema pronto. Decide aqui, e publica o que decidiu.");
-  Serial.printf("  Publica em: %s\r\n\r\n", MQTT_PUB_TOPIC);
+  Serial.println("Sistema pronto. Uma janela por segundo, sem botão nenhum.");
+  Serial.printf("  Publica em: %s\r\n", MQTT_PUB_TOPIC);
+  Serial.printf("  Escuta em:  %s\r\n", MQTT_SUB_TOPIC);
+  Serial.println("  Saidas (uma por classe):");
+  Serial.printf("    GPIO %2d  LED azul     = operando\r\n",         LED_AZUL);
+  Serial.printf("    GPIO %2d  LED amarelo  = inclinado_frente\r\n", LED_AMARELO);
+  Serial.printf("    GPIO %2d  LED vermelho = inclinado_tras\r\n",   LED_VERMELHO);
+  Serial.printf("    GPIO %2d  BUZZER       = anomalia\r\n",         BUZZER);
+  Serial.println("  Tudo apagado = a nuvem ainda nao respondeu\r\n");
 }
 
 /* ============================== LOOP =============================== */
@@ -223,13 +217,14 @@ void loop() {
 
   digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
 
-  // --- Coleta IMU a 100 Hz ---
+  // --- Coleta IMU a 100 Hz, direto, sem esperar comando ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
     // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o atraso
     // de um ciclo não empurra o próximo e a taxa não escorrega abaixo de 100 Hz.
     tempoAnterior += AMOSTRA_MS;
-    // Se ainda estamos mais de uma amostra atrasados, não adianta amostrar em
-    // rajada para recuperar: as amostras sairiam sem espaçamento real.
+    // Se ainda estamos mais de uma amostra atrasados (reconexão MQTT, publish
+    // lento), não adianta amostrar em rajada para recuperar: as amostras sairiam
+    // sem espaçamento real. Recomeça do agora.
     if (millis() - tempoAnterior >= AMOSTRA_MS) tempoAnterior = millis();
 
     AccelData accel;
@@ -253,96 +248,20 @@ void loop() {
       float stdMag = calcStd(mag_buf, TAMANHO_JANELA, mMag);
       float p2p    = calcPtP(mag_buf, TAMANHO_JANELA);
 
-      // A ORDEM deste vetor é a ordem das colunas no treino.
-      float features[8] = { mx, my, mz, sx, sy, sz, stdMag, p2p };
-
-      // Primeiro decide e age. Publicar vem depois, e de propósito: se o
-      // broker estiver fora do ar, o motor continua sendo monitorado.
-      int classe = classificarJanela(features);
-      acionarSaida(classe);
-      publicarJanela(features, classe);
+      publicarJanela(mx, my, mz, sx, sy, sz, stdMag, p2p);
 
       indice = 0;
     }
   }
 }
 
-/* ---- A inferência: duas linhas, e o resto é impressão ----
-   Esta função só RESPONDE: devolve o índice da classe e não mexe em pino
-   nenhum. Quem acende é a acionarSaida(), chamada pelo loop. */
-int classificarJanela(const float features[8]) {
-  float padronizado[8];
-
-  uint32_t t0 = micros();
-  Scaler::standardize(features, padronizado);  // (valor - media) / desvio
-  int classe = modeloRF.predict(padronizado);  // a floresta decide
-  uint32_t duracao = micros() - t0;
-
-  Serial.println("--- Janela fechada ---");
-  Serial.printf("  mean_ax=%.3f  mean_ay=%.3f  mean_az=%.3f\r\n",
-                features[0], features[1], features[2]);
-  Serial.printf("  std_ax=%.3f   std_ay=%.3f   std_az=%.3f\r\n",
-                features[3], features[4], features[5]);
-  Serial.printf("  std_mag=%.3f  p2p_mag=%.3f\r\n", features[6], features[7]);
-
-  if (classe >= 0 && classe < 4) {
-    Serial.printf("  PREDIÇÃO:  %d -> %s\r\n", classe, NOMES_CLASSES[classe]);
-  } else {
-    Serial.printf("  PREDIÇÃO:  %d -> indice fora da faixa\r\n", classe);
-  }
-  Serial.printf("  Inferencia: %lu us\r\n", duracao);
-  Serial.println("----------------------");
-
-  return classe;
-}
-
-/* ---- Acende SÓ a saída da classe prevista ---- */
-void acionarSaida(int classe) {
-  apagarTodasAsSaidas();
-
-  switch (classe) {
-    case 0: tone(BUZZER, 500, 250);           break;   // anomalia: bipe de 250 ms
-    case 1: digitalWrite(LED_AMARELO,  HIGH); break;   // inclinado_frente
-    case 2: digitalWrite(LED_VERMELHO, HIGH); break;   // inclinado_tras
-    case 3: digitalWrite(LED_AZUL,     HIGH); break;   // operando
-    default: break;                                    // tudo apagado
-  }
-}
-
-/* ---- Apaga as quatro saídas ---- */
+/* ---- Apaga as quatro saídas de classe ----
+   Chamada antes de acender a saída nova, para nunca ficarem duas ligadas. */
 void apagarTodasAsSaidas() {
   digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  LOW);
   digitalWrite(LED_VERMELHO, LOW);
   digitalWrite(BUZZER,       LOW);
-}
-
-/* ---- Publica a janela E a predição da borda ----
-   As oito features vão para a nuvem rodar o modelo dela em cima dos MESMOS
-   números, e predicao_borda vai junto para a comparação ser possível. Sem ela
-   a nuvem responderia no vácuo: haveria uma predição só, e nada a conferir.
-
-   Vai o nome da classe, não o índice: do outro lado, a API devolve o nome
-   também, e comparar texto com texto dispensa qualquer tabela de tradução. */
-void publicarJanela(const float features[8], int classe) {
-  JsonDocument doc;
-  doc["device"]         = MQTT_CLIENT_ID;
-  doc["predicao_borda"] = (classe >= 0 && classe < 4) ? NOMES_CLASSES[classe] : "desconhecida";
-  doc["mean_ax"] = serialized(String(features[0], 3));
-  doc["mean_ay"] = serialized(String(features[1], 3));
-  doc["mean_az"] = serialized(String(features[2], 3));
-  doc["std_ax"]  = serialized(String(features[3], 3));
-  doc["std_ay"]  = serialized(String(features[4], 3));
-  doc["std_az"]  = serialized(String(features[5], 3));
-  doc["std_mag"] = serialized(String(features[6], 3));
-  doc["p2p_mag"] = serialized(String(features[7], 3));
-
-  String buffer;
-  serializeJson(doc, buffer);
-
-  if (!mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str())) {
-    Serial.println("MQTT: falha no envio");
-  }
 }
 
 /* ---- WiFi ---- */
@@ -362,16 +281,94 @@ void conectarWiFi() {
   Serial.println(WiFi.localIP());
 }
 
-/* ---- MQTT ----
-   Sem subscribe: não há tópico de comando para assinar. */
+/* ---- MQTT ---- */
 void conectarMQTT() {
   while (!mqttClient.connected()) {
     Serial.printf("Conectando ao MQTT Broker %s...", MQTT_SERVER);
     if (mqttClient.connect(MQTT_CLIENT_ID)) {
       Serial.println(" Conectado!");
+      mqttClient.subscribe(MQTT_SUB_TOPIC);
+      Serial.printf("Inscrito em: %s\r\n", MQTT_SUB_TOPIC);
     } else {
       Serial.printf(" Falha rc=%d. Tentando em 5s...\r\n", mqttClient.state());
       delay(5000);
     }
+  }
+}
+
+/* ---- A resposta da nuvem chega aqui ----
+   É a única função que mexe nas saídas. Chega o NOME da classe, comparamos
+   com os quatro nomes possíveis e acendemos a saída daquele que casar.
+
+   Não há nada de temporal aqui: acendeu, FICA aceso até chegar a próxima
+   mensagem — e ela chega a cada segundo. A saída é a memória do dispositivo. */
+void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
+  // O payload MQTT não termina em '\0', por isso o String recebe o tamanho junto.
+  String classe(conteudo, tamanho);
+  classe.trim();
+
+  // Mostra o que chegou ANTES de julgar: se o payload vier errado (um JSON
+  // inteiro, por exemplo), é aqui que se vê o que o n8n publicou de fato.
+  Serial.println("--- MQTT recebido ---");
+  Serial.printf("  topico:  %s\r\n", topico);
+  Serial.printf("  tamanho: %u bytes\r\n", tamanho);
+  Serial.printf("  payload: \"%s\"\r\n", classe.c_str());
+
+  // Passo 1: apaga tudo. Assim nunca ficam duas saídas ligadas ao mesmo tempo.
+  apagarTodasAsSaidas();
+
+  // Passo 2: acende SÓ a saída da classe que chegou.
+  if (classe == "operando") {
+    digitalWrite(LED_AZUL, HIGH);
+    Serial.println("  MODELO:  operando         -> LED azul aceso");
+
+  } else if (classe == "inclinado_frente") {
+    digitalWrite(LED_AMARELO, HIGH);
+    Serial.println("  MODELO:  inclinado_frente -> LED amarelo aceso");
+
+  } else if (classe == "inclinado_tras") {
+    digitalWrite(LED_VERMELHO, HIGH);
+    Serial.println("  MODELO:  inclinado_tras   -> LED vermelho aceso");
+
+  } else if (classe == "anomalia") {
+    tone(BUZZER, 500, 250);   // bipe de 250 ms; a cada mensagem, um bipe
+    Serial.println("  MODELO:  anomalia         -> BUZZER ligado");
+
+  } else {
+    // Nenhum nome casou. As saídas ficam todas apagadas, e isso é proposital:
+    // apagado avisa que algo está errado, melhor do que manter a última classe
+    // e parecer que o sistema continua funcionando.
+    Serial.println("  MODELO:  classe DESCONHECIDA - tudo apagado");
+    Serial.println("           esperado, sem aspas e sem JSON:");
+    Serial.println("           operando | inclinado_frente | inclinado_tras | anomalia");
+  }
+
+  Serial.println("---------------------");
+}
+
+/* ---- Publica a janela: só o que o modelo precisa ----
+   Não vai timestamp. Na coleta ele existia porque as janelas iam para um
+   BANCO, onde o tempo é o eixo e a ordem importa. Aqui a janela vale agora:
+   é medida, classificada e respondida em menos de um segundo, e depois não
+   serve para mais nada. Sem timestamp no payload, o NTP também sai. */
+void publicarJanela(float mx, float my, float mz,
+                    float sx, float sy, float sz,
+                    float stdMag, float p2p) {
+  JsonDocument doc;
+  doc["device"]  = MQTT_CLIENT_ID;
+  doc["mean_ax"] = serialized(String(mx, 3));
+  doc["mean_ay"] = serialized(String(my, 3));
+  doc["mean_az"] = serialized(String(mz, 3));
+  doc["std_ax"]  = serialized(String(sx, 3));
+  doc["std_ay"]  = serialized(String(sy, 3));
+  doc["std_az"]  = serialized(String(sz, 3));
+  doc["std_mag"] = serialized(String(stdMag, 3));
+  doc["p2p_mag"] = serialized(String(p2p, 3));
+
+  String buffer;
+  serializeJson(doc, buffer);
+
+  if (!mqttClient.publish(MQTT_PUB_TOPIC, buffer.c_str())) {
+    Serial.println("MQTT: falha no envio");
   }
 }

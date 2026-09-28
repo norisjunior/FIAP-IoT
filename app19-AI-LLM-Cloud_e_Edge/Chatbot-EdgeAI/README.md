@@ -1,4 +1,4 @@
-# Validacao — a borda continua concordando com a nuvem?
+# Chatbot-EdgeAI — a borda continua concordando com a nuvem?
 
 O dispositivo decide sozinho, com a Random Forest que mora na flash dele. Isso é
 ótimo: responde em microssegundos e funciona sem rede. Mas levanta uma pergunta
@@ -19,6 +19,10 @@ ESP32 ─► decide na flash ─► acende a saída
 
 Na indústria isso se chama **shadow mode**: o modelo grande roda em paralelo,
 sem mandar em nada, só para medir o quanto o modelo pequeno concorda com ele.
+
+São **dois fluxos**, como na `Chatbot-CloudAI/`: um que ingere a comparação sem
+parar, outro que responde quando você pergunta. Eles não se falam — conversam
+pelo banco.
 
 ## O dispositivo não obedece a ninguém
 
@@ -55,9 +59,9 @@ Para montar o firmware do zero, em etapas que compilam:
 ### O tópico é outro
 
 `FIAPIoT/motor/validacao`, e não o `FIAPIoT/motor/multiclasse` das outras
-aplicações. Se fosse o mesmo, o fluxo do `Chatbot` reagiria a estas mensagens
-também — ele responderia no tópico de comando, e as duas aplicações se
-embolariam no mesmo dispositivo.
+aplicações. Se fosse o mesmo, o fluxo da `Chatbot-CloudAI` reagiria a estas
+mensagens também — ele responderia no tópico de comando, e as duas aplicações
+se embolariam no mesmo dispositivo.
 
 ### O que sai no JSON
 
@@ -78,26 +82,25 @@ predição só, e não existiria conferência nenhuma.
 A predição vai como **nome**, não como índice: a API também devolve nome, e
 comparar texto com texto dispensa qualquer tabela de tradução no meio.
 
-## 2) O fluxo
+## 2) O fluxo de ingestão
 
-Importe `n8n/Fluxo-validacao.json` e configure as credenciais de **MQTT** e
-**PostgreSQL**. São quatro nós depois do gatilho:
+Importe `n8n/Fluxo-1-ingestao-postgres.json` e configure as credenciais de
+**MQTT** e **PostgreSQL**. São três nós depois do gatilho:
 
 | # | Nó | O que faz |
 |---|---|---|
-| 1 | `FIAPIoT/motor/validacao` | recebe a janela e a predição da borda |
-| 2 | `Code (gera JSON)` | converte a mensagem MQTT em JSON |
-| 3 | `Predict Motor (nuvem)` | `POST` para a API, que ignora os campos a mais |
-| 4 | `Compara borda e nuvem` | monta as duas predições e o `concordam` |
-| 5 | `Armazena a comparacao` | cria a tabela se não existir e insere |
+| 1 | `FIAPIoT/motor/validacao` | recebe a janela e a predição da borda, já como objeto (**JSON Parse Body**) |
+| 2 | `Predict Motor (nuvem)` | `POST` do `message` para a API, que ignora os campos a mais |
+| 3 | `Compara borda e nuvem` | monta as duas predições e o `concordam` |
+| 4 | `Armazena a comparacao` | cria a tabela se não existir e insere |
 
-No nó 4 há um detalhe que vale explicar em voz alta: depois do `POST`, o item
+No nó 3 há um detalhe que vale explicar em voz alta: depois do `POST`, o item
 que circula é a **resposta da API** — a predição da borda ficou para trás. Por
 isso ela é buscada pelo nome do nó:
 
 ```js
 const nuvem = $input.first().json.class;
-const borda = $('Code (gera JSON)').first().json.predicao_borda;
+const borda = $('FIAPIoT/motor/validacao').first().json.message.predicao_borda;
 ```
 
 ### A tabela
@@ -124,8 +127,15 @@ você vai projetar na aula.
 SELECT
   COUNT(*)                                   AS janelas,
   COUNT(*) FILTER (WHERE concordam)          AS concordaram,
-  ROUND(100.0 * COUNT(*) FILTER (WHERE concordam) / COUNT(*), 1) AS taxa_pct
+  ROUND(100.0 * COUNT(*) FILTER (WHERE concordam)
+        / NULLIF(COUNT(*), 0), 1)            AS taxa_pct
 FROM motor_validacao;
+```
+
+Para rodar direto no banco, sem sair do terminal:
+
+```bash
+docker exec -it n8n-postgres psql -U n8nuser -d n8n
 ```
 
 E, quando discordarem, quais classes se confundiram:
@@ -155,6 +165,53 @@ Se as duas discordarem sempre da mesma forma — por exemplo, a borda dizendo
 isso: ela está no Serial Monitor do dispositivo, que imprime as oito features a
 cada segundo.
 
+## 4) O fluxo do chat
+
+A taxa acima é uma consulta que você roda. Mas ela também pode ser uma
+**pergunta em português**, do mesmo jeito que a `Chatbot-CloudAI/` pergunta pelo
+estado do motor. Importe `n8n/Fluxo-2-chat-llm.json` e configure as credenciais
+de **Ollama** e **PostgreSQL**.
+
+| Nó | Papel |
+|---|---|
+| `When chat message received` | abre a janela de chat |
+| `FIoT Agent` | decide qual ferramenta usar e redige a resposta |
+| `Ollama Chat Model` | o modelo de linguagem (`llama3.2:1b`) |
+| `Simple Memory` | lembra as mensagens anteriores da conversa |
+| `concordancia_geral` | a taxa sobre todas as janelas gravadas |
+| `concordancia_periodo` | a taxa em `WHERE data = $1 AND periodo = $2` |
+| `onde_discordam` | quais classes se confundiram, da mais frequente para a menos |
+
+Ative o fluxo e abra a URL que o nó de chat mostra.
+
+### Quem faz a conta é o Postgres, não o LLM
+
+Repare no SQL das três ferramentas: a agregação está toda lá dentro, e o agente
+recebe `taxa_pct` já pronto. Isso é deliberado.
+
+Se o `llama3.2:1b` recebesse as 300 linhas cruas e a pergunta *"qual a taxa de
+concordância?"*, ele devolveria um número plausível e errado — **modelo de
+linguagem não conta**. O `COUNT(*) FILTER` roda no banco, e o LLM fica só com o
+trabalho que é dele: escolher a ferramenta e escrever a frase.
+
+É a mesma decisão do `concordam`, calculado no nó 3 da ingestão e gravado
+pronto: **trabalho feito antes é trabalho que o LLM não precisa acertar.**
+
+E a *system message* vai um passo além da tradução: ela traz as faixas de
+leitura — acima de 95% está saudável, abaixo de 85% é hora de retreinar. O
+número sai do banco; o que fazer com ele está escrito no prompt.
+
+## 5) Testar
+
+Com o ESP32 rodando e o fluxo de ingestão **ativo**, espere alguns segundos e
+pergunte no chat:
+
+- *"O modelo da borda está confiável?"* → usa `concordancia_geral`
+- *"E ontem à noite?"* → usa `concordancia_periodo`
+- *"Em quais classes eles discordam?"* → usa `onde_discordam`
+- *"Preciso retreinar?"* → usa a taxa que já está na conversa e as faixas da
+  *system message*
+
 ## Se der errado
 
 **`concordam` é sempre `true`, em todas as janelas.** Confira se a API está
@@ -167,9 +224,17 @@ vira tautologia: mesmo modelo, mesmos números, mesma resposta, para sempre.
 mostra se o dispositivo está publicando.
 
 **A API recusa o corpo.** Ela ignora `device` e `predicao_borda` e lê só as oito
-features. Se estiver recusando, é o JSON que chegou quebrado — veja o que o nó 2
-produziu.
+features. Se estiver recusando, é o JSON que chegou quebrado — veja se o `message` do
+nó 1 abriu em campos ou ficou como texto.
 
 **Os LEDs acendem mas nada é gravado.** É o comportamento esperado quando o
 broker está fora do ar: o dispositivo decide primeiro e publica depois, de
 propósito.
+
+**O chat responde um número que não bate com o `SELECT`.** O agente não deveria
+calcular nada. Confira se as `query` das ferramentas vieram completas na
+importação — se o `COUNT(*) FILTER` se perder, o LLM passa a inventar.
+
+**O agente sempre usa a ferramenta errada.** É o sintoma clássico de modelo
+pequeno. Confira se as descrições das três ferramentas vieram completas: elas
+são a única instrução que o agente tem para escolher.
