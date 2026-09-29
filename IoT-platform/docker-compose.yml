@@ -24,6 +24,7 @@ services:
     volumes:
       - nodered-data:/data
       - ./nodered/settings.js:/data/settings.js:ro
+      - ./files:/data/files
     restart: unless-stopped
     networks: [iot-network]
     depends_on: [mosquitto, influxdb]
