@@ -29,6 +29,8 @@ Imagens ausentes são baixadas; as existentes não são atualizadas a cada iníc
 - `docker-compose.yml`: definição fixa dos serviços e volumes.
 - `mqtt-broker/mosquitto.conf`: configuração pronta de MQTT e WebSocket.
 - `nodered/settings.js`: autenticação que lê variáveis recebidas do Compose.
+- `files/`: o que o Node-RED gravar em `/data/files` aparece aqui (imagens, CSV etc.).
+  Criada no primeiro start e ignorada pelo Git.
 - `start-linux.sh` e `stop-linux.sh`: início e parada no Linux/WSL2.
 - `start-windows.ps1` e `stop-windows.ps1`: início e parada no Windows.
 
