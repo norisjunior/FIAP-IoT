@@ -1,0 +1,496 @@
+[
+    {
+        "id": "c3a0f1e2d4b5a601",
+        "type": "tab",
+        "label": "CP3 - Captura de foto",
+        "disabled": false,
+        "info": "Equipe01. Tampa aberta e caixa sacudindo: pede uma foto, no máximo uma a cada 10 s, e grava foto e leituras em /data/files. No dia da prova, troque a URL do pedir-foto pelo IP do ESP32-CAM."
+    },
+    {
+        "id": "c3a0f1e2d4b5a602",
+        "type": "mqtt in",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Dados da caixa",
+        "topic": "FIAPIoT/nexolog/equipe01/dados",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "6c9a71ebeeca9850",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 100,
+        "y": 80,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a603"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a603",
+        "type": "json",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "JSON para objeto",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 310,
+        "y": 80,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a604",
+                "c3a0f1e2d4b5a609"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a604",
+        "type": "function",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "separarDadosSensores",
+        "func": "const p = msg.payload;\nlet temp = {payload: p.temp};\nlet umid = {payload: p.umid};\nlet dist = {payload: p.dist};\nlet movimentacao = {payload: p.movimentacao};\nreturn [temp, umid, dist, movimentacao];",
+        "outputs": 4,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 80,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a605"
+            ],
+            [
+                "c3a0f1e2d4b5a606"
+            ],
+            [
+                "c3a0f1e2d4b5a607"
+            ],
+            [
+                "c3a0f1e2d4b5a608"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a605",
+        "type": "ui_gauge",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Temperatura",
+        "group": "c3a0f1e2d4b5a620",
+        "order": 1,
+        "width": 3,
+        "height": 3,
+        "gtype": "gage",
+        "title": "Temperatura",
+        "label": "°C",
+        "format": "{{value | number:1}}",
+        "min": 0,
+        "max": 50,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "25",
+        "seg2": "30",
+        "diff": false,
+        "className": "",
+        "x": 810,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "c3a0f1e2d4b5a606",
+        "type": "ui_gauge",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Umidade",
+        "group": "c3a0f1e2d4b5a620",
+        "order": 2,
+        "width": 3,
+        "height": 3,
+        "gtype": "gage",
+        "title": "Umidade",
+        "label": "%",
+        "format": "{{value | number:1}}",
+        "min": 0,
+        "max": 100,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "60",
+        "seg2": "70",
+        "diff": false,
+        "className": "",
+        "x": 800,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "c3a0f1e2d4b5a607",
+        "type": "ui_level",
+        "z": "c3a0f1e2d4b5a601",
+        "group": "c3a0f1e2d4b5a620",
+        "order": 3,
+        "width": 3,
+        "height": 3,
+        "name": "Distância da tampa",
+        "label": "Tampa",
+        "colorHi": "#e60000",
+        "colorWarn": "#ff9900",
+        "colorNormal": "#00b33c",
+        "colorOff": "#595959",
+        "min": 0,
+        "max": 50,
+        "segWarn": "20",
+        "segHigh": "25",
+        "unit": "cm",
+        "layout": "sv",
+        "channelA": "",
+        "channelB": "",
+        "decimals": 1,
+        "animations": "soft",
+        "shape": 2,
+        "colorschema": "fixed",
+        "textoptions": "default",
+        "colorText": "#eeeeee",
+        "fontLabel": "",
+        "fontValue": "",
+        "fontSmall": "",
+        "colorFromTheme": true,
+        "textAnimations": false,
+        "hideValue": false,
+        "tickmode": "off",
+        "peakmode": false,
+        "property": "payload",
+        "peaktime": 3000,
+        "x": 830,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "c3a0f1e2d4b5a608",
+        "type": "ui_gauge",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Movimentação",
+        "group": "c3a0f1e2d4b5a620",
+        "order": 4,
+        "width": 3,
+        "height": 3,
+        "gtype": "gage",
+        "title": "Movimentação",
+        "label": "m/s²",
+        "format": "{{value | number:1}}",
+        "min": 0,
+        "max": 20,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "1.5",
+        "seg2": "3",
+        "diff": false,
+        "className": "",
+        "x": 820,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "c3a0f1e2d4b5a609",
+        "type": "switch",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Tampa aberta?",
+        "property": "payload.dist",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "25",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 540,
+        "y": 220,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a610"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a610",
+        "type": "switch",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Movimento brusco?",
+        "property": "payload.movimentacao",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "3",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 740,
+        "y": 220,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a611"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a611",
+        "type": "change",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Guardar leituras",
+        "rules": [
+            {
+                "t": "set",
+                "p": "evento",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 950,
+        "y": 220,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a612"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a612",
+        "type": "delay",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "1 foto a cada 10 s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "10",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1150,
+        "y": 220,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a613",
+                "c3a0f1e2d4b5a619"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a613",
+        "type": "http request",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "pedir-foto",
+        "method": "GET",
+        "ret": "bin",
+        "paytoqs": "ignore",
+        "url": "https://picsum.photos/640/480",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 340,
+        "y": 340,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a614",
+                "c3a0f1e2d4b5a616"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a614",
+        "type": "function",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Nomear foto e registro",
+        "func": "// Mesmo nome para os dois arquivos: equipe01_2026-10-06T14-30-00.jpg e .json\n// Hora local: o container roda com TZ=America/Sao_Paulo.\nconst agora = new Date();\nconst local = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000);\nconst hora = local.toISOString().slice(0, 19);\nconst nome = \"equipe01_\" + hora.replace(/:/g, \"-\");\n\nconst foto = {payload: msg.payload, filename: \"/data/files/\" + nome + \".jpg\"};\n\nconst registro = {\n    filename: \"/data/files/\" + nome + \".json\",\n    payload: JSON.stringify({\n        foto: nome + \".jpg\",\n        data_hora: hora,\n        gatilho: \"dist > 25 e movimentacao > 3\",\n        ...msg.evento\n    }, null, 2)\n};\n\nreturn [foto, registro];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 320,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a615"
+            ],
+            [
+                "c3a0f1e2d4b5a615"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a615",
+        "type": "file",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Gravar em /data/files",
+        "filename": "filename",
+        "filenameType": "msg",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 840,
+        "y": 320,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a618"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a616",
+        "type": "function",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Foto em base64",
+        "func": "// O template do dashboard monta a imagem a partir do texto em base64.\nmsg.payload = msg.payload.toString(\"base64\");\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 380,
+        "wires": [
+            [
+                "c3a0f1e2d4b5a617"
+            ]
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a617",
+        "type": "ui_template",
+        "z": "c3a0f1e2d4b5a601",
+        "group": "c3a0f1e2d4b5a620",
+        "name": "Última captura",
+        "order": 5,
+        "width": 12,
+        "height": 10,
+        "format": "<img ng-src=\"data:image/jpeg;base64,{{msg.payload}}\" style=\"width:100%\">\n<div>\n  Tampa: {{msg.evento.dist | number:1}} cm ·\n  Movimentação: {{msg.evento.movimentacao | number:1}} m/s² ·\n  Temperatura: {{msg.evento.temp | number:1}} °C ·\n  Umidade: {{msg.evento.umid | number:1}} %\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 800,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c3a0f1e2d4b5a618",
+        "type": "debug",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Arquivo gravado",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "filename",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "c3a0f1e2d4b5a619",
+        "type": "debug",
+        "z": "c3a0f1e2d4b5a601",
+        "name": "Foto pedida",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "evento",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1350,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "6c9a71ebeeca9850",
+        "type": "mqtt-broker",
+        "name": "Mosquitto - plataforma IoT",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "c3a0f1e2d4b5a620",
+        "type": "ui_group",
+        "name": "Caixa equipe01",
+        "tab": "c3a0f1e2d4b5a621",
+        "order": 1,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "c3a0f1e2d4b5a621",
+        "type": "ui_tab",
+        "name": "CP3",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
