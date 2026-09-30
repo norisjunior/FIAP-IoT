@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "CP3 - Captura de foto",
         "disabled": false,
-        "info": "Equipe01. Tampa aberta e caixa sacudindo: pede uma foto, no máximo uma a cada 10 s, e grava foto e leituras em /data/files. No dia da prova, troque a URL do pedir-foto pelo IP do ESP32-CAM."
+        "info": "Equipe01. Tampa aberta e caixa sacudindo: pede uma foto, no máximo uma a cada 10 s, e grava a foto em /data/files. No dia da prova, troque a URL do pedir-foto pelo IP do ESP32-CAM."
     },
     {
         "id": "c3a0f1e2d4b5a602",
@@ -331,9 +331,9 @@
         "id": "c3a0f1e2d4b5a614",
         "type": "function",
         "z": "c3a0f1e2d4b5a601",
-        "name": "Nomear foto e registro",
-        "func": "// Mesmo nome para os dois arquivos: equipe01_2026-10-06T14-30-00.jpg e .json\n// Hora local: o container roda com TZ=America/Sao_Paulo.\nconst agora = new Date();\nconst local = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000);\nconst hora = local.toISOString().slice(0, 19);\nconst nome = \"equipe01_\" + hora.replace(/:/g, \"-\");\n\nconst foto = {payload: msg.payload, filename: \"/data/files/\" + nome + \".jpg\"};\n\nconst registro = {\n    filename: \"/data/files/\" + nome + \".json\",\n    payload: JSON.stringify({\n        foto: nome + \".jpg\",\n        data_hora: hora,\n        gatilho: \"dist > 25 e movimentacao > 3\",\n        ...msg.evento\n    }, null, 2)\n};\n\nreturn [foto, registro];",
-        "outputs": 2,
+        "name": "Nome do arquivo",
+        "func": "const ts = new Date().toISOString().replace(/[:.]/g, \"-\");\nmsg.filename = `/data/files/equipe01_${ts}.jpg`;\nreturn msg;",
+        "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
@@ -342,9 +342,6 @@
         "x": 590,
         "y": 320,
         "wires": [
-            [
-                "c3a0f1e2d4b5a615"
-            ],
             [
                 "c3a0f1e2d4b5a615"
             ]
