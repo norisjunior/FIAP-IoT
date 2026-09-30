@@ -27,7 +27,22 @@ services:
       - ./files:/data/files
     restart: unless-stopped
     networks: [iot-network]
-    depends_on: [mosquitto, influxdb]
+    depends_on:
+      mosquitto:
+        condition: service_started
+      influxdb:
+        condition: service_started
+      files-dono:
+        condition: service_completed_successfully
+
+  # No Linux/WSL o Docker cria ./files como root e o Node-RED (uid 1000) não grava.
+  # Roda uma vez, entrega a pasta ao Node-RED e sai. No Windows não muda nada.
+  files-dono:
+    image: ${NODERED_IMAGE:?Defina NODERED_IMAGE no .env}
+    user: "0"
+    entrypoint: ["chown", "node-red:node-red", "/data/files"]
+    volumes:
+      - ./files:/data/files
 
   postgres:
     image: ${POSTGRES_IMAGE:?Defina POSTGRES_IMAGE no .env}
