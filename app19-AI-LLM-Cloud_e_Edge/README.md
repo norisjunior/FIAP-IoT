@@ -10,10 +10,11 @@ diferentes:
 | Pasta | O que guarda | Para quê |
 |---|---|---|
 | [`Chatbot-CloudAI/`](Chatbot-CloudAI/README.md) | a predição da nuvem, a cada segundo | perguntar em linguagem natural como o motor está, ou como estava |
-| [`Chatbot-EdgeAI/`](Chatbot-EdgeAI/README.md) | a predição da **borda** e a da **nuvem**, lado a lado | medir se o modelo pequeno do dispositivo continua concordando com o modelo da nuvem |
+| [`Chatbot-EdgeAI/`](Chatbot-EdgeAI/README.md) | a predição da **borda**, a cada segundo; depois, a da borda e a da nuvem lado a lado | levar o histórico do motor para fora, num `.csv`; depois, medir se o modelo pequeno do dispositivo continua concordando com o modelo da nuvem |
 
 As duas aplicações usam a mesma API, que está em [`api/`](api/) e serve a rede
-neural treinada com o dataset do motor.
+neural treinada com o dataset do motor. Na `Chatbot-EdgeAI/`, só a etapa de
+conferir precisa dela: guardar a predição da borda dispensa a API.
 
 ## O que é novo aqui
 
@@ -27,6 +28,7 @@ O que muda é o **destino da predição**:
 antes    ESP32 → MQTT → n8n → API → MQTT → ESP32          (a resposta acende um LED e some)
 Chatbot  ESP32 → MQTT → n8n → API → MQTT → ESP32
                           └──────────────→ PostgreSQL → chat com LLM
+Borda    ESP32 (decide sozinho) → MQTT → n8n → PostgreSQL → .csv
 Validacao ESP32 (decide sozinho) → MQTT → n8n → API → PostgreSQL
                                                   └→ as duas respostas, comparadas
 ```
@@ -43,7 +45,7 @@ Serviços que este app usa:
 | Serviço | Onde | Para quê |
 |---|---|---|
 | MQTT Broker | `localhost:1883` | o ESP32 publica a janela |
-| n8n | `http://localhost:5678` | os três fluxos |
+| n8n | `http://localhost:5678` | os fluxos das duas aplicações |
 | PostgreSQL | `localhost:5432` | as duas tabelas |
 | Ollama | `http://localhost:11434` | o modelo de linguagem do chat |
 
@@ -78,7 +80,7 @@ curl -X POST http://localhost:8000/predict \
 ```text
 api/               service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
 Chatbot-CloudAI/   device/ (publica a janela) · n8n/ (ingestão + chat)
-Chatbot-EdgeAI/    device/ (decide e publica) · n8n/ (ingestão da comparação + chat)
+Chatbot-EdgeAI/    device/ (decide e publica) · n8n/ (ingestão da borda · comparação + chat)
 ```
 
 ## Por onde começar
@@ -89,4 +91,6 @@ primeiro deste curso que **decide sozinho e ainda assim fala com a nuvem**.
 
 As duas têm a mesma forma: um fluxo que ingere sem parar e um fluxo de chat com
 um agente LLM. O que muda é a pergunta que o agente responde — *como o motor
-está* de um lado, *o modelo da borda ainda é confiável* do outro.
+está* de um lado, *o modelo da borda ainda é confiável* do outro. A
+`Chatbot-EdgeAI/` começa por um fluxo a mais: a predição da borda no banco,
+antes da comparação com a nuvem.
