@@ -1,0 +1,96 @@
+{
+  "name": "app19 - Ingestao da predicao da borda no PostgreSQL",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/motor/validacao",
+        "options": {
+          "jsonParseBody": true
+        }
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "6faec2cf-c723-43f6-9884-ca7e0f1a7005",
+      "name": "FIAPIoT/motor/validacao",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Timestamp e periodo no fuso de Sao Paulo. O PERIODO e o truque desta\n// aplicacao: gravado agora, ele faz \"ontem a noite\" virar um WHERE comum\n// na hora da consulta, sem ninguem precisar fazer conta de data.\nconst agora = new Date().toLocaleString(\"sv-SE\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour12: false\n});\n\nconst hora = Number(new Date().toLocaleString(\"en-US\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour: \"numeric\",\n  hour12: false\n}));\n\nlet periodo = \"madrugada\";\nif (hora >= 6 && hora < 12) periodo = \"manhã\";\nelse if (hora >= 12 && hora < 18) periodo = \"tarde\";\nelse if (hora >= 18) periodo = \"noite\";\n\n// A classe ja vem pronta: quem decidiu foi o ESP32. Nao ha API no caminho.\nconst classe = $input.first().json.message.predicao_borda;\n\nreturn [{ json: { classe, timestamp_medicao: agora, periodo } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5bc1cd31-ea95-4e15-b9f6-365e481738bc",
+      "name": "Formata para o banco"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS motor_medicoes (\n  id SERIAL PRIMARY KEY,\n  classe TEXT,\n  timestamp_medicao TEXT,\n  periodo TEXT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO motor_medicoes (classe, timestamp_medicao, periodo)\nVALUES ('{{ $json.classe }}', '{{ $json.timestamp_medicao }}', '{{ $json.periodo }}');\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        220,
+        0
+      ],
+      "id": "c27b7819-118e-4740-8775-05a01c9d18b7",
+      "name": "Armazena a predicao",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FIAPIoT/motor/validacao": {
+      "main": [
+        [
+          {
+            "node": "Formata para o banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata para o banco": {
+      "main": [
+        [
+          {
+            "node": "Armazena a predicao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3b1b408d-a0fd-4598-8cd5-41eaa04ca3e7",
+  "meta": {
+    "instanceId": "app19-AI-LLM-Cloud_e_Edge"
+  },
+  "id": "cacc98a1-0360-43dd-b45f-3f4fa51ef03d",
+  "tags": []
+}

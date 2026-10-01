@@ -1,18 +1,28 @@
-# Chatbot-EdgeAI — a borda continua concordando com a nuvem?
+# Chatbot-EdgeAI — a borda decide, a nuvem guarda e confere
 
 O dispositivo decide sozinho, com a Random Forest que mora na flash dele. Isso é
-ótimo: responde em microssegundos e funciona sem rede. Mas levanta uma pergunta
-que não existia enquanto a nuvem decidia tudo:
+ótimo: responde em microssegundos e funciona sem rede. O que ele decide, ele
+publica — e este app faz duas coisas com isso, nesta ordem.
 
-> **Como eu sei que o modelo pequeno da ponta continua certo?**
-
-Este app responde medindo. O dispositivo publica a janela **junto com a própria
-predição**, o n8n faz a mesma pergunta ao modelo maior que roda na nuvem, e
-guarda as duas respostas lado a lado.
+**Primeiro, guardar.** Cada predição da borda vai para o PostgreSQL com a data, a
+hora e o período do dia — e dali pode sair num `.csv` para qualquer outra
+ferramenta. Nenhum modelo roda na nuvem: a classe já chega pronta.
 
 ```text
 ESP32 ─► decide na flash ─► acende a saída
    │
+   └─► MQTT (predição da borda) ─► n8n ─► PostgreSQL ─► .csv
+```
+
+**Depois, conferir.** Com o dado guardado, aparece uma pergunta que não existia
+enquanto a nuvem decidia tudo:
+
+> **Como eu sei que o modelo pequeno da ponta continua certo?**
+
+O n8n faz a mesma pergunta ao modelo maior que roda na nuvem e guarda as duas
+respostas lado a lado.
+
+```text
    └─► MQTT (janela + predição da borda) ─► n8n ─► API (a rede neural) ─► PostgreSQL
                                                               └► as duas respostas
 ```
@@ -20,9 +30,16 @@ ESP32 ─► decide na flash ─► acende a saída
 Na indústria isso se chama **shadow mode**: o modelo grande roda em paralelo,
 sem mandar em nada, só para medir o quanto o modelo pequeno concorda com ele.
 
-São **dois fluxos**, como na `Chatbot-CloudAI/`: um que ingere a comparação sem
-parar, outro que responde quando você pergunta. Eles não se falam — conversam
-pelo banco.
+São **três fluxos**, um para guardar e dois para conferir:
+
+| Fluxo | Etapa | O que faz |
+|---|---|---|
+| `Fluxo-1-ingestao-borda` | guardar | grava cada predição da borda em `motor_medicoes` |
+| `Fluxo-2-ingestao-validacao` | conferir | pergunta à nuvem e grava as duas respostas em `motor_validacao` |
+| `Fluxo-3-chat-concordancia` | conferir | chat com um agente LLM sobre a concordância |
+
+Os fluxos não se falam — conversam pelo banco. O 1 e o 2 escutam o **mesmo
+tópico** e podem ficar ativos juntos: cada um recebe a sua cópia da mensagem.
 
 ## O dispositivo não obedece a ninguém
 
@@ -82,9 +99,79 @@ predição só, e não existiria conferência nenhuma.
 A predição vai como **nome**, não como índice: a API também devolve nome, e
 comparar texto com texto dispensa qualquer tabela de tradução no meio.
 
-## 2) O fluxo de ingestão
+Para **guardar**, só a `predicao_borda` interessa; as oito features esperam a
+etapa de **conferir**. É a mesma mensagem servindo às duas.
 
-Importe `n8n/Fluxo-1-ingestao-postgres.json` e configure as credenciais de
+## 2) A predição da borda no banco
+
+Importe `n8n/Fluxo-1-ingestao-borda.json` e configure as credenciais de **MQTT**
+e **PostgreSQL**. São dois nós depois do gatilho:
+
+| # | Nó | O que faz |
+|---|---|---|
+| 1 | `FIAPIoT/motor/validacao` | recebe a mensagem, já como objeto (**JSON Parse Body**) |
+| 2 | `Formata para o banco` | lê a `predicao_borda` e calcula a data, a hora e o período |
+| 3 | `Armazena a predicao` | cria a tabela se não existir e insere |
+
+É o fluxo de ingestão da `Chatbot-CloudAI/` **sem** o `Predict Motor` e sem o
+tópico de comando: a classe já chega decidida, e não há nada a devolver ao
+dispositivo. Muda uma linha no nó 2 — de onde vem a classe:
+
+```js
+const classe = $input.first().json.message.predicao_borda;
+```
+
+A tabela é a mesma `motor_medicoes` da `Chatbot-CloudAI/`, com as mesmas
+colunas. Por isso o chat de lá (`Chatbot-CloudAI/n8n/Fluxo-2-chat-llm.json`)
+funciona aqui sem mudar nada: ele não sabe, nem precisa saber, quem classificou.
+
+```sql
+CREATE TABLE motor_medicoes (
+  id                SERIAL PRIMARY KEY,
+  classe            TEXT,
+  timestamp_medicao TEXT,
+  periodo           TEXT,
+  created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## 3) Levar os dados para fora: `.csv`
+
+O banco guarda; quem quiser usar o dado em outra ferramenta — um notebook, uma
+planilha, outro automatizador, um agente LLM — leva a tabela inteira num `.csv`.
+No terminal onde roda a plataforma:
+
+```bash
+docker exec n8n-postgres psql -U n8nuser -d n8n \
+  -c "\copy motor_medicoes TO STDOUT WITH CSV HEADER" > motor_medicoes.csv
+```
+
+```text
+id,classe,timestamp_medicao,periodo,created_at
+1,operando,2026-09-30 08:00:01,manhã,2026-09-30 11:00:01.698538+00
+2,anomalia,2026-09-30 14:00:01,tarde,2026-09-30 17:00:01.104211+00
+```
+
+O `\copy` roda **dentro** do contêiner e escreve na saída padrão; o `>` do
+seu terminal é que grava o arquivo na sua máquina. Por isso o arquivo aparece
+na pasta em que você está, e não dentro do Docker.
+
+Use o `timestamp_medicao`, não o `created_at`. Os dois marcam o mesmo instante,
+mas o `created_at` está em UTC — três horas à frente de São Paulo —, e o
+`periodo` foi calculado pelo `timestamp_medicao`. Misturar os dois faz uma
+medição das 22h aparecer no dia seguinte.
+
+Para conferir, no Python:
+
+```python
+import pandas as pd
+df = pd.read_csv("motor_medicoes.csv")
+print(df.groupby(["periodo", "classe"]).size())
+```
+
+## 4) A ingestão da comparação
+
+Importe `n8n/Fluxo-2-ingestao-validacao.json` e configure as credenciais de
 **MQTT** e **PostgreSQL**. São três nós depois do gatilho:
 
 | # | Nó | O que faz |
@@ -94,9 +181,9 @@ Importe `n8n/Fluxo-1-ingestao-postgres.json` e configure as credenciais de
 | 3 | `Compara borda e nuvem` | monta as duas predições e o `concordam` |
 | 4 | `Armazena a comparacao` | cria a tabela se não existir e insere |
 
-No nó 3 há um detalhe que vale explicar em voz alta: depois do `POST`, o item
-que circula é a **resposta da API** — a predição da borda ficou para trás. Por
-isso ela é buscada pelo nome do nó:
+No nó 3 deste fluxo há um detalhe que vale explicar em voz alta: depois do
+`POST`, o item que circula é a **resposta da API** — a predição da borda ficou
+para trás. Por isso ela é buscada pelo nome do nó:
 
 ```js
 const nuvem = $input.first().json.class;
@@ -121,7 +208,7 @@ O `concordam` é calculado no n8n e gravado pronto. Daria para deixar a conta
 para o `SELECT`, mas assim a consulta que interessa fica trivial — e é ela que
 você vai projetar na aula.
 
-## 3) A medida que importa
+## 5) A medida que importa
 
 ```sql
 SELECT
@@ -165,12 +252,12 @@ Se as duas discordarem sempre da mesma forma — por exemplo, a borda dizendo
 isso: ela está no Serial Monitor do dispositivo, que imprime as oito features a
 cada segundo.
 
-## 4) O fluxo do chat
+## 6) O fluxo do chat
 
 A taxa acima é uma consulta que você roda. Mas ela também pode ser uma
 **pergunta em português**, do mesmo jeito que a `Chatbot-CloudAI/` pergunta pelo
-estado do motor. Importe `n8n/Fluxo-2-chat-llm.json` e configure as credenciais
-de **Ollama** e **PostgreSQL**.
+estado do motor. Importe `n8n/Fluxo-3-chat-concordancia.json` e configure as
+credenciais de **Ollama** e **PostgreSQL**.
 
 | Nó | Papel |
 |---|---|
@@ -194,16 +281,16 @@ concordância?"*, ele devolveria um número plausível e errado — **modelo de
 linguagem não conta**. O `COUNT(*) FILTER` roda no banco, e o LLM fica só com o
 trabalho que é dele: escolher a ferramenta e escrever a frase.
 
-É a mesma decisão do `concordam`, calculado no nó 3 da ingestão e gravado
+É a mesma decisão do `concordam`, calculado no nó 3 do fluxo 2 e gravado
 pronto: **trabalho feito antes é trabalho que o LLM não precisa acertar.**
 
 E a *system message* vai um passo além da tradução: ela traz as faixas de
 leitura — acima de 95% está saudável, abaixo de 85% é hora de retreinar. O
 número sai do banco; o que fazer com ele está escrito no prompt.
 
-## 5) Testar
+## 7) Testar
 
-Com o ESP32 rodando e o fluxo de ingestão **ativo**, espere alguns segundos e
+Com o ESP32 rodando e o fluxo 2 **ativo**, espere alguns segundos e
 pergunte no chat:
 
 - *"O modelo da borda está confiável?"* → usa `concordancia_geral`
@@ -222,6 +309,14 @@ vira tautologia: mesmo modelo, mesmos números, mesma resposta, para sempre.
 **Nada chega no fluxo.** Confira o tópico: este app usa
 `FIAPIoT/motor/validacao`. Um `mosquitto_sub -h localhost -t "FIAPIoT/motor/validacao" -v`
 mostra se o dispositivo está publicando.
+
+**O `.csv` sai vazio ou com erro `relation "motor_medicoes" does not exist`.**
+A tabela nasce no primeiro insert do fluxo 1. Confira se ele está **ativo** e se
+já passou pelo menos uma mensagem.
+
+**O `manhã` aparece como `manhÃ£` na planilha.** O arquivo é UTF-8 e o Excel
+abriu como outra codificação. Importe por *Dados → De Texto/CSV* e escolha
+UTF-8; o pandas já lê certo.
 
 **A API recusa o corpo.** Ela ignora `device` e `predicao_borda` e lê só as oito
 features. Se estiver recusando, é o JSON que chegou quebrado — veja se o `message` do
