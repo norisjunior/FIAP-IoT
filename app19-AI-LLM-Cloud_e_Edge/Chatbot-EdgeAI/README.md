@@ -121,6 +121,9 @@ dispositivo. Muda uma linha no nó 2 — de onde vem a classe:
 const classe = $input.first().json.message.predicao_borda;
 ```
 
+Para montar o fluxo do zero, nó a nó:
+[n8n/CONSTRUIR-O-FLUXO-1.md](n8n/CONSTRUIR-O-FLUXO-1.md).
+
 A tabela é a mesma `motor_medicoes` da `Chatbot-CloudAI/`, com as mesmas
 colunas. Por isso o chat de lá (`Chatbot-CloudAI/n8n/Fluxo-2-chat-llm.json`)
 funciona aqui sem mudar nada: ele não sabe, nem precisa saber, quem classificou.
