@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wake word</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 16px; background: #111; color: #eee; text-align: center; }
+  button { font-size: 1.4em; padding: 16px 40px; border: 0; border-radius: 12px; background: #2e7d32; color: #fff; }
+  #estado { margin: 20px 0; color: #aaa; }
+  #scores { max-width: 420px; margin: 0 auto; text-align: left; }
+  .linha { margin: 10px 0; }
+  .barra { height: 14px; background: #333; border-radius: 7px; overflow: hidden; }
+  .barra div { height: 100%; background: #42a5f5; }
+  #alerta { font-size: 2.2em; font-weight: bold; color: #ffca28; visibility: hidden; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1>Wake word</h1>
+<button id="botao">Ouvir</button>
+<p id="estado">Toque em Ouvir e libere o microfone.</p>
+<div id="alerta">WAKE WORD!</div>
+<div id="scores"></div>
+
+<script>
+const TAXA = 16000;
+const estado = document.getElementById("estado");
+const alerta = document.getElementById("alerta");
+const scores = document.getElementById("scores");
+
+document.getElementById("botao").onclick = async (evento) => {
+  evento.target.disabled = true;
+  const microfone = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  // Pede ao navegador o áudio já em 16 kHz, a taxa do impulse
+  const contexto = new AudioContext({ sampleRate: TAXA });
+  if (contexto.sampleRate !== TAXA) {
+    estado.textContent = `Este navegador entregou ${contexto.sampleRate} Hz, e o modelo precisa de ${TAXA} Hz.`;
+    return;
+  }
+
+  const servidor = new WebSocket(location.origin.replace("http", "ws") + "/ouvir");
+  servidor.binaryType = "arraybuffer";
+  servidor.onopen = () => (estado.textContent = "Ouvindo... fale a sua wake word.");
+  servidor.onclose = () => (estado.textContent = "Conexão com o servidor fechada.");
+  servidor.onmessage = (mensagem) => mostrar(JSON.parse(mensagem.data));
+
+  // A cada 4096 amostras (~0,25 s), converte para int16 e manda ao servidor
+  const fonte = contexto.createMediaStreamSource(microfone);
+  const processador = contexto.createScriptProcessor(4096, 1, 1);
+  processador.onaudioprocess = (e) => {
+    if (servidor.readyState !== WebSocket.OPEN) return;
+    const amostras = e.inputBuffer.getChannelData(0);   // float de -1 a 1
+    const inteiros = new Int16Array(amostras.length);   // int16, como no treino
+    for (let i = 0; i < amostras.length; i++) {
+      inteiros[i] = Math.max(-32768, Math.min(32767, amostras[i] * 32768));
+    }
+    servidor.send(inteiros.buffer);
+  };
+  fonte.connect(processador);
+  processador.connect(contexto.destination);
+};
+
+function mostrar({ scores: valores, disparou }) {
+  scores.innerHTML = Object.entries(valores).map(([classe, valor]) => `
+    <div class="linha">${classe}: ${valor.toFixed(2)}
+      <div class="barra"><div style="width:${valor * 100}%"></div></div>
+    </div>`).join("");
+  if (disparou) {
+    alerta.style.visibility = "visible";
+    setTimeout(() => (alerta.style.visibility = "hidden"), 1500);
+  }
+}
+</script>
+</body>
+</html>
