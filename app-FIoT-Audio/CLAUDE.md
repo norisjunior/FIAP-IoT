@@ -1,8 +1,13 @@
 # app-FIoT-Audio
 
 Trilha didática de áudio para a disciplina de IoT (FIAP, 2º ano): do sinal cru do microfone
-até uma wake word que aciona um atuador. Seis projetos PlatformIO independentes, em ordem
+até uma wake word que aciona um atuador. Sete pastas PlatformIO independentes, em ordem
 crescente de conceito. O plano completo está em [PLANO.md](PLANO.md).
+
+A wake word é **"Ei Fioti"**, e o modelo do Edge Impulse (`WakeWord-EiFIOT`) **já está
+treinado** — veio do trilho Android em [android-wakeword/](android-wakeword/). As etapas 3 a 5
+reaproveitam esse projeto; só a etapa 6 (EMERGÊNCIA) exige coleta nova. Não proponha regravar o
+dataset para fazer a trilha funcionar.
 
 ## Alvo e toolchain — leia antes de escrever qualquer linha
 
@@ -41,15 +46,15 @@ Detalhes que já custaram tempo:
 | WS (LRCL) | GPIO 25 |
 | SD (DOUT) | GPIO 33 |
 
-Atuadores **só a partir da etapa 4** — as etapas 1 a 3 não acionam nada:
+Atuadores **só a partir da etapa 3** — as etapas 1 e 2 não acionam nada:
 
 | Atuador | GPIO | Etapa |
 |---|---|---|
-| LED azul (dispositivo ATIVO) | 21 | 4, 5, 6 |
-| Buzzer (EMERGÊNCIA) | 19 | 4, 5, 6 |
-| Motor de vibração 3 V (ALERTA) | 18 | 6 — **sempre** via transistor NPN + diodo de roda livre |
-| GPS NEO-6M (LOCALIZAÇÃO) | RX2 16 / TX2 17 | 6 |
-| LED onboard (status MQTT) | 2 | 5, 6 |
+| LED azul (dispositivo ATIVO) | 21 | 3, 4, 5, 6 |
+| Motor de vibração 3 V (ALERTA) | 18 | 5 — **sempre** via transistor NPN + diodo de roda livre |
+| GPS NEO-6M (LOCALIZAÇÃO) | RX2 16 / TX2 17 | 5 |
+| Buzzer (EMERGÊNCIA) | 19 | 6 |
+| LED onboard (status MQTT) | 2 | 4, 5, 6 |
 
 ## Estrutura de cada etapa
 
@@ -83,7 +88,7 @@ hardware físico. Não recrie esses arquivos.
   demonstração, não produção.
 - **Nada de flag de configuração.** Sem `#if MODO_X`, sem caminho A/B. Um caminho só; quem
   quiser outro comportamento edita o número no topo.
-- **Sem estado global esperto** nas etapas 1 a 3: nada de sobreposição de janela com `memmove`,
+- **Sem estado global esperto** nas etapas 1 e 2: nada de sobreposição de janela com `memmove`,
   buffer circular ou máquina de estados.
 
 O código que o professor digita tem que caber na cabeça de quem está vendo pela primeira vez.
@@ -115,8 +120,8 @@ framework**; fazer o aluno ver a struct do I2S é como fazer ele ver a calibraç
 - Configuração em `#define` no topo do arquivo. O aluno mexe ali, não caça no meio do `loop()`.
 - Português do Brasil em comentários e mensagens. Identificadores em português.
 - **Teleplot** para gráfico ao vivo: `Serial.printf(">nome:%d\n", valor)`.
-- Serial a **921600** nas etapas 1 a 3 (115200 não dá conta de plotar a onda: ver abaixo). O
-  Teleplot precisa ser configurado na mesma taxa.
+- Serial a **921600** nas etapas 1 e 2 (115200 não dá conta de plotar a onda: ver abaixo). O
+  Teleplot precisa ser configurado na mesma taxa. Se um README disser 115200, é erro — corrija.
 
 ## Duas placas, um código
 
@@ -144,38 +149,60 @@ No S3 o baud é decorativo (USB CDC nativo), mas mantenha 921600 para o código 
 
 ## Restrições didáticas — não "melhore" isto
 
-### As etapas 1 a 3 são observação pura
+### As etapas 1 e 2 são observação pura
 
 **Não acionam nada.** Sem LED, sem buzzer, sem relé, sem `digitalWrite` em atuador. Elas
 existem para mostrar o comportamento da onda e o que se extrai dela — o aluno olha o Teleplot,
 não uma lâmpada.
 
-O acionamento só aparece **depois do Edge Impulse**, no código de inferência (etapas 4 a 6).
+O acionamento só aparece **depois do Edge Impulse**, no código de inferência (etapas 3 a 6).
 Essa separação é o arco da trilha: primeiro entender o sinal, depois treinar o modelo, e só
-então agir. Se um limiar precisar ser mostrado nas etapas 1 a 3, ele vira **uma linha no
+então agir. Se um limiar precisar ser mostrado nas etapas 1 e 2, ele vira **uma linha no
 gráfico**, nunca um comando.
 
-### Nas etapas 1 a 3 não há transformada
+### Nas etapas 1 e 2 não há transformada
 
 **Proibido FFT, MFCC, filtro digital ou biblioteca de DSP.** Só estatística de janela: média,
 desvio-padrão, pico a pico, RMS, máximo absoluto e cruzamentos por zero.
 
-O ponto pedagógico é o aluno **bater no teto** dessas features e concluir sozinho que "FIOT" e
-"EMERGÊNCIA" empatam nelas — é isso que motiva o Edge Impulse na etapa 4. Antecipar a
-transformada destrói a aula. Se algo parecer "fácil de melhorar com uma FFT", é de propósito.
+O ponto pedagógico é o aluno **bater no teto** dessas features e concluir sozinho que "Ei
+Fioti" empata com qualquer outra palavra do mesmo volume — é isso que motiva o Edge Impulse na
+etapa 3. Antecipar a transformada destrói a aula. Se algo parecer "fácil de melhorar com uma
+FFT", é de propósito.
 
-A partir da etapa 4, o MFCC vem pronto dentro da biblioteca exportada pelo Edge Impulse.
+A partir da etapa 3, o MFCC vem pronto dentro da biblioteca exportada pelo Edge Impulse.
 
-## Etapas 4 a 6 — Edge Impulse
+## Etapas 3 a 6 — Edge Impulse
 
 - A biblioteca exportada vai em `lib/<Nome>_inferencing/` (mesma convenção do
   `app33-MagicWand` no repositório principal). É grande; é versionada mesmo assim.
 - `board_build.partitions = huge_app.csv` no `platformio.ini`, senão o binário estoura a
   partição padrão de 1,3 MB.
-- O dataset é gravado **pelo celular** no Edge Impulse Studio, não por firmware. Ver
-  [docs/coleta-edge-impulse.md](docs/coleta-edge-impulse.md).
+- O dataset foi gravado **pelo celular** no Edge Impulse Studio, não por firmware, e **já
+  existe**. Ver [docs/coleta-edge-impulse.md](docs/coleta-edge-impulse.md).
+- Deployment **int8** no ESP32 (a RAM é o recurso escasso); o Android usa float32. Não copie a
+  configuração de um para o outro.
+- O MFCC do Edge Impulse espera escala **int16 crua**, não `[-1, 1]`. Normalizar quebra o
+  modelo **em silêncio**, sem erro. Já custou tempo no Android; não repita aqui.
 - A máquina de estados DORMINDO → ATIVO fica no firmware, não no modelo. As palavras de comando
   só valem com o dispositivo ATIVO.
+
+## O trilho Android e os dois repositórios
+
+O mesmo impulse roda no celular. A pasta [android-wakeword/](android-wakeword/) guarda **só
+documentação** — plano, auditoria, roteiro de coleta e material de aula. O **código** do app
+Flutter vive em outro repositório:
+
+```text
+FIAP-IoT-develop/app-FIoT-Audio/android-wakeword/   docs
+FIAP-IoT-eval/app40-WakeWord/app40-1-SmartphoneAndroid/   implementação (Flutter + FFI)
+```
+
+**Não mova a documentação para o eval nem o código para cá.** Os dois lados se referenciam por
+caminho absoluto no topo de cada README; se você mexer em um, acerte o outro.
+
+O SDK do Edge Impulse (29 MB, ~1400 arquivos) **não está no Git** do lado do app: o `.zip` é a
+fonte, e um `Expand-Archive` o recria. Não versione o SDK extraído.
 
 ## Verificação
 
@@ -185,7 +212,7 @@ Antes de dar qualquer etapa por pronta:
 pio run -e esp32          # dentro da pasta da etapa
 ```
 
-As etapas 4 a 6 só compilam depois que a biblioteca do Edge Impulse estiver em `lib/`.
+As etapas 3 a 6 só compilam depois que a biblioteca do Edge Impulse estiver em `lib/`.
 
 Não versione `.pio/`.
 

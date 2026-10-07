@@ -23,7 +23,7 @@ namespace INMP441 {
 #endif
 
 const uint32_t TAXA  = 16000;  // amostras por segundo
-const int      GANHO = 12;     // bits descartados do valor de 24 bits do sensor
+const int      GANHO = 13;     // bits descartados do valor de 24 bits do sensor
 
 inline void iniciar() {
   i2s_config_t cfg = {

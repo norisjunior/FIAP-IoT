@@ -130,13 +130,16 @@ Meta: um limiar único (~0.85) servir nos dois ambientes.
 
 ### 3. Levar para o ESP32 + INMP441
 
-O trilho irmão, em `app-FIoT-Audio/app-4-mic-FIOT`.
+O trilho irmão, em [`app-3-mic-FIOT`](../app-3-mic-FIOT/) — é a **etapa 3**
+da trilha do ESP32, e depende deste modelo para existir.
 
 - Mesmo projeto do Edge Impulse, outro Deployment
 - Escolher **Quantized (int8)** — no ESP32 a RAM importa
 - Se não couber, baixar a janela de 1500 para 1000 ms e retreinar
+  ("Ei Fioti" tem 3 sílabas e cabe em 1 s)
 - O `ww_classify` em `wakeword_ffi.cpp` serve de referência: a chamada ao
   `run_classifier` é idêntica, muda só o porting
+- Passo a passo em [`docs/coleta-edge-impulse.md`](../docs/coleta-edge-impulse.md)
 
 ## Armadilhas já pagas (não repetir)
 

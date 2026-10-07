@@ -53,7 +53,8 @@ Experimente, nesta ordem: **silêncio · falar · assobiar · bater palma**.
 
 ## Analógico × digital
 
-Os `.txt` desta pasta são as versões com KY-038 e MAX9814, do 1º ano:
+Os cinco `.txt` desta pasta são o material analógico do 1º ano (KY-038 e MAX9814), parqueados fora do build: leitura crua, comparador, detector de palma com limiar e a
+`calibrarCentro()` que virou a subtração da média na etapa 2. Servem de contraste:
 
 | | `analogRead(34)` | `INMP441::ler(som, 256)` |
 |---|---|---|
@@ -68,7 +69,7 @@ prontos.
 ## Outra placa
 
 Para o **ESP32-S3 Super Mini**: renomeie `platformio.ini.esp32s3` para `platformio.ini` (guarde
-o original como `platformio.ini.esp32dev`). O código não muda; a flag `PLACA_S3` troca os pinos
+o original como `platformio.ini.devkit1`). O código não muda; a flag `PLACA_S3` troca os pinos
 para SCK 4 · WS 5 · SD 6.
 
 ## Problemas

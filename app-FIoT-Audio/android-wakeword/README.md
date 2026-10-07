@@ -1,7 +1,11 @@
 # Wake Word no Android — "Ei Fioti"
 
-Trilho irmão do `app-FIoT-Audio` (ESP32 + INMP441), rodando no celular.
+Trilho irmão do [`app-FIoT-Audio`](../) (ESP32 + INMP441), rodando no celular.
 Mesmo modelo do Edge Impulse, mesmo MFCC, outro alvo.
+
+**Este trilho é quem produziu o modelo.** O projeto `WakeWord-EiFIOT` treinado aqui é o mesmo
+que as etapas 3 a 5 do ESP32 vão usar — lá com Deployment int8, aqui com float32. Por isso a
+wake word da trilha inteira é "Ei Fioti", e não a "FIOT" que o plano antigo previa.
 
 > **Plano e documentação:** aqui, neste repositório (`FIAP-IoT-develop`).
 > **Implementação:** `C:\Projects\FIAP-IoT-eval\app40-WakeWord\app40-1-SmartphoneAndroid`

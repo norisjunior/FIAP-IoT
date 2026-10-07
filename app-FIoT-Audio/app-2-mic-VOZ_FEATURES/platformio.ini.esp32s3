@@ -1,5 +1,5 @@
 ; Renomeie este arquivo para "platformio.ini" ao usar o ESP32-S3 Super Mini.
-; Guarde o original como "platformio.ini.esp32dev".
+; Guarde o original com outro nome (ex.: "platformio.ini.devkit1").
 ;
 ; O codigo em src/ NAO muda: a flag PLACA_S3 troca os pinos do INMP441
 ; (SCK 4, WS 5, SD 6 em vez de 26, 25, 33) dentro do INMP441.hpp.

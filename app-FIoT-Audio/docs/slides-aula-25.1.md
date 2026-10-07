@@ -40,7 +40,7 @@ ocupar tela.
 | 8 | encerramento | manter |
 
 Slides novos entram **entre o slide 6 e a divisória HANDS ON!**.
-Resultado previsto: **21 slides**.
+Resultado previsto: **21 slides** (22 com a Seção 5, que entra depois do HANDS ON!).
 
 ---
 
@@ -57,8 +57,10 @@ CONTEXTO
 - Os alunos JÁ cursaram uma disciplina de Machine Learning.
 - Esta aula fecha a trilha de TinyML: depois de gestos com acelerômetro,
   agora reconhecimento de PALAVRA com microfone.
-- A aplicação: a palavra FIOT acorda o dispositivo (LED azul) e a palavra
-  EMERGÊNCIA toca um buzzer.
+- A aplicação: a palavra "Ei Fioti" acorda o dispositivo e acende o LED
+  azul. O comando que dispara o alarme é o passo seguinte, ainda a fazer.
+- O modelo do Edge Impulse JÁ ESTÁ TREINADO (93% de validação). A turma
+  não grava dataset nesta aula - a coleta é explicada, não executada.
 
 ESTA É UMA TURMA DE IA, NÃO DE PROCESSAMENTO DE SINAIS
 - A parte de áudio é RAMPA, não conteúdo. Ela existe para chegar rápido
@@ -128,7 +130,8 @@ COMO VAMOS TRABALHAR
 | 1 | O microfone | 2 |
 | 2 | Da janela à parede | 4 |
 | 3 | Edge Impulse: coletar e treinar | 4 |
-| 4 | FIOT: o dispositivo acorda | 3 |
+| 4 | "Ei Fioti": o dispositivo acorda | 3 |
+| 5 | Em casa: a sua wake word no notebook | 1 + 3 ajustes |
 
 ---
 
@@ -145,8 +148,8 @@ Troque "Aplicação: Varinha mágica" por:
 
 ACRESCENTE abaixo, 3 itens:
   - Por que áudio quebra o que funcionava com o acelerômetro
-  - Treinar a palavra FIOT no Edge Impulse
-  - Acordar o dispositivo e disparar o alarme
+  - Treinar a palavra "Ei Fioti" no Edge Impulse
+  - Acordar o dispositivo com a palavra certa - e só com ela
 
 --------------------------------------------------------------------
 SLIDE 6 (Materiais necessários)
@@ -157,7 +160,6 @@ Troque "Sensor para captação de áudio" por uma tabela:
 | ESP32 | DevKit v1 |
 | Microfone INMP441 | MEMS digital, I2S |
 | LED azul | indica o dispositivo ACORDADO |
-| Buzzer | dispara na palavra EMERGÊNCIA |
 
 ACRESCENTE ao lado uma FIGURA DE LIGAÇÃO com formas: retângulo "INMP441"
 com 6 pinos rotulados ligado a um retângulo "ESP32".
@@ -169,7 +171,8 @@ com 6 pinos rotulados ligado a um retângulo "ESP32".
   SD  -> 33
 
 NOTAS: mostrar o módulo na mão. Custa o mesmo que o sensor de som
-analógico do 1º ano e é outro mundo. Não entrar em I2S.
+analógico do 1º ano e é outro mundo. Não entrar em I2S. O buzzer não
+entra nesta lista: o comando de voz é etapa posterior.
 ```
 
 ---
@@ -258,10 +261,10 @@ SLIDE 2.2 - Título: "A janela vira um número"
 
 VISUAL PRINCIPAL - funil da esquerda para a direita, numerado e animado:
 
-  (1) 16 000 números/s -> (2) janela de 512 (32 ms) -> (3) 1 RMS
-      AZUL                    CINZA                      LARANJA
+  (1) 16 000 números/s -> (2) janela de 4096 (256 ms) -> (3) 1 RMS
+      AZUL                    CINZA                        LARANJA
 
-Embaixo: "31 números por segundo, em vez de 16 000."
+Embaixo: "4 números por segundo, em vez de 16 000."
 
 ACRESCENTE mini-tabela do que se vê no gráfico:
   | silêncio | baixo e plano |
@@ -271,9 +274,11 @@ ACRESCENTE mini-tabela do que se vê no gráfico:
 
 DESTAQUE: "Um número diz QUÃO ALTO. Nunca diz O QUÊ."
 
-NOTAS: rodar o app-2 ao vivo - bater palma, depois falar alto. A última
-linha da tabela é o ponto: são indistinguíveis por energia. Emendar: e
-se em vez de um número forem quatro?
+NOTAS: rodar o app-2 ao vivo olhando SÓ a série "desvio" - bater palma,
+depois falar alto. A última linha da tabela é o ponto: são
+indistinguíveis por energia. Dizer que esse desvio-padrão É o RMS:
+depois de tirar a média, é a mesma conta. Emendar: e se em vez de um
+número forem quatro? Já estão na tela.
 
 --------------------------------------------------------------------
 SLIDE 2.3 - Título: "Quatro números descrevem a janela"
@@ -300,11 +305,12 @@ pelo zero, o que separa agudo de grave. Se sobrar tempo, teste ao vivo:
 "sssss" e "ahhhh" no mesmo volume, e olhe o zcr. Se não sobrar, siga.
 
 --------------------------------------------------------------------
-SLIDE 2.4 - Título: "FIOT e EMERGÊNCIA empatam"   [SLIDE-CHAVE DA AULA]
+SLIDE 2.4 - Título: "Duas palavras diferentes, os mesmos quatro números"
+[SLIDE-CHAVE DA AULA]
 
 VISUAL PRINCIPAL - tabela com as duas palavras e valores quase iguais:
 
-| Feature | "FIOT" | "EMERGÊNCIA" |
+| Feature | "Ei Fioti" | "projeto" |
 | média | ~0 | ~0 |
 | desvio | 412 | 431 |
 | pico a pico | 2764 | 2810 |
@@ -317,7 +323,7 @@ ACRESCENTE embaixo, em destaque grande:
  Não dizem QUAIS frequências, em QUAL ordem."
 
 E uma linha menor:
-"Tocar o áudio de FIOT de trás para frente dá exatamente os mesmos
+"Tocar o áudio de 'Ei Fioti' de trás para frente dá exatamente os mesmos
 quatro números."
 
 NOTAS: ESTE É O SLIDE DA AULA. Tudo antes é rampa para ele; tudo depois
@@ -339,7 +345,7 @@ SEÇÃO 3. Insira 4 slides na sequência.
 SLIDE 3.1 - Título: "O que muda é a frequência ao longo do tempo"
 
 VISUAL PRINCIPAL - dois ESPECTROGRAMAS lado a lado, capturados do
-próprio Studio: "FIOT" e "EMERGÊNCIA". Eixo horizontal = tempo,
+próprio Studio: "Ei Fioti" e "projeto". Eixo horizontal = tempo,
 vertical = frequência, cor = energia.
 
 Embaixo de cada um, repita a linha de features do slide anterior em
@@ -384,9 +390,10 @@ Ao lado, antes/depois: uma faixa longa de áudio com ~25 picos, e embaixo
 a mesma faixa recortada em janelas centradas nos picos.
 
 ACRESCENTE caixa VERMELHA de atenção:
-"Segmento = 1500 ms. O padrão do Studio é 1000 ms e EMERGÊNCIA tem 5
-sílabas - não cabe. O segmento e a janela do impulse têm que ser o MESMO
-número."
+"Amostra = 2000 ms, janela = 1500 ms. A amostra NUNCA pode ser menor que
+a janela, e o segmento do Split tem que bater com a janela do impulse.
+O padrão do Studio é 1000 ms - trocado de propósito, para caber comando
+de 5 sílabas depois."
 
 DESTAQUE: "Protocolo da Aula 14: descarte os primeiros segundos e
 mantenha a condição estável durante toda a gravação."
@@ -394,30 +401,33 @@ mantenha a condição estável durante toda a gravação."
 NOTAS: não precisa de firmware para coletar - o celular vira o sensor,
 sem instalar nada. Gravar com pelo menos 3 pessoas diferentes: um modelo
 treinado só com a voz do professor reconhece só a voz do professor.
+Dizer que ESTE dataset já foi gravado assim (433 janelas, 93% de
+validação) e que a aula usa o modelo pronto - isto aqui é para quando
+eles forem fazer o deles.
 
 --------------------------------------------------------------------
-SLIDE 3.4 - Título: "Quatro classes, não duas"
+SLIDE 3.4 - Título: "Três classes, não uma"
 
-VISUAL PRINCIPAL - quatro caixas, as duas primeiras AZUIS e as duas
-últimas CINZAS:
+VISUAL PRINCIPAL - três caixas, a primeira AZUL e as duas últimas
+CINZAS, com a contagem real do dataset:
 
-  fiot          a palavra que acorda
-  emergencia    o comando
-  ruido         silêncio, ventilador, cadeira, conversa ao fundo
-  desconhecido  outras palavras: "fiapo", "emergente", "alô", números
+  WakeWord      "Ei Fioti" - a palavra que acorda       131 janelas
+  desconhecido  outras palavras: "fiap", "ei", números  144 janelas
+  ruido         silêncio, ventilador, cadeira, conversa 158 janelas
 
 DESTAQUE em caixa VERMELHA:
-"Um modelo treinado só com as palavras-alvo SEMPRE responde uma delas.
+"Um modelo treinado só com a palavra-alvo SEMPRE responde ela.
 Ele não tem alternativa para escolher."
 
 NOTAS: as duas classes de baixo não são enchimento - são o que permite ao
-modelo dizer NÃO. Retomar a Aula 14 (slide 28): o rótulo não vem do
-sensor, vem de quem sabia o que estava acontecendo. Aqui, de quem gravou.
+modelo dizer NÃO, e juntas têm mais que o dobro de amostras da própria
+wake word. Retomar a Aula 14 (slide 28): o rótulo não vem do sensor, vem
+de quem sabia o que estava acontecendo. Aqui, de quem gravou.
 ```
 
 ---
 
-## Seção 4 — FIOT: o dispositivo acorda
+## Seção 4 — "Ei Fioti": o dispositivo acorda
 
 ```
 SEÇÃO 4. Insira 3 slides. O último fica IMEDIATAMENTE ANTES da divisória
@@ -430,16 +440,17 @@ VISUAL PRINCIPAL - diagrama de estados com formas e setas:
 
         +---------------------------+
         |         DORMINDO          |   CINZA
-        |  só reage à palavra FIOT  |
+        |   só reage a "Ei Fioti"   |
         +-------------+-------------+
-                      | "FIOT"
+                      | "Ei Fioti"
                       v
         +---------------------------+
    <----|    ATIVO - LED AZUL       |   AZUL
  timeout|                           |
    5 s  +-------------+-------------+
                       |
-              "EMERGÊNCIA" -> buzzer
+           palavra de comando -> ação
+              (próximo passo, CINZA tracejado)
 
 DESTAQUE em caixa:
 "O modelo é o MESMO nos dois estados. O que muda é o que o firmware
@@ -450,30 +461,39 @@ sozinho no meio da conversa da sala - e o conserto não foi treinar
 melhor, foi mudar a ARQUITETURA. A palavra de comando só vale com o
 dispositivo acordado, e isso derruba o falso positivo sem tocar numa
 linha do modelo. Frase de fechamento: arquitetura vale tanto quanto
-acurácia.
+acurácia. Ser honesto: o ramo de comando ainda não está implementado -
+exige gravar uma classe nova. O estado ATIVO com o LED já demonstra a
+ideia inteira.
 
 --------------------------------------------------------------------
 SLIDE 4.2 - Título: "Limiar de confiança"
 
 VISUAL PRINCIPAL - barra horizontal de 0 a 1 com a marca do limiar em
-0,7 e três saídas do modelo plotadas nela:
+0,85 e três saídas do modelo plotadas nela:
 
-  fiot 0,94    VERDE, aceita
-  fiot 0,62    CINZA, ignora
-  ruido 0,88   não é comando
+  WakeWord 0,94   VERDE, aceita
+  WakeWord 0,62   CINZA, ignora
+  ruido 0,88      não é a wake word
 
 Ao lado, tabela de 2 linhas:
   | limiar alto | menos falso positivo, mas precisa falar mais claro |
   | limiar baixo | reage fácil, mas dispara sozinho |
+
+ACRESCENTE embaixo, em LARANJA, os números medidos no celular:
+  | sala fechada | 0,90 |
+  | ambiente barulhento | 0,79 |
+  | padrão fixado | 0,85 |
 
 DESTAQUE: "Não existe limiar certo. Existe a escolha entre incomodar e
 não responder."
 
 NOTAS: eles já viram precision/recall em ML - não reensine, só aponte que
 esse parâmetro é a escolha entre os dois, feita numa linha de código.
-Pergunta para a turma: num assistente de EMERGÊNCIA, é pior disparar
-sozinho ou deixar de responder? Não há resposta certa, e é isso que faz
-a pergunta valer.
+Os três números de baixo foram medidos de verdade, no Galaxy A52 - e o
+fato de o limiar mudar com o ambiente é o gancho do próximo slide: a
+causa é DADO, não parâmetro. Pergunta para a turma: num assistente de
+emergência, é pior disparar sozinho ou deixar de responder? Não há
+resposta certa, e é isso que faz a pergunta valer.
 
 --------------------------------------------------------------------
 SLIDE 4.3 - Título: "Treinou no celular, roda no INMP441"
@@ -488,15 +508,90 @@ ACRESCENTE caixa VERDE com as mitigações numeradas:
   1. gravar à mesma distância de uso (~30 cm)
   2. classe "ruido" gravada NA SALA onde a demo vai acontecer
   3. ligar o data augmentation no Studio
-  4. se ainda falhar: gravar algumas amostras com o próprio INMP441
+  4. ajustar o GANHO do INMP441 para a mesma faixa do treino
+  5. se ainda falhar: gravar algumas amostras com o próprio INMP441
 
 DESTAQUE: "O dado de treino precisa parecer o dado de operação."
 
 NOTAS: fechar com honestidade de engenharia. Isso se chama descasamento
 de domínio e é aposta consciente, não detalhe escondido - é a lição da
-Aula 14 dita de outro jeito. Se a demo falhar ao vivo, ESTE slide é a
+Aula 14 dita de outro jeito. O preço já foi medido: a wake word foi
+gravada quase toda em sala silenciosa, e é por isso que o limiar do
+slide anterior muda com o ambiente. Se a demo falhar ao vivo, ESTE slide é a
 explicação: falhar na frente da turma com a explicação pronta vale mais
 que acertar por sorte.
+```
+
+---
+
+## Seção 5 — Em casa: a sua wake word no notebook
+
+Cada aluno treina a **própria** wake word em casa e roda no notebook, com o Docker como motor
+de inferência. A aula em sala não muda. Esta seção é autocontida: funciona mesmo que as seções
+0 a 4 já estejam aplicadas no `.pptx`.
+
+O runbook do aluno está no repositório `FIAP-IoT-eval`, em
+`app40-WakeWord/app40-2-DockerHTTP/`.
+
+```
+SEÇÃO 5. Crie 1 slide novo e faça 3 ajustes pequenos em slides existentes.
+
+--------------------------------------------------------------------
+AJUSTE 1 - SLIDE 3 (Agenda)
+
+ACRESCENTE um item no fim da lista:
+  - Em casa: treinar a SUA wake word e rodar no notebook
+
+--------------------------------------------------------------------
+AJUSTE 2 - SLIDE "O celular é o sensor"
+
+Só nas NOTAS. Troque a frase final
+  "e que a aula usa o modelo pronto - isto aqui é para quando eles
+  forem fazer o deles."
+por:
+  "e que a aula usa o modelo pronto. Em casa, cada um faz exatamente
+  isto com a própria palavra: é a tarefa."
+
+--------------------------------------------------------------------
+AJUSTE 3 - SLIDE "Treinou no celular, roda no INMP441"
+
+Só nas NOTAS. Acrescente no fim:
+  "Em casa o problema é o mesmo com outro microfone: treinou no
+  celular, roda no notebook. As mesmas mitigações valem."
+
+--------------------------------------------------------------------
+SLIDE 5.1 - Título: "Em casa: seu modelo, no seu notebook"
+Insira IMEDIATAMENTE DEPOIS da divisória "HANDS ON!", antes do
+encerramento.
+
+VISUAL PRINCIPAL - fluxo da esquerda para a direita, 3 caixas com
+setas, numerado e animado:
+
+  (1) microfone do notebook  ->  (2) wakeword.py      ->  (3) container Docker
+      AZUL                        Python, janela           MFCC + rede
+                                  de 1,5 s                 do Edge Impulse
+                                                           LARANJA
+
+Seta de volta de (3) para (2) com o rótulo:
+  {"WakeWord": 0.93, "ruido": 0.02, ...}
+
+Embaixo, duas linhas de código em caixa:
+  docker run ... --api-key SUA_CHAVE --run-http-server 1337
+  python wakeword.py
+
+ACRESCENTE caixa VERMELHA:
+"A classe da sua palavra tem que se chamar WakeWord - seja qual for a
+palavra."
+
+DESTAQUE: "No Deployment do Studio: Docker container. Mesmo impulse do
+ESP32, outro destino."
+
+NOTAS: é a Aula 25 de novo - exportar o impulse - só que o destino é um
+container em vez da biblioteca Arduino. O container recebe as 24 000
+amostras por HTTP e devolve as probabilidades; o MFCC roda lá dentro,
+com o mesmo código do treino. O Python só junta a janela e decide - o
+limiar e a pausa são dele, como no firmware. A chave de API é pessoal:
+não vai em print nem em grupo. O passo a passo está no README do app.
 ```
 
 ---
@@ -578,7 +673,7 @@ Mini com INMP441.
 |---|---|
 | pico observado | `73.897.472` (= 288.662 no valor de 24 bits) |
 | mínimo observado | `−35.549.696` |
-| ganho resultante | `GANHO = 12` |
+| ganho resultante | `GANHO = 13` (ajustado na bancada) |
 
 Pinagem: DevKit v1 = SCK 26 · WS 25 · SD 33 · S3 Super Mini = SCK 4 · WS 5 · SD 6.
 
@@ -586,12 +681,16 @@ Pinagem: DevKit v1 = SCK 26 · WS 25 · SD 33 · S3 Super Mini = SCK 4 · WS 5 �
 
 ## Falta capturar
 
-Só existe depois que você gravar e treinar:
+O modelo já está treinado — é só abrir o projeto `WakeWord-EiFIOT` no Studio e capturar:
 
-- [ ] print dos dois **espectrogramas** (FIOT e EMERGÊNCIA) → slide 3.1
+- [ ] print dos dois **espectrogramas** ("Ei Fioti" e uma outra palavra) → slide 3.1
 - [ ] print do **MFCC** gerado → slide 3.2
 - [ ] print do **Split sample** antes/depois → slide 3.3
-- [ ] os **valores reais das 4 features** para FIOT e EMERGÊNCIA → slide 2.4
+- [ ] print da **matriz de confusão** (86,73% no Model testing) → slide 3.4, se couber
+
+Este só sai da bancada, rodando o `app-2-mic-VOZ_FEATURES`:
+
+- [ ] os **valores reais das 4 features** para duas palavras → slide 2.4
       (os do spec são plausíveis, mas **inventados** — troque pelos medidos)
 
 ---
