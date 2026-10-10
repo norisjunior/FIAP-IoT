@@ -59,9 +59,10 @@ a inicialização do ESP32.
 
 ## A pasta `lib/`
 
-Ela vem com a biblioteca do modelo do professor, `FIAP-IoT-ObjRec_inferencing`, que
-detecta alicate de corte, cubo mágico e case de fone de ouvido. Para o seu projeto,
-**apague essa pasta e descompacte a sua no lugar** (passo 2).
+Ela vem com o `.zip` da biblioteca do modelo do professor,
+`ei-fiap-iot-objrec-arduino-1.0.1-impulse-#2.zip`, que detecta alicate de corte, cubo
+mágico e case de fone de ouvido. Para o seu projeto, **use o `.zip` do seu modelo no
+lugar dele** (passos 1 e 2).
 
 ## Antes de começar
 
@@ -84,13 +85,13 @@ No Edge Impulse: **Deployment** → **Arduino library** → **Build**. Será bai
 
 ### 2. Descompactar dentro de `lib/`
 
-Apague `lib/FIAP-IoT-ObjRec_inferencing/` (a do professor) e descompacte o seu `.zip`
-dentro de `lib/`. O PlatformIO não lê o `.zip`: tem que descompactar. A estrutura deve
-ficar assim:
+Apague o `.zip` do professor, coloque o seu em `lib/` e descompacte-o ali mesmo. O
+PlatformIO não lê o `.zip`: tem que descompactar. A estrutura deve ficar assim:
 
 ```
 app27-2-ObjectDetection/
 ├── lib/
+│   ├── ei-<seu-projeto>-arduino-<versão>.zip
 │   └── <SEU_PROJETO>_inferencing/
 │       ├── examples/
 │       ├── src/
