@@ -24,7 +24,7 @@ app04_ESP_transmite_Server/
   - SCL: GPIO 19
 
 **Atuadores:**
-- LED Vermelho - Pino GPIO 14
+- LED Vermelho - Pino GPIO 26
 
 ### Funcionamento
 

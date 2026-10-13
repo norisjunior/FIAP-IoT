@@ -22,7 +22,7 @@ No Edge Impulse, vá em **Deployment** e escolha **Docker container**. Copie o c
 *"in a one-liner locally"* e cole **numa linha só**.
 
 ```
-docker run --rm -it -p 1337:1337 public.ecr.aws/g7a8t7v6/inference-container:v1.95.15 --api-key SUA_CHAVE --run-http-server 1337
+docker run --rm -it -p 1337:1337 public.ecr.aws/g7a8t7v6/inference-container:v1.95.15 --api-key ei_6b34e0fce172c23c8bed39597a7e005fcc8895a8c0f59b56 --run-http-server 1337
 ```
 
 Espere aparecer `HTTP Server now running`.

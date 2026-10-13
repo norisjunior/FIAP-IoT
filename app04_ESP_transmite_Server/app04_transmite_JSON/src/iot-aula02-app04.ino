@@ -2,8 +2,6 @@
 //WiFi
 #include <WiFi.h>
 #include <WiFiClient.h>
-//WebServer
-#include <WebServer.h>
 //ESP32Sensors
 #include "ESP32SensorsAmbiente.hpp"
 #include "ESP32SensorsAccel.hpp"
@@ -19,10 +17,10 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-//WebServer
+//WiFi e servidor Python
 const char* ssid = "Wokwi-GUEST";
 const char* password = "";
-const char* host = "host.wokwi.internal"; // IP do servidor Python
+const char* host = "host.wokwi.internal"; // Wokwi no VS Code: o seu computador. ESP32 físico: IP do computador com o servidor Python
 const uint16_t port = 5000;
 
 //Dispositivo

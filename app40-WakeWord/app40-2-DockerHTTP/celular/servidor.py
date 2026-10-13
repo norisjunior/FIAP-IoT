@@ -7,10 +7,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 
 URL = "http://localhost:1337/api/features"
-JANELA = 24000        # 1,5 s a 16 kHz
+INFO = requests.get("http://localhost:1337/api/info").json()["modelParameters"]
+JANELA = INFO["input_features_count"]  # ~1,5 s: o tamanho que o modelo pede
 PASSO = 8000          # classifica a cada 0,5 s
 CLASSE = "WakeWord"
-LIMIAR = 0.85
+LIMIAR = 0.80
 PAUSA = 1.5           # segundos sem disparar de novo
 
 app = FastAPI()
@@ -36,9 +37,12 @@ async def ouvir(ws: WebSocket):
             if len(janela) < JANELA or novas < PASSO:
                 continue  # janela ainda incompleta, ou menos de 0,5 s de áudio novo
             novas = 0
+            if not janela.any():
+                continue  # janela toda zerada: microfone mudo, nada a classificar
 
-            resposta = requests.post(URL, json={"features": janela.tolist()}).json()
-            scores = resposta["result"]["classification"]
+            resposta = requests.post(URL, json={"features": janela.tolist()})
+            resposta.raise_for_status()
+            scores = resposta.json()["result"]["classification"]
             print("  ".join(f"{classe}: {valor:.2f}" for classe, valor in scores.items()))
 
             disparou = scores[CLASSE] >= LIMIAR and time.time() - ultimo_disparo > PAUSA
