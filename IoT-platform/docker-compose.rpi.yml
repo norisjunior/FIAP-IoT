@@ -1,0 +1,86 @@
+# Variante enxuta para Raspberry Pi 3B (1 GB de RAM), com Raspberry Pi OS 64 bits.
+# Sobe só Mosquitto + Node-RED. O n8n é opcional (perfil "n8n") e usa SQLite,
+# dispensando o PostgreSQL. InfluxDB e Grafana ficam de fora: não cabem na RAM.
+# No .env: COMPOSE_FILE=docker-compose.rpi.yml (e COMPOSE_PROFILES=n8n para o n8n).
+# Depois, os comandos de sempre: docker compose up -d / docker compose down
+services:
+  mosquitto:
+    image: ${MOSQUITTO_IMAGE:?Defina MOSQUITTO_IMAGE no .env}
+    container_name: mqtt-broker
+    ports:
+      - "${MQTT_PORT}:1883"
+      - "${MQTT_WEBSOCKET_PORT}:9001"
+    volumes:
+      - ./mqtt-broker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    restart: unless-stopped
+    networks: [iot-network]
+
+  node-red:
+    image: ${NODERED_IMAGE:?Defina NODERED_IMAGE no .env}
+    container_name: NorisNodeRED
+    ports:
+      - "${NODERED_PORT}:1880"
+      - "${NODERED_EXTRA_PORT}:3456"
+    environment:
+      TZ: ${TZ}
+      NODERED_USER: ${NODERED_USER:?Defina NODERED_USER no .env}
+      NODERED_PASSWORD_HASH: ${NODERED_PASSWORD_HASH:?Defina NODERED_PASSWORD_HASH no .env}
+      NODE_OPTIONS: --max-old-space-size=256
+    volumes:
+      - nodered-data:/data
+      - ./nodered/settings.js:/data/settings.js:ro
+      - ./files:/data/files
+    restart: unless-stopped
+    networks: [iot-network]
+    depends_on:
+      mosquitto:
+        condition: service_started
+      files-dono:
+        condition: service_completed_successfully
+
+  # O Docker cria ./files como root e o Node-RED (uid 1000) não grava.
+  # Roda uma vez, entrega a pasta ao Node-RED e sai.
+  files-dono:
+    image: ${NODERED_IMAGE:?Defina NODERED_IMAGE no .env}
+    user: "0"
+    entrypoint: ["chown", "node-red:node-red", "/data/files"]
+    volumes:
+      - ./files:/data/files
+
+  n8n:
+    image: ${N8N_IMAGE:?Defina N8N_IMAGE no .env}
+    container_name: n8n
+    profiles: [n8n]
+    environment:
+      DB_TYPE: sqlite
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: ${N8N_PROTOCOL}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+      TZ: ${TZ}
+      GENERIC_TIMEZONE: ${TZ}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Defina N8N_ENCRYPTION_KEY no .env}
+      N8N_LOG_LEVEL: ${N8N_LOG_LEVEL}
+      N8N_RUNNERS_ENABLED: ${N8N_RUNNERS_ENABLED}
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "72"
+      NODE_OPTIONS: --max-old-space-size=384
+    ports:
+      - "${N8N_PORT}:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+    restart: unless-stopped
+    networks: [iot-network]
+
+networks:
+  iot-network:
+    driver: bridge
+
+volumes:
+  mosquitto-data:
+  nodered-data:
+  n8n-data:

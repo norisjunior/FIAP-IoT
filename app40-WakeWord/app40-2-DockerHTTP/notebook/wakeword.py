@@ -5,11 +5,12 @@ import requests
 import sounddevice as sd
 
 URL = "http://localhost:1337/api/features"
+INFO = requests.get("http://localhost:1337/api/info").json()["modelParameters"]
 TAXA = 16000          # a mesma do impulse
-JANELA = 24000        # 1,5 s a 16 kHz
+JANELA = INFO["input_features_count"]  # ~1,5 s: o tamanho que o modelo pede
 PASSO = 8000          # classifica a cada 0,5 s
 CLASSE = "WakeWord"
-LIMIAR = 0.85
+LIMIAR = 0.80
 PAUSA = 1.5           # segundos sem disparar de novo
 
 janela = np.zeros(JANELA, dtype=np.int16)
@@ -20,9 +21,12 @@ with sd.InputStream(samplerate=TAXA, channels=1, dtype="int16") as microfone:
     while True:
         bloco, _ = microfone.read(PASSO)
         janela = np.concatenate([janela[PASSO:], bloco[:, 0]])
+        if not janela.any():
+            continue  # janela toda zerada: microfone mudo, nada a classificar
 
-        resposta = requests.post(URL, json={"features": janela.tolist()}).json()
-        scores = resposta["result"]["classification"]
+        resposta = requests.post(URL, json={"features": janela.tolist()})
+        resposta.raise_for_status()
+        scores = resposta.json()["result"]["classification"]
         print("  ".join(f"{classe}: {valor:.2f}" for classe, valor in scores.items()))
 
         if scores[CLASSE] >= LIMIAR and time.time() - ultimo_disparo > PAUSA:

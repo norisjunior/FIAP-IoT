@@ -5,32 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wake word</title>
 <style>
-  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 16px; background: #111; color: #eee; text-align: center; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 16px; background: #111; color: #eee; text-align: center; transition: background 0.3s; }
   button { font-size: 1.4em; padding: 16px 40px; border: 0; border-radius: 12px; background: #2e7d32; color: #fff; }
   #estado { margin: 20px 0; color: #aaa; }
   #scores { max-width: 420px; margin: 0 auto; text-align: left; }
   .linha { margin: 10px 0; }
   .barra { height: 14px; background: #333; border-radius: 7px; overflow: hidden; }
   .barra div { height: 100%; background: #42a5f5; }
-  #alerta { font-size: 2.2em; font-weight: bold; color: #ffca28; visibility: hidden; margin: 24px 0; }
 </style>
 </head>
 <body>
 <h1>Wake word</h1>
 <button id="botao">Ouvir</button>
 <p id="estado">Toque em Ouvir e libere o microfone.</p>
-<div id="alerta">WAKE WORD!</div>
 <div id="scores"></div>
 
 <script>
+// ===== O que fazer quando ouvir a wake word =====
+function wakeWord() {
+  setTimeout(() => (document.body.style.background = ""), 1000);
+  falar("Pois não?");
+  document.body.style.background = "#1b5e20";
+
+  // Abrir um endereço da web:
+  //   location.href = "https://www.fiap.com.br";
+  // troca esta página pela outra, e o microfone para de ouvir.
+  // window.open(...) abriria numa aba nova, mas o navegador bloqueia:
+  // a aba não veio de um toque na tela.
+}
+
+function falar(texto) {
+  const fala = new SpeechSynthesisUtterance(texto);
+  fala.lang = "pt-BR";
+  speechSynthesis.speak(fala);
+  setTimeout(() => (document.body.style.background = ""), 1000);
+}
+
+// ===== Daqui para baixo: microfone e servidor =====
 const TAXA = 16000;
 const estado = document.getElementById("estado");
-const alerta = document.getElementById("alerta");
 const scores = document.getElementById("scores");
 
 document.getElementById("botao").onclick = async (evento) => {
   evento.target.disabled = true;
-  const microfone = await navigator.mediaDevices.getUserMedia({ audio: true });
+  falar("");   // libera a voz: o celular só fala depois de um toque
+  // Áudio cru, como no treino: os filtros do navegador zeram o microfone no silêncio
+  const microfone = await navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+  });
 
   // Pede ao navegador o áudio já em 16 kHz, a taxa do impulse
   const contexto = new AudioContext({ sampleRate: TAXA });
@@ -43,7 +65,11 @@ document.getElementById("botao").onclick = async (evento) => {
   servidor.binaryType = "arraybuffer";
   servidor.onopen = () => (estado.textContent = "Ouvindo... fale a sua wake word.");
   servidor.onclose = () => (estado.textContent = "Conexão com o servidor fechada.");
-  servidor.onmessage = (mensagem) => mostrar(JSON.parse(mensagem.data));
+  servidor.onmessage = (mensagem) => {
+    const resposta = JSON.parse(mensagem.data);
+    mostrar(resposta.scores);
+    if (resposta.disparou) wakeWord();
+  };
 
   // A cada 4096 amostras (~0,25 s), converte para int16 e manda ao servidor
   const fonte = contexto.createMediaStreamSource(microfone);
@@ -61,15 +87,11 @@ document.getElementById("botao").onclick = async (evento) => {
   processador.connect(contexto.destination);
 };
 
-function mostrar({ scores: valores, disparou }) {
+function mostrar(valores) {
   scores.innerHTML = Object.entries(valores).map(([classe, valor]) => `
     <div class="linha">${classe}: ${valor.toFixed(2)}
       <div class="barra"><div style="width:${valor * 100}%"></div></div>
     </div>`).join("");
-  if (disparou) {
-    alerta.style.visibility = "visible";
-    setTimeout(() => (alerta.style.visibility = "hidden"), 1500);
-  }
 }
 </script>
 </body>

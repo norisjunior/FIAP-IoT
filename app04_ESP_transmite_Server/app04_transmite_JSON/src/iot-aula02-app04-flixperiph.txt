@@ -42,8 +42,6 @@
 //WiFi
 #include <WiFi.h>
 #include <WiFiClient.h>
-//WebServer
-#include <WebServer.h>
 //IMU
 #include <Wire.h>
 #include <FlixPeriph.h>
@@ -122,7 +120,7 @@ namespace ESP32Sensors {
 	}
 }
 
-//WebServer
+//WiFi e servidor Python
 const char* ssid = "NorisIoT";
 const char* password = "Secure10T";
 const char* host = "172.16.10.101"; // IP do servidor Python

@@ -1,7 +1,7 @@
 # Wake word no celular: microfone do celular, modelo no computador
 
 ```text
-celular ──HTTPS──► túnel ──► servidor.py ──POST 24000 amostras──► container :1337
+celular ──HTTPS──► túnel ──► servidor.py ──POST ~24000 amostras──► container :1337
 ```
 
 O celular só captura o áudio. O container é o modelo do Edge Impulse (MFCC + rede). O
@@ -29,15 +29,15 @@ Com o container rodando, abra <http://localhost:1337/api/info> e confira:
 
 | Campo | Esperado | Onde |
 |---|---|---|
-| `frequency` | `16000` | `TAXA` no `celular.html` |
-| `input_features_count` | `24000` | `JANELA` no `servidor.py` |
+| `frequency` | ~`16000` | `TAXA` no `celular.html` |
+| `input_features_count` | ~`24000` | `JANELA` no `servidor.py` (lido sozinho) |
 | `labels` | contém `WakeWord` | `CLASSE` no `servidor.py` |
 
 ## Como funciona
 
 | Arquivo | O que faz |
 |---|---|
-| `celular.html` | pede o áudio em 16 kHz, converte para int16 e manda pelo WebSocket |
+| `celular.html` | pede o áudio em 16 kHz, converte para int16, manda pelo WebSocket e chama `wakeWord()` quando o servidor avisa |
 | `servidor.py` | monta a janela de 1,5 s, chama o container a cada 0,5 s e devolve as probabilidades |
 
 Taxa e escala têm de bater com o treino. Se divergir, o modelo não dá erro: só
@@ -45,7 +45,7 @@ responde errado.
 
 ## Limiar
 
-`LIMIAR = 0.85` no `servidor.py`. Dispara sozinho → suba. Não reage → desça.
+`LIMIAR = 0.80` no `servidor.py`. Dispara sozinho → suba. Não reage → desça.
 
 ## Problemas comuns
 

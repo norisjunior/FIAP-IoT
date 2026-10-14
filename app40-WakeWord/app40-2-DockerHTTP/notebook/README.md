@@ -1,7 +1,7 @@
 # Wake word no notebook: microfone do computador
 
 ```text
-microfone ──► wakeword.py ──POST 24000 amostras──► container :1337 ──► {WakeWord: 0.93, ...}
+microfone ──► wakeword.py ──POST ~24000 amostras──► container :1337 ──► {WakeWord: 0.93, ...}
 ```
 
 O container é o modelo do Edge Impulse (MFCC + rede). O `wakeword.py` captura o áudio,
@@ -22,8 +22,8 @@ Com o container rodando, abra <http://localhost:1337/api/info> e confira:
 
 | Campo | Esperado | No `wakeword.py` |
 |---|---|---|
-| `frequency` | `16000` | `TAXA` |
-| `input_features_count` | `24000` | `JANELA` |
+| `frequency` | ~`16000` | `TAXA` |
+| `input_features_count` | ~`24000` | `JANELA` (lido sozinho) |
 | `labels` | contém `WakeWord` | `CLASSE` |
 
 ## Como funciona
@@ -34,7 +34,7 @@ não dá erro: só responde errado.
 
 ## Limiar
 
-`LIMIAR = 0.85`. Dispara sozinho → suba. Não reage → desça.
+`LIMIAR = 0.80`. Dispara sozinho → suba. Não reage → desça.
 
 ## Problemas comuns
 
