@@ -59,6 +59,25 @@ Cole o resultado em `NODERED_PASSWORD_HASH`, mantendo as aspas simples, e execut
 Referências: [autenticação do Node-RED](https://nodered.org/docs/user-guide/runtime/securing-node-red)
 e [variáveis do Compose](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/).
 
+## Raspberry Pi 3B (1 GB)
+
+`docker-compose.rpi.yml` sobe só Mosquitto e Node-RED; o n8n é opcional e usa SQLite
+no lugar do PostgreSQL. InfluxDB e Grafana ficam de fora. Use o **Raspberry Pi OS Lite
+64 bits**: as imagens do Node-RED e do n8n só existem para arm64.
+
+No `.env`, descomente as linhas do Raspberry Pi:
+
+```bash
+COMPOSE_FILE=docker-compose.rpi.yml
+COMPOSE_PROFILES=n8n    # apague esta linha para só MQTT + Node-RED
+```
+
+A partir daí, `docker compose up -d` e `docker compose down` usam a variante.
+
+Com o n8n, a RAM fica no limite (≈ 700 MB em uso). Aumente o swap (no Trixie,
+em `/etc/rpi/swap.conf.d/`) e use cartão rápido ou SSD USB.
+O mesmo `.env` serve; as variáveis de PostgreSQL, InfluxDB e Grafana são ignoradas.
+
 ## Acessos iniciais
 
 Substitua localhost pelo endereço do servidor ao acessar de outra máquina.
