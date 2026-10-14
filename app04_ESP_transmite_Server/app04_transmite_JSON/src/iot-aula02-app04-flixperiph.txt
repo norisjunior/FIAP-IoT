@@ -121,13 +121,38 @@ namespace ESP32Sensors {
 }
 
 //WiFi e servidor Python
-const char* ssid = "NorisIoT";
-const char* password = "Secure10T";
+const char* WIFI_SSID = "NorisIoT";
+const char* WIFI_SENHA = "Secure10T";
 const char* host = "172.16.10.101"; // IP do servidor Python
 const uint16_t port = 5000;
 
 //Dispositivo
 const char* device = "ESP32Noris";
+
+// Controle da conexão
+const uint32_t INTERVALO_RECONEXAO = 5000;
+uint32_t ultimaTentativaWiFi = 0;
+
+void conectarWiFi() {
+  // Uma tentativa a cada INTERVALO_RECONEXAO, como no app14.
+  if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaWiFi = millis();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  WiFi.setSleep(false);
+
+  // Aguarda conectar para mostrar o IP obtido nesta conexão.
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  Serial.println("[WiFi] Conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
 
 void setup() {
   Serial.begin(115200);
@@ -137,17 +162,14 @@ void setup() {
   ESP32Sensors::Accel::inicializar(SDA_PIN, SCL_PIN);
   ESP32Sensors::LED::inicializar(LED_PIN);
 
-  WiFi.begin(ssid, password);
-  WiFi.setSleep(false);
-  Serial.print("Conectando ao WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi conectado!");
+  conectarWiFi();
 }
 
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    conectarWiFi();
+  }
+
   //Mede temperatura, umidade e índice de calor
   ESP32Sensors::Ambiente::AMBIENTE salaMaquinas = ESP32Sensors::Ambiente::medirAmbiente();
 
@@ -155,7 +177,7 @@ void loop() {
   ESP32Sensors::Accel::ACCEL motor = ESP32Sensors::Accel::medirAccel();
 
   WiFiClient client;
-  if (client.connect(host, port)) {
+  if (WiFi.status() == WL_CONNECTED && client.connect(host, port)) {
 
     /* Transmissão dos dados em formato JSON */
     JsonDocument doc;

@@ -7,7 +7,7 @@ Use o mesmo firmware preparado no **app anterior, para cloud**. A decisão conti
 1. Conecte Raspberry Pi e ESP32 à mesma rede.
 2. Execute Mosquitto, Node-RED e n8n no Raspberry Pi. Se usar Docker, escolha imagens compatíveis com a arquitetura e o sistema do Raspberry. A `IoT-platform` pode servir como referência de configuração.
 3. Descubra o IP do Raspberry com `hostname -I`.
-4. No firmware, configure a rede Wi-Fi e altere somente `MQTT_SERVER` para esse IP. Exemplo: `"192.168.1.50"`. Recompile e grave quando alterar essas configurações.
+4. No firmware, configure a rede Wi-Fi e altere somente `MQTT_BROKER` para esse IP. Exemplo: `"192.168.1.50"`. Recompile e grave quando alterar essas configurações.
 5. Acesse `http://IP_DO_RASPBERRY:1880` para importar o dashboard e `http://IP_DO_RASPBERRY:5678` para configurar o n8n.
 
 ## Mesmos fluxos do app anterior, para cloud
@@ -33,3 +33,5 @@ Desconecte o acesso à internet mantendo a rede local. Broker, Node-RED e ESP32 
 Se o Raspberry, o broker ou o Wi-Fi local parar, o ESP32 mantém o último estado do LED. Não há regra autônoma de alerta no ESP32, armazenamento offline ou reenvio de leituras perdidas.
 
 O que mudou foi a localização da plataforma, não a lógica do firmware. Esta pasta contém somente esta orientação.
+
+O firmware do app15 usa canal WiFi automático, mostra o IP em `conectarWiFi()` após conectar e executa `mqttClient.subscribe(MQTT_SUB_TOPIC);` após cada conexão MQTT. Mantenha esse padrão ao apontar o broker para o Raspberry.

@@ -28,3 +28,9 @@ O servidor conecta-se à rede WiFi "Wokwi-GUEST" e permanece aguardando requisi�
 ### Acesso
 
 Após inicialização, o servidor pode ser acessado via navegador pelo endereço IP exibido no monitor serial (http://localhost:8180 no ambiente Wokwi).
+
+## Conexão WiFi
+
+O loop verifica `WiFi.status() != WL_CONNECTED` e chama `conectarWiFi()`. A função usa `WiFi.begin(WIFI_SSID, WIFI_SENHA)`, com canal automático, aguarda conectar e então mostra `[WiFi] Conectado` e o IP. O IP fica dentro da função, inclusive ao reconectar.
+
+`INTERVALO_RECONEXAO` e `ultimaTentativaWiFi` são `uint32_t`. O controle usa 5 s. Enquanto a função aguarda a rede, o restante do programa pausa.

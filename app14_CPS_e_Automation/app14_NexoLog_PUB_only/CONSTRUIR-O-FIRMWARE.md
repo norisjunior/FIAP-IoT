@@ -28,8 +28,8 @@ const uint8_t ECHO_PIN = 18;
 const uint8_t SCL_PIN = 23;
 const uint8_t SDA_PIN = 22;
 
-const unsigned long INTERVALO_COLETA = 2500;
-unsigned long tempoAnterior = 0;
+const uint32_t INTERVALO_COLETA = 2500;
+uint32_t tempoAnterior = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -98,10 +98,10 @@ Cada sensor tem um ritmo próprio, e nenhum deles é o ritmo do envio:
 
 ```cpp
 /* ---- Controle de intervalo ---- */
-const unsigned long INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
-const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
-const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
-unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
+const uint32_t INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
+const uint32_t INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
+const uint32_t INTERVALO_MPU = 50;        // 20 amostras por segundo
+uint32_t tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
 
 /* ---- Medicoes guardadas entre um envio e outro ---- */
 ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
@@ -194,36 +194,48 @@ Acrescente ao que já funciona. Os nomes das medições não mudam mais.
 
 ```cpp
 const char* WIFI_SSID = "Wokwi-GUEST";
-const char* WIFI_PASSWORD = "";
-#define MQTT_SERVER "host.wokwi.internal"
-#define MQTT_PORT 1883
-#define MQTT_CLIENT_ID "NexoLogEquipe01"
+const char* WIFI_SENHA = "";
+const char* MQTT_BROKER = "host.wokwi.internal";
+const uint16_t MQTT_PORTA = 1883;
+const char* MQTT_CLIENT_ID = "a12345678-app14-01";
+const char* DISPOSITIVO_ID = "NexoLogEquipe01";
 #define MQTT_PUB_TOPIC "FIAPIoT/nexolog/equipe01/dados"
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 ```
 
+Troque o RA de exemplo pelo seu; cada dispositivo deve ter um `MQTT_CLIENT_ID` distinto. `DISPOSITIVO_ID` mantém a identificação da equipe no JSON.
+
 **Mais um intervalo e dois relógios**, no bloco de controle:
 
 ```cpp
-const unsigned long INTERVALO_RECONEXAO = 5000;
-unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
+const uint32_t INTERVALO_RECONEXAO = 5000;
+uint32_t ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 ```
 
 **Duas funções**, no fim do arquivo:
 
 ```cpp
 void conectarWiFi() {
-  // Uma tentativa a cada INTERVALO_RECONEXAO.
+  // Uma tentativa a cada INTERVALO_RECONEXAO, como no app14.
   if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
     return;
   }
   ultimaTentativaWiFi = millis();
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.begin(WIFI_SSID, WIFI_SENHA);
   WiFi.setSleep(false);
+
+  // Aguarda conectar para mostrar o IP obtido nesta conexão.
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  Serial.println("[WiFi] Conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
 }
 
 void conectarMQTT() {
@@ -241,16 +253,13 @@ void conectarMQTT() {
 ```
 
 Cada função cuida do próprio ritmo de tentativa. Quem chama não precisa saber disso —
-chama à vontade, a função decide se é hora.
+chama à vontade, a função decide se é hora. O WiFi aguarda a conexão e só então mostra a mensagem e o IP, dentro de `conectarWiFi()`.
 
 Repare no `delay(INTERVALO_RECONEXAO)` do `setup()`. A conta `millis() - ultima`
 começa valendo poucos milissegundos no boot, menos que o intervalo — sem a espera, a
 **primeira** tentativa seria bloqueada pelo próprio controle. O `delay` resolve com
 uma linha, ao custo de cinco segundos parado ao ligar.
 
-> É uma simplificação didática assumida. Um firmware de produção não para o boot para
-> isso — e por que, e o que se faz no lugar, fica para a aula de recursos de
-> produção.
 
 **Dois protótipos**, antes do `setup()`, porque as funções agora ficam depois de quem
 as chama:
@@ -267,12 +276,13 @@ void conectarMQTT();
   // INTERVALO_RECONEXAO, entao esperamos para a primeira tentativa passar.
   delay(INTERVALO_RECONEXAO);
   conectarWiFi();
-  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
   mqttClient.setBufferSize(768);
   mqttClient.setKeepAlive(120);
+  mqttClient.setSocketTimeout(2);
 ```
 
-**No fim do `loop()`**, depois dos três relógios — três linhas, sem `delay()`:
+**No fim do `loop()`**, depois dos três relógios:
 
 ```cpp
   if (WiFi.status() != WL_CONNECTED) {
@@ -291,7 +301,7 @@ mantém a conexão viva.
 
 ```cpp
     JsonDocument doc;
-    doc["device"] = MQTT_CLIENT_ID;
+    doc["device"] = DISPOSITIVO_ID;
     doc["temp"] = ambiente.temp;
     doc["umid"] = ambiente.umid;
     doc["dist"] = distancia;
@@ -319,7 +329,7 @@ Sem `return` aqui: o bloco de conexão está logo abaixo e precisa rodar.
 | Deu errado | Onde olhar |
 |---|---|
 | `[MQTT] Falha: -2` | broker no ar? No Wokwi o host é `host.wokwi.internal`; na placa, o IP da Ethernet do notebook |
-| Nunca conecta, nem depois de minutos | faltou o `delay` do `setup()`: a primeira tentativa foi bloqueada e a variável nunca avança |
+| WiFi não conecta | confira SSID e senha; `conectarWiFi()` aguarda a conexão. Sem a espera inicial no `setup()`, a primeira tentativa acontece quando `millis()` chega a 5 s |
 | Conecta e cai sozinho | dois ESP32 com o mesmo `MQTT_CLIENT_ID` |
 | `Publicado`, mas nada no `mosquitto_sub` | tópico diferente entre firmware e assinante — confira `equipe01` |
 | Publica e para depois de uns segundos | falta o `mqttClient.loop()` |
@@ -348,7 +358,7 @@ bool enviarDadosColetados() {
                 ambiente.temp, ambiente.umid, distancia, movimentacaoMax);
 
   JsonDocument doc;
-  doc["device"] = MQTT_CLIENT_ID;
+  doc["device"] = DISPOSITIVO_ID;
   doc["temp"] = ambiente.temp;
   doc["umid"] = ambiente.umid;
   doc["dist"] = distancia;

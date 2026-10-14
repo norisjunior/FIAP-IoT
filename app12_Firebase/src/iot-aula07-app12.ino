@@ -16,7 +16,7 @@ const float   DIST_LIMIAR = 100.0;
 
 /* ==== CREDENCIAIS =================================================== */
 const char* WIFI_SSID     = "Wokwi-GUEST";   // Rede pública do simulador
-const char* WIFI_PASSWORD = "";
+const char* WIFI_SENHA = "";
 
 const char* API_KEY       = "";
 const char* DB_URL        = "https://fiap-exemplo-2026-default-rtdb.firebaseio.com/"; // sem barra final
@@ -49,6 +49,31 @@ const uint32_t INTERVALO_COLETA = 30000;   // 10 segundos
 uint32_t proximaLeitura     = 0;
 
 /* ==== SETUP ========================================================= */
+// Controle da conexão
+const uint32_t INTERVALO_RECONEXAO = 5000;
+uint32_t ultimaTentativaWiFi = 0;
+
+void conectarWiFi() {
+  // Uma tentativa a cada INTERVALO_RECONEXAO, como no app14.
+  if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaWiFi = millis();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  WiFi.setSleep(false);
+
+  // Aguarda conectar para mostrar o IP obtido nesta conexão.
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  Serial.println("[WiFi] Conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -57,15 +82,9 @@ void setup() {
   ESP32Sensors::LED::inicializar(LED_PIN);
 
   // Wi-Fi ---------------------------------------------------------------
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  WiFi.setSleep(false);
-  Serial.print("Conectando-se ao Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print('.');
-    delay(350);
-  }
-  Serial.println("");
-  Serial.println("Wi-Fi conectado.");
+  // Aguarda o intervalo inicial antes de iniciar o serviço com WiFi conectado.
+  delay(INTERVALO_RECONEXAO);
+  conectarWiFi();
 
   // Firebase -----------------------------------------------------------
   config.api_key      = API_KEY;
@@ -80,6 +99,10 @@ void setup() {
 
 /* ==== LOOP PRINCIPAL =============================================== */
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    conectarWiFi();
+  }
+
   if (millis() < proximaLeitura) return;   // Aguarda próximo ciclo
   proximaLeitura = millis() + INTERVALO_COLETA;
 

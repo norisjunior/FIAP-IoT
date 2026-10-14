@@ -1,3 +1,4 @@
+#pragma once
 #include <DHT.h>
 
 namespace ESP32Sensors {
@@ -14,8 +15,8 @@ namespace ESP32Sensors {
 		static uint8_t dhtPin = 0;
 		static uint8_t dhtModel = 0;
 		static DHT dht(0, 0);  // Instância inicial (será reinicializada)
-		static const int TEMPO_DECORRIDO_MIN = 2000;  // 2 segundos
-		static int ultimoTempoColeta = 0;
+		static const uint32_t TEMPO_DECORRIDO_MIN = 2000;  // 2 segundos
+		static uint32_t ultimoTempoColeta = 0;
 
 		// Função de inicialização que recebe os parâmetros de configuração
 		void inicializar(uint8_t pin, uint8_t modelo) {
@@ -26,7 +27,7 @@ namespace ESP32Sensors {
 		}
 
 		bool podeColetar() {
-			int agora = millis();
+			uint32_t agora = millis();
 			if (agora - ultimoTempoColeta >= TEMPO_DECORRIDO_MIN) {
 				ultimoTempoColeta = agora;
 				return true;

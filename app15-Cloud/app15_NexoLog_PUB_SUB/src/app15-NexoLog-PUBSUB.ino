@@ -19,10 +19,12 @@ const uint8_t LED_ALERTA = 21;
 
 /* ---- Config Wi-Fi e MQTT ---- */
 const char* WIFI_SSID = "Wokwi-GUEST";
-const char* WIFI_PASSWORD = "";
-#define MQTT_SERVER "host.wokwi.internal"
-#define MQTT_PORT 1883
-#define MQTT_CLIENT_ID "NexoLogEquipe01"
+const char* WIFI_SENHA = "";
+const char* MQTT_BROKER = "host.wokwi.internal";
+const uint16_t MQTT_PORTA = 1883;
+// O Client ID identifica a sessão; o DISPOSITIVO_ID preserva o JSON da equipe.
+const char* MQTT_CLIENT_ID = "a12345678-app15-01";
+const char* DISPOSITIVO_ID = "NexoLogEquipe01";
 #define MQTT_PUB_TOPIC "FIAPIoT/nexolog/equipe01/dados"
 #define MQTT_SUB_TOPIC "FIAPIoT/nexolog/equipe01/cmd"
 
@@ -30,12 +32,12 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Controle de intervalo ---- */
-const unsigned long INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
-const unsigned long INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
-const unsigned long INTERVALO_MPU = 50;        // 20 amostras por segundo
-const unsigned long INTERVALO_RECONEXAO = 5000;
-unsigned long tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
-unsigned long ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
+const uint32_t INTERVALO_COLETA = 1000;   // publica e le o ultrassonico
+const uint32_t INTERVALO_DHT = 2100;      // o DHT22 nao responde mais rapido
+const uint32_t INTERVALO_MPU = 50;        // 20 amostras por segundo
+const uint32_t INTERVALO_RECONEXAO = 5000;
+uint32_t tempoAnterior = 0, ultimoDHT = 0, ultimoMPU = 0;
+uint32_t ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 
 /* ---- Medicoes guardadas entre um envio e outro ---- */
 ESP32Sensors::Ambiente::AMBIENTE ambiente = {NAN, NAN, NAN, false};
@@ -61,10 +63,11 @@ void setup() {
   // INTERVALO_RECONEXAO, entao esperamos para a primeira tentativa passar.
   delay(INTERVALO_RECONEXAO);
   conectarWiFi();
-  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
   mqttClient.setCallback(callbackMQTT);
   mqttClient.setBufferSize(768);
   mqttClient.setKeepAlive(120);
+  mqttClient.setSocketTimeout(2); // Espera pela resposta MQTT, em segundos
 
   // Linha de titulo do CSV. Serial.println ja termina em \r\n .
   Serial.println("temp,umid,dist,movimentacao");
@@ -105,15 +108,24 @@ void loop() {
 }
 
 void conectarWiFi() {
-  // Uma tentativa a cada INTERVALO_RECONEXAO.
+  // Uma tentativa a cada INTERVALO_RECONEXAO, como no app14.
   if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
     return;
   }
   ultimaTentativaWiFi = millis();
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.begin(WIFI_SSID, WIFI_SENHA);
   WiFi.setSleep(false);
+
+  // Aguarda conectar para mostrar o IP obtido nesta conexão.
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  Serial.println("[WiFi] Conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
 }
 
 void conectarMQTT() {
@@ -135,7 +147,7 @@ bool enviarDadosColetados() {
                 ambiente.temp, ambiente.umid, distancia, movimentacaoMax);
 
   JsonDocument doc;
-  doc["device"] = MQTT_CLIENT_ID;
+  doc["device"] = DISPOSITIVO_ID;
   doc["temp"] = ambiente.temp;
   doc["umid"] = ambiente.umid;
   doc["dist"] = distancia;

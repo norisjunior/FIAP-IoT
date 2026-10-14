@@ -23,6 +23,8 @@ Copie `app14_NexoLog_PUB_only` inteiro e renomeie para `app15_NexoLog_PUB_SUB`. 
 precisa estar rodando as quatro iterações do `CONSTRUIR-O-FIRMWARE.md` do app14
 antes de continuar: publicando JSON a cada 1 s.
 
+Ao copiar, troque `MQTT_CLIENT_ID` para `"a12345678-app15-01"` e substitua o RA pelo seu. Mantenha `DISPOSITIVO_ID` para preservar o JSON da equipe.
+
 Nada do que sobe muda. **Paridade com o app14:**
 
 | O quê | Valor |
@@ -33,8 +35,10 @@ Nada do que sobe muda. **Paridade com o app14:**
 | Saída no Serial | CSV com `\r\n`, título no `setup()` |
 | Reconexão | dentro de `conectarWiFi()` e `conectarMQTT()`, uma tentativa a cada 5 s |
 | Estilo | todo `if` com chaves, mesmo de uma linha |
-| Client ID | `NexoLogEquipe01`, um por equipe |
+| Client ID | `a12345678-app15-01`, distinto para cada dispositivo |
+| Identificação no JSON | `DISPOSITIVO_ID = "NexoLogEquipe01"`, mantida |
 | `mqttClient.setKeepAlive(120)` | mantido |
+| `mqttClient.setSocketTimeout(2)` | resposta MQTT em segundos |
 
 O dashboard do app15 lê o mesmo payload do app14. Mudar um nome de campo aqui
 apaga um widget lá.

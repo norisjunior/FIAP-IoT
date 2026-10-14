@@ -36,7 +36,7 @@ Os tópicos são iguais nas três etapas:
 - `FIAPIoT/nexolog/equipe01/dados`: leituras JSON, a cada 1 segundo. Node-RED e n8n assinam **os dois** este tópico.
 - `FIAPIoT/nexolog/equipe01/cmd`: comandos em JSON para os LEDs, recebidos a partir do app15.
 
-O dispositivo usa `NexoLogEquipe01`. Troque a identificação e `equipe01` no firmware e nos fluxos para sua equipe. Não execute dois ESP32 com o mesmo Client ID.
+O JSON usa `DISPOSITIVO_ID = "NexoLogEquipe01"`. Troque essa identificação e `equipe01` no firmware e nos fluxos para sua equipe. A conexão usa `MQTT_CLIENT_ID` com RA, app e dispositivo, por exemplo `a12345678-app14-01`. Não execute dois ESP32 com o mesmo Client ID.
 
 ```json
 {"device":"NexoLogEquipe01","temp":24,"umid":55,"dist":10,"accel_x":0,"accel_y":0,"accel_z":9.81,"movimentacao":0}
@@ -93,4 +93,4 @@ Os nós `Simular` alimentam o dashboard diretamente. No app15 também enviam com
 
 ## Limites
 
-O ESP32 não decide sobre alertas. Sem comunicação, mantém o último estado do LED. Não há armazenamento offline nem reenvio de leituras perdidas. No app16, perder a internet mantendo a rede local permite continuar os comandos locais; notificações externas dependem da internet.
+O ESP32 não decide sobre alertas. Sem comunicação, mantém o último estado do LED. A coleta pausa enquanto `conectarWiFi()` aguarda conectar, e a mensagem com IP aparece somente após a conexão. Não há armazenamento offline nem reenvio de leituras perdidas. No app16, perder a internet mantendo a rede local permite continuar os comandos locais; notificações externas dependem da internet.

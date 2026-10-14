@@ -12,7 +12,9 @@ const char* WIFI_SSID = "Wokwi-GUEST";
 const char* WIFI_SENHA = "";
 // const char* WIFI_SSID = "NorisIoT";
 // const char* WIFI_SENHA = "Secure10T";
-const char* BROKER_IP = "172.16.10.101";
+// Wokwi: broker local; no kit, use "172.16.10.101".
+const char* MQTT_BROKER = "host.wokwi.internal";
+const uint16_t MQTT_PORTA = 1883;
 
 const char* TOPICO = "fiap/iot/distancia";
 
@@ -22,21 +24,34 @@ const int LIMITE_VISUAL = 50;
 const int LIMITE_SONORO = 20;
 
 WiFiClient wifiClient;
-PubSubClient mqtt(wifiClient);
+PubSubClient mqttClient(wifiClient);
 
-const char* CLIENT_ID = "aluno1";
+// Troque o RA de exemplo; cada aluno/dispositivo precisa de um ID distinto.
+const char* MQTT_CLIENT_ID = "a12345678-app08-01";
+
+// Controle da conexão
+const uint32_t INTERVALO_RECONEXAO = 5000;
+uint32_t ultimaTentativaWiFi = 0, ultimaTentativaMQTT = 0;
 
 void conectarWiFi() {
-  Serial.print("Conectando ao Wi-Fi");
+  // Uma tentativa a cada INTERVALO_RECONEXAO, como no app14.
+  if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaWiFi = millis();
+
+  WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_SENHA);
   WiFi.setSleep(false);
 
+  // Aguarda conectar para mostrar o IP obtido nesta conexão.
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
   }
 
-  Serial.println(" conectado!");
+  Serial.println("[WiFi] Conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
 }
 
 void receberMensagem(char* topico, byte* conteudo, unsigned int tamanho) {
@@ -60,17 +75,16 @@ void receberMensagem(char* topico, byte* conteudo, unsigned int tamanho) {
 }
 
 void conectarMQTT() {
-  // O endereco MAC deixa o nome de cada ESP32 unico na sala.
-  while (!mqtt.connected()) {
-    Serial.print("Conectando ao broker MQTT...");
+  if (millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaMQTT = millis();
 
-    if (mqtt.connect(CLIENT_ID)) {
-      Serial.println(" conectado!");
-      mqtt.subscribe(TOPICO);
-    } else {
-      Serial.println(" falhou. Nova tentativa em 2 segundos.");
-    }
-  delay(2000);
+  if (mqttClient.connect(MQTT_CLIENT_ID)) {
+    Serial.println("[MQTT] Conectado");
+    mqttClient.subscribe(TOPICO);
+  } else {
+    Serial.printf("[MQTT] Falha: %d\r\n", mqttClient.state());
   }
 }
 
@@ -84,16 +98,19 @@ void setup() {
   noTone(PINO_BUZ);
 
   conectarWiFi();
-  mqtt.setServer(BROKER_IP, 1883);
-  mqtt.setKeepAlive(120);
-  mqtt.setCallback(receberMensagem);
+  mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
+  mqttClient.setKeepAlive(120);
+  mqttClient.setSocketTimeout(2); // Espera pela resposta MQTT, em segundos
+  mqttClient.setCallback(receberMensagem);
 }
 
 void loop() {
-  if (!mqtt.connected()) {
+  if (WiFi.status() != WL_CONNECTED) {
+    conectarWiFi();
+  } else if (!mqttClient.connected()) {
     conectarMQTT();
+  } else {
+    mqttClient.loop();
   }
-
-  mqtt.loop();  // recebe as mensagens do broker
   delay(100);
 }
