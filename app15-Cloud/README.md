@@ -67,9 +67,9 @@ O comando é `{"alerta":"ON"}` — o dispositivo trata o JSON, extrai o valor e 
 
 ## 5. Registrar no setup
 
-Mantenha `mqttClient.setKeepAlive(120);` do app14 e os timeouts padrão das bibliotecas.
+Mantenha `mqttClient.setKeepAlive(120);` e `mqttClient.setSocketTimeout(2);` do app14.
 
-Depois de `mqttClient.setServer(MQTT_SERVER, MQTT_PORT);`:
+Depois de `mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);`:
 
 ```cpp
 mqttClient.setCallback(callbackMQTT);
@@ -118,7 +118,7 @@ Para o gêmeo dizer a verdade, faltaria um **acknowledgment**: depois de acender
 
 **Isso não está implementado nesta versão.** Seria um tópico a mais, um `publish` no fim da callback e um `mqtt in` no dashboard. Fica como exercício — e como a diferença entre ordenar e confirmar, que é onde gêmeo digital deixa de ser enfeite.
 
-Se a comunicação cair, o LED mantém o último comando que recebeu. O ESP32 continua coletando, mas não decide sobre alertas.
+Se a comunicação cair, o LED mantém o último comando que recebeu. A coleta pausa enquanto `conectarWiFi()` aguarda a rede. O ESP32 não decide sobre alertas.
 
 Nesta etapa, a plataforma pode representar uma central em nuvem. Para executá-la remotamente, ajuste o endereço do broker e a conectividade. Um serviço executado localmente continua local.
 

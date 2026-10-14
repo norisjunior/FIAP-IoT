@@ -23,3 +23,5 @@ Em `src/ESP32SensorsAccel.hpp`, selecione `MPU_TYPE`: `MPU6050` para o diagrama 
 FastIMU retorna aceleração em g. O módulo converte para m/s² para preservar o payload. A movimentação é a magnitude da aceleração menos a gravidade, também em m/s²: caixa parada fica próxima de 0. O campo publicado é o pico do último segundo, com amostragem a 50 ms.
 
 [Montagem e configuração comuns](Guia-NexoLog.md)
+
+O padrão de conexão WiFi e MQTT está descrito no [README do firmware](app14_NexoLog_PUB_only/README.md).

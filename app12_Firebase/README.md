@@ -32,3 +32,11 @@ O sistema coleta dados dos sensores a cada 30 segundos e envia para o Firebase R
 - Email e senha de autenticação do usuário Firebase
 
 O sistema estabelece conexão WiFi, autentica no Firebase usando email/senha, e mantém sincronização automática dos dados. Cada atualização sobrescreve os valores anteriores no mesmo nó, mantendo sempre o estado mais recente dos sensores disponível na nuvem.
+
+## Conexão WiFi
+
+O loop verifica `WiFi.status() != WL_CONNECTED` e chama `conectarWiFi()`. A função usa `WiFi.begin(WIFI_SSID, WIFI_SENHA)`, com canal automático, aguarda conectar e então mostra `[WiFi] Conectado` e o IP. O IP fica dentro da função, inclusive ao reconectar.
+
+`INTERVALO_RECONEXAO` e `ultimaTentativaWiFi` são `uint32_t`. O controle usa 5 s. Enquanto a função aguarda a rede, o restante do programa pausa.
+
+No setup, aguarda 5 s e conecta antes de iniciar o Firebase. A checagem WiFi fica antes do controle de intervalo no loop. A configuração de reconexão da biblioteca Firebase foi mantida.

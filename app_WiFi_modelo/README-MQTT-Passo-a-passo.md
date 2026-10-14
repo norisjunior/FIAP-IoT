@@ -1,216 +1,170 @@
-# Physical Computing, Embedded AI, Robotics & Cognitive IoT
+# MQTT com ESP32 — Passo a passo
 
-## MQTT com ESP32 — Passo a Passo
+Use `src/iot-app-wifi-exemplo.ino` como base. WiFi, sensor e JSON já estão prontos; os TODOs indicam onde acrescentar MQTT. O publicador envia e o assinante recebe pelo callback. A assinatura é uma chamada explícita, acrescentada somente no assinante.
 
-Sequência de passos de como estruturar uma aplicação MQTT.
+## 1. Biblioteca
 
-A seguir seguem exemplos para um ESP32 que **publica** a leitura de um sensor e para um ESP32 que **recebe** via callback.
-
-> Os códigos-base já vêm com WiFi, sensor de distância (namespace `ESP32Sensors::Distancia`) e ArduinoJson funcionando (o mesmo modelo usado em aula). Deve-se apenas preencher os **TODOs** do MQTT.
-
----
-
-### Passo 1: Adicionar a biblioteca no `platformio.ini`
-
-Para utilizar o MQTT no ESP32 deve-se utilizar a biblioteca **PubSubClient**. Deve ser inserida no `platformio.ini` dessa maneira:
+O `platformio.ini` já declara PubSubClient. A versão do padrão é:
 
 ```ini
-lib_deps =
-    knolleary/PubSubClient@^2.8
+knolleary/PubSubClient @ 2.8
 ```
 
-No caso da aplicação modelo (app_WiFiModelo), o `platformio.ini` já tem outras bibliotecas (ArduinoJson, EasyUltrasonic). Basta **adicionar** a linha da PubSubClient junto com as demais:
+Mantenha as dependências já usadas pelo modelo, ArduinoJson e EasyUltrasonic. O monitor é 115200.
 
-```ini
-lib_deps =
-    knolleary/PubSubClient@^2.8
-    bblanchon/ArduinoJson@^7.4.1
-    EasyUltrasonic
-```
-
----
-
-### Passo 2: Incluir a biblioteca no código
-
-No arquivo da aplicação (`src/app.ino`), adicionar o include da PubSubClient junto com os demais:
+## 2. Include
 
 ```cpp
 #include <PubSubClient.h>
 ```
 
----
+## 3. Configuração
 
-### Passo 3: Configurar os parâmetros do MQTT
-
-Definir o endereço do broker, porta, tópico, ID do dispositivo e criar o objeto `PubSubClient`. Esses defines ficam na área de configurações, junto com as configs de WiFi e sensor:
-
-#### Dispositivo que realiza publish:
+No publicador:
 
 ```cpp
-/* ---- Config MQTT ---- */
-#define MQTT_HOST       "broker.emqx.io"
-#define MQTT_PORT       1883
-#define MQTT_PUB_TOPIC  "FIAP/sala/distancia"
-#define MQTT_DEVICEID   "DistSensor00001"
+const char* MQTT_BROKER = "host.wokwi.internal";
+const uint16_t MQTT_PORTA = 1883;
+const char* MQTT_CLIENT_ID = "a12345678-modelopub-01";
+const char* MQTT_PUB_TOPIC = "FIAP/sala/distancia";
 
-PubSubClient client(wifiClient);
+PubSubClient mqttClient(wifiClient);
+uint32_t ultimaTentativaMQTT = 0;
 ```
 
-#### Dispositivo que realiza subscribe (adicionar também o tópico de subscribe):
+No assinante, substitua a declaração de Client ID e acrescente o tópico recebido:
 
 ```cpp
-/* ---- Config MQTT ---- */
-#define MQTT_HOST       "broker.emqx.io"
-#define MQTT_PORT       1883
-#define MQTT_SUB_TOPIC  "FIAP/sala/distancia"
-#define MQTT_DEVICEID   "DistSensor00002"
-
-PubSubClient client(wifiClient);
+const char* MQTT_CLIENT_ID = "a12345678-modelosub-01";
+const char* MQTT_SUB_TOPIC = "FIAP/sala/distancia";
 ```
 
-> **Importante:** cada ESP32 deve ter um `MQTT_DEVICEID` diferente. O tópico de publish de um dispositivo deve ser o mesmo tópico de subscribe do outro.
+Troque o RA de exemplo pelo seu. Cada aluno/dispositivo precisa de um Client ID distinto. A MAC padrão das simulações Wokwi não é suficiente para distinguir todos os devices. O tópico do assinante deve ser igual ao do publicador.
 
-> Caso o dispositivo faça PUBLISH **e** SUBSCRIBE, todos os tópicos devem ser declarados, ou devem ser usados os wildcards "#" e "+" conforme a aplicação.
+No Wokwi, `host.wokwi.internal` acessa o broker local pelo gateway. No kit, informe o IP do computador do laboratório (por exemplo `172.16.10.101`). Porta 1883, sem autenticação ou TLS neste modelo.
 
----
+`INTERVALO_RECONEXAO` e `ultimaTentativaWiFi` já estão no código-base. O intervalo é `uint32_t` e vale 5000 ms. Não redeclare essas variáveis.
 
-### Passo 4: Criar a função para conectar ao broker MQTT
+## 4. Conectar ao MQTT
 
-Criar a função `conectarMQTT()` na seção de funções, junto com a `conectarWiFi()`. Essa função será chamada no `loop()`:
-
-#### Quando o dispositivo apenas realiza publish:
+A função fica antes do setup, na seção de funções. No publicador:
 
 ```cpp
 void conectarMQTT() {
-  while (!client.connected()) {
-    Serial.print("Conectando ao broker MQTT...");
-    if (client.connect(MQTT_DEVICEID)) {
-      Serial.println(" Conectado!");
-    } else {
-      Serial.print(" Falhou. Código: ");
-      Serial.println(client.state());
-      delay(2000);
-    }
+  if (millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaMQTT = millis();
+
+  if (mqttClient.connect(MQTT_CLIENT_ID)) {
+    Serial.println("[MQTT] Conectado");
+  } else {
+    Serial.printf("[MQTT] Falha: %d\r\n", mqttClient.state());
   }
 }
 ```
 
-#### Quando o dispositivo realiza subscribe, ele deve assinar o tópico desejado logo depois de conectar:
+No assinante, acrescentamos `subscribe` dentro do `if` que confirma a conexão:
 
-> **Atenção:** antes de implementar esta função, complete o **Passo 8** (declaração do callback), pois ela precisa aparecer no código **antes** do `setup()`.
-
-Função de conectar MQTT:
 ```cpp
 void conectarMQTT() {
-  while (!client.connected()) {
-    Serial.print("Conectando ao broker MQTT...");
-    if (client.connect(MQTT_DEVICEID)) {
-      Serial.println(" Conectado!");
-      client.subscribe(MQTT_SUB_TOPIC);
-    } else {
-      Serial.print(" Falhou. Código: ");
-      Serial.println(client.state());
-      delay(2000);
-    }
+  if (millis() - ultimaTentativaMQTT < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaMQTT = millis();
+
+  if (mqttClient.connect(MQTT_CLIENT_ID)) {
+    Serial.println("[MQTT] Conectado");
+    mqttClient.subscribe(MQTT_SUB_TOPIC);
+  } else {
+    Serial.printf("[MQTT] Falha: %d\r\n", mqttClient.state());
   }
 }
 ```
 
----
+Assim, toda reconexão renova a assinatura. Não há chave ou flag para selecionar assinatura.
 
-### Passo 5: Apontar o client para o broker no `setup()`
+## 5. Setup
 
-No `setup()`, após conectar ao WiFi, informar ao client o endereço e porta do broker:
+Depois da chamada WiFi, configure o cliente:
 
 ```cpp
-client.setServer(MQTT_HOST, MQTT_PORT);
+mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
+mqttClient.setKeepAlive(120);
+mqttClient.setSocketTimeout(2);
 ```
 
----
+A chamada WiFi mantém o controle por intervalo: a primeira tentativa acontece quando passam os primeiros 5 s. Quando uma tentativa é iniciada, `conectarWiFi()` aguarda a conexão e mostra a mensagem e o IP dentro da própria função. O canal é automático; somente SSID e senha são passados ao `WiFi.begin`.
 
-### Passo 6: Publicar uma mensagem (dispositivo que ENVIA)
+## 6. Publicar
 
-Para enviar uma mensagem em um tópico, usar `client.publish()`. No nosso modelo, publicamos o JSON com a leitura do sensor dentro do bloco de coleta (onde já temos o `millis()`):
+Dentro do bloco de coleta, depois de serializar o JSON no `buffer`:
 
 ```cpp
-client.publish(MQTT_PUB_TOPIC, buffer);
+mqttClient.publish(MQTT_PUB_TOPIC, buffer);
 ```
 
-Onde `buffer` é o JSON serializado que já montamos com ArduinoJson.
+O conteúdo e o ritmo de coleta do modelo permanecem os mesmos.
 
----
+## 7. Registrar o callback
 
-### Passo 7: Assinar um tópico (dispositivo que RECEBE)
-
-Para receber mensagens, são necessárias **mais alterações**:
-
-**7a)** Registrar a função de callback no `setup()`:
+Somente no assinante, acrescente ao setup:
 
 ```cpp
-client.setCallback(callback);
+mqttClient.setCallback(callback);
 ```
 
-**7b)** Assinar o tópico logo após conectar ao broker (dentro da função `conectarMQTT`, após o `connect` bem-sucedido) - como consta no exemplo do **Passo 4**;
+A assinatura do tópico já está dentro de `conectarMQTT()`. O callback precisa estar declarado antes do setup ou ter um protótipo ali.
 
-
----
-
-### Passo 8: Criar a função de callback (dispositivo que RECEBE)
-
-A função `callback` é chamada **automaticamente** toda vez que uma mensagem chega no tópico assinado. No nosso modelo, a mensagem chega como JSON e pode ser parseada com ArduinoJson:
+## 8. Callback
 
 ```cpp
-void callback(char* topic, byte* payload, unsigned int length) {
-  String mensagem = "";
-  for (unsigned int i = 0; i < length; i++) {
-    mensagem += (char)payload[i];
-  }
-  Serial.print("Recebido no tópico [");
-  Serial.print(topic);
-  Serial.print("]: ");
-  Serial.println(mensagem);
+void callback(char* topico, byte* conteudo, unsigned int tamanho) {
+  String mensagem(conteudo, tamanho);
+  Serial.println("Recebido: " + mensagem);
 
-  // Exemplo: parsear o JSON recebido
   JsonDocument doc;
   deserializeJson(doc, mensagem);
   float dist = doc["dist"];
   Serial.printf("Distância recebida: %.2f cm\n", dist);
 
-  // Aqui você decide o que fazer com o valor recebido
+  // Acrescente aqui a ação da aplicação.
 }
 ```
 
-> **Atenção:** a função `callback` deve ser declarada **antes** do `setup()`.
+O formato dos parâmetros é o exigido pela biblioteca. Não é preciso criar outra abstração para tratar o recebimento.
 
----
+## 9. Loop
 
-### Passo 9 — Manter a conexão viva no `loop()`
-
-O `client.loop()` é **obrigatório** no `loop()`. Ele mantém a conexão com o broker e processa as mensagens recebidas:
+Substitua o bloco WiFi existente e o TODO do loop pela sequência completa do app14:
 
 ```cpp
-if (!client.connected()) {
+if (WiFi.status() != WL_CONNECTED) {
+  conectarWiFi();
+} else if (!mqttClient.connected()) {
   conectarMQTT();
+} else {
+  mqttClient.loop();
 }
-client.loop();
 ```
 
----
+Depois desse bloco, mantenha o bloco de coleta/JSON do modelo. `mqttClient.loop()` processa as mensagens e mantém a sessão.
 
-## Código-base:
-`app_WiFi_modelo/src/iot-app-wifi-exemplo.ino`
+## Esperas deste exemplo
 
+WiFi usa `while` e `delay(500)` para aguardar a conexão iniciada, conforme o padrão didático escolhido. Só imprime a mensagem quando conectar e mostra o IP obtido; uma reconexão mostra o IP atual. Enquanto aguarda, o restante do loop fica pausado.
 
----
+MQTT faz uma tentativa por intervalo de 5 s, mas `PubSubClient::connect()` é síncrono. `setSocketTimeout(2)` limita a resposta MQTT; não limita toda a conexão TCP. Não há armazenamento/reenvio offline.
 
 ## Referência rápida
 
-| Função | O que faz |
+| Função | Uso |
 |---|---|
-| `client.setServer(host, porta)` | Define o broker |
-| `client.setCallback(funcao)` | Registra o callback |
-| `client.connect("id")` | Conecta ao broker |
-| `client.subscribe("topico")` | Assina um tópico |
-| `client.publish("topico", "msg")` | Publica uma mensagem |
-| `client.loop()` | Mantém conexão e processa mensagens |
-| `client.connected()` | Retorna `true` se conectado |
+| `setServer` | Broker e porta |
+| `connect` | Conectar com Client ID |
+| `subscribe` | Assinar explicitamente após conectar |
+| `setCallback` | Registrar quem trata as mensagens |
+| `publish` | Enviar o payload |
+| `loop` | Processar mensagens e manter a sessão |
+
+APIs conferidas: [PubSubClient 2.8](https://github.com/knolleary/pubsubclient/blob/v2.8/src/PubSubClient.h), [implementação da conexão](https://github.com/knolleary/pubsubclient/blob/v2.8/src/PubSubClient.cpp), [WiFi do core 2.0.17](https://github.com/espressif/arduino-esp32/blob/2.0.17/libraries/WiFi/src/WiFiSTA.h) e [rede Wokwi](https://docs.wokwi.com/guides/esp32-wifi).

@@ -14,9 +14,8 @@
 
 //WebServer
 const char* WIFI_SSID = "Wokwi-GUEST";
-const char* WIFI_PASSWORD = "";
+const char* WIFI_SENHA = "";
 const char* HTTPCHARSET = "text/plain; charset=utf-8";
-const uint8_t WIFI_CHANNEL = 6;
 WebServer server(80);
 
 // -------------- Handlers HTTP
@@ -49,6 +48,31 @@ void handleAudio() {
 
 
 // --------------- Funções setup() e loop()
+// Controle da conexão
+const uint32_t INTERVALO_RECONEXAO = 5000;
+uint32_t ultimaTentativaWiFi = 0;
+
+void conectarWiFi() {
+  // Uma tentativa a cada INTERVALO_RECONEXAO, como no app14.
+  if (millis() - ultimaTentativaWiFi < INTERVALO_RECONEXAO) {
+    return;
+  }
+  ultimaTentativaWiFi = millis();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  WiFi.setSleep(false);
+
+  // Aguarda conectar para mostrar o IP obtido nesta conexão.
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  Serial.println("[WiFi] Conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -57,18 +81,9 @@ void setup() {
   ESP32Sensors::LED::inicializar(LED_PIN);
 
   //Conexão WiFi
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);
-  WiFi.setSleep(false);
-  Serial.print("Conectando ao Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(250);
-    Serial.print(".");
-  }
-
-  Serial.println();
-  Serial.println("Wi-Fi conectado!");
-  Serial.print("Endereço IP: ");
-  Serial.println(WiFi.localIP());
+  // Aguarda o intervalo inicial antes de iniciar o serviço com WiFi conectado.
+  delay(INTERVALO_RECONEXAO);
+  conectarWiFi();
 
   // Rotas
   server.on("/", handleRoot);
@@ -79,6 +94,10 @@ void setup() {
 }
 
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    conectarWiFi();
+  }
+
   server.handleClient(); // processa requisições
   delay(10);
 }

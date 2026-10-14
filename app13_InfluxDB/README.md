@@ -40,3 +40,11 @@ sensores_iot,dispositivo=Noris1_ESP32_Aula07 distancia_cm=45.23,distancia_alarme
 ```
 
 O InfluxDB armazena automaticamente timestamps e permite consultas e visualizações avançadas dos dados históricos através do Flux Query Language ou InfluxQL.
+
+## Conexão WiFi
+
+O loop verifica `WiFi.status() != WL_CONNECTED` e chama `conectarWiFi()`. A função usa `WiFi.begin(WIFI_SSID, WIFI_SENHA)`, com canal automático, aguarda conectar e então mostra `[WiFi] Conectado` e o IP. O IP fica dentro da função, inclusive ao reconectar.
+
+`INTERVALO_RECONEXAO` e `ultimaTentativaWiFi` são `uint32_t`. O controle usa 5 s. Enquanto a função aguarda a rede, o restante do programa pausa.
+
+No setup, aguarda 5 s e conecta antes de preparar o InfluxDB. A checagem WiFi fica antes do controle de intervalo no loop.
