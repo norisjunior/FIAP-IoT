@@ -1,0 +1,477 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ei Fioti em ação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: palco 16:9 em colunas por camada, linhas nos corredores, legenda fixa embaixo */
+:root{--bg:#EDF0F4;--frame:#FAFBFC;--surface:#FFFFFF;--card:#EFF2F6;--line:#D3DAE3;--ink:#141A22;--muted:#5A6676;--acq:#2563C9;--acq-tint:#EAF1FD;--proc:#5B4CD6;--proc-tint:#F0EEFD;--ship:#C2410C;--wake:#0E8A6D;--unk:#A35F08;--noise:#64748B;--on-accent:#FFFFFF;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B0E12;--frame:#11151A;--surface:#171C23;--card:#202731;--line:#2E3743;--ink:#E6EAF0;--muted:#97A3B4;--acq:#6FA2F2;--acq-tint:#15223A;--proc:#A196F5;--proc-tint:#1D1A36;--ship:#F08A5D;--wake:#3CC7A3;--unk:#F0B45A;--noise:#94A3B8;--on-accent:#0B0E12;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B0E12;--frame:#11151A;--surface:#171C23;--card:#202731;--line:#2E3743;--ink:#E6EAF0;--muted:#97A3B4;--acq:#6FA2F2;--acq-tint:#15223A;--proc:#A196F5;--proc-tint:#1D1A36;--ship:#F08A5D;--wake:#3CC7A3;--unk:#F0B45A;--noise:#94A3B8;--on-accent:#0B0E12;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+main{max-width:1320px;margin:0 auto;padding-block:20px;padding-inline:16px;display:flex;flex-direction:column;gap:14px}
+#stage{background:var(--frame);border:1px solid var(--line);border-radius:20px;overflow-x:auto}
+#stage svg{display:block;width:100%;height:auto;min-width:0}
+#stage:fullscreen{display:flex;align-items:center;justify-content:center;border:0;border-radius:0;padding:2vh 2vw;box-sizing:border-box}
+#stage:fullscreen svg{width:100%;height:100%;max-height:96vh}
+.ttl{font:500 34px var(--sans);fill:var(--ink)}
+.sub{font:400 19px var(--sans);fill:var(--muted)}
+.h{font:500 24px var(--sans);fill:var(--ink)}
+.h2{font:500 20px var(--sans);fill:var(--ink)}
+.s{font:400 17px var(--sans);fill:var(--muted)}
+.m{font:400 15.5px var(--mono);fill:var(--muted)}
+.ms{font:400 13.5px var(--mono);fill:var(--muted)}
+.val{font:500 15.5px var(--mono);fill:var(--ink);font-variant-numeric:tabular-nums}
+.cont{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.cont-hl{fill:var(--proc-tint);stroke:var(--proc);stroke-width:2}
+.cont-ac{fill:var(--acq-tint);stroke:var(--acq);stroke-width:2}
+.card{fill:var(--card);stroke:transparent;stroke-width:2.5;transition:stroke .25s}
+.card.fc{fill:var(--surface)}
+.ring{fill:var(--surface);stroke:var(--line);stroke-width:1.5;transition:stroke .25s,fill .25s}
+.ico{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+.node.on .card,.node.on .ring{stroke:var(--c)}
+.node.on .ring{stroke-width:3;fill:color-mix(in srgb,var(--c) 14%,var(--surface))}
+.node.on>.ico,.node.on .hdr .ico{stroke:var(--c)}
+.base{stroke:var(--line);stroke-width:3;stroke-dasharray:2 8;stroke-linecap:round;fill:none}
+.lit{stroke-width:3.5;stroke-linecap:round;fill:none}
+.bar-bg{fill:var(--line)}
+.pk{font:500 14px var(--mono);fill:var(--on-accent)}
+.wave{fill:none;stroke-width:2.4;stroke-linecap:round}
+.badge rect{fill:var(--ink)}
+.badge text{font:500 13px var(--mono);fill:var(--bg)}
+.pill rect{fill:var(--card);stroke:var(--line);stroke-width:1.2}
+.pill text{font:500 14px var(--mono);fill:var(--muted)}
+.pill.ok rect{fill:color-mix(in srgb,var(--wake) 16%,var(--surface));stroke:var(--wake)}
+.pill.ok text{fill:var(--wake)}
+.pill.busy rect{fill:color-mix(in srgb,var(--unk) 14%,var(--surface));stroke:var(--unk)}
+.pill.busy text{fill:var(--unk)}
+.cap{height:280px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:18px 24px;box-sizing:border-box;font-family:var(--sans)}
+.cap-head{display:flex;align-items:center;gap:20px}
+.cap-num{flex:none;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:500 28px var(--sans);color:var(--on-accent);background:var(--acq);transition:background .25s}
+.cap-txt{flex:1;min-width:0}
+.cap-title{font:500 28px var(--sans);color:var(--ink);line-height:1.2}
+.cap-desc{font:400 21px var(--sans);color:var(--muted);line-height:1.3;margin-top:3px}
+.msg{flex:1;min-height:0;background:var(--card);border-radius:14px;padding:12px 20px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.msg-in{display:flex;flex-direction:column;gap:8px;max-width:100%;min-width:0}
+.msg-kind{font:500 15px var(--sans);color:var(--muted);letter-spacing:.02em}
+.row{display:grid;grid-template-columns:150px minmax(0,1fr);column-gap:16px;align-items:start}
+.k{justify-self:start;font:500 14px var(--sans);line-height:18px;color:var(--on-accent);background:var(--kc);border-radius:999px;padding:3px 12px;margin-top:1px}
+.v{font:400 17px var(--mono);color:var(--ink);line-height:1.4;word-break:break-word;min-width:0}
+.note{grid-column:2;font:400 15px var(--sans);color:var(--muted);line-height:1.35;margin-top:1px}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:500 14px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--acq);outline-offset:2px}
+#bPlay{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:110px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.seg button[aria-pressed="true"]{background:var(--acq-tint);color:var(--acq)}
+.hint{font-size:13px;color:var(--muted);margin:0;line-height:1.5;max-width:90ch}
+@media (prefers-reduced-motion:reduce){.card,.ring,.ico,.cap-num{transition:none}}
+
+.box{fill:var(--card);stroke:var(--line);stroke-width:1.2;transition:fill .2s}
+.box-t{font:500 15.5px var(--mono);fill:var(--muted)}
+</style>
+
+<main>
+<div id="stage">
+<svg id="scene" viewBox="0 0 1600 1010" role="img" aria-labelledby="sceneTitle sceneDesc">
+<title id="sceneTitle">Arquitetura da wake word Ei Fioti em execução</title>
+<desc id="sceneDesc">Animação em duas fases. Fase A: sobem o container do Edge Impulse na porta 1337, o servidor.py na porta 8000 e o túnel cloudflared. Fase B: o celular abre o endereço HTTPS, liga o microfone e manda blocos de áudio por WebSocket; o servidor monta a janela de 1,5 s, envia ao container, recebe as probabilidades, decide que é a wake word e avisa o celular, que responde Pois não.</desc>
+<defs>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M10.5 18.3h3"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9M12 3c-2.6 2.6-3.9 5.6-3.9 9s1.3 6.4 3.9 9"/></symbol>
+<symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></symbol>
+<symbol id="i-split" viewBox="0 0 24 24"><path d="M3 12h6.5l4.5-5.5h7M9.5 12l4.5 5.5h7M18 4l3 2.5-3 2.5M18 15l3 2.5-3 2.5"/></symbol>
+<symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h1.5M7 8.5v7M10.5 5v14M14 9v6M17.5 6.5v11M21 11v2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16.5 9"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3 13h18v2.5a5.5 5.5 0 0 1-5.5 5.5h-7A5.5 5.5 0 0 1 3 15.5z"/><path d="M5 9h3.5v4H5zM8.5 9H12v4H8.5zM12 9h3.5v4H12zM8.5 5H12v4H8.5z"/></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M7 10l3 2.5-3 2.5M12.5 15H17"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .3-8 6 6 0 0 0-11.5 1.6A3.5 3.5 0 0 0 7 18.5z"/></symbol>
+<symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+
+<clipPath id="clipBuf"><rect x="980" y="408" width="280" height="40" rx="6"/></clipPath>
+</defs>
+
+<text class="ttl" x="40" y="62">O que acontece quando você diz “Ei Fioti”</text>
+<text class="sub" x="40" y="94">Celular, túnel da Cloudflare, servidor.py e o container do Edge Impulse</text>
+<text class="s" id="stepTxt" x="1560" y="58" text-anchor="end"></text>
+<g id="stepBar"></g>
+
+<rect class="cont" x="40" y="120" width="300" height="570" rx="24"/>
+<text class="h" x="190" y="160" text-anchor="middle">Celular</text>
+<text class="s" x="190" y="186" text-anchor="middle">navegador · página HTTPS</text>
+
+<rect class="cont" x="390" y="120" width="258" height="570" rx="24"/>
+<text class="h" x="519" y="160" text-anchor="middle">Internet</text>
+<text class="s" x="519" y="186" text-anchor="middle">qualquer rede</text>
+
+<rect class="cont-hl" x="690" y="120" width="870" height="570" rx="24"/>
+<text class="h" x="1125" y="160" text-anchor="middle">Notebook</text>
+<text class="s" x="1125" y="186" text-anchor="middle">Docker Desktop + Python 3.12 · três terminais</text>
+
+<g id="baseLines"></g>
+<g id="litLines"></g>
+
+<g class="node" id="n0">
+<rect class="card" id="pgCard" x="58" y="206" width="264" height="244" rx="18"/>
+<use href="#i-phone" class="ico" x="76" y="222" width="38" height="38"/>
+<text class="h2" x="124" y="242">celular.html</text>
+<text class="s" x="124" y="264">a página aberta</text>
+<g id="pg">
+<rect id="btnR" x="76" y="286" width="228" height="46" rx="12"/>
+<use id="btnIco" href="#i-speaker" class="ico" x="96" y="297" width="24" height="24" style="stroke:var(--on-accent)"/>
+<text id="btnT" class="h2" x="190" y="316" text-anchor="middle"></text>
+<g id="pscores"></g>
+</g>
+</g>
+
+<g class="node" id="n1">
+<rect class="card" x="58" y="480" width="264" height="190" rx="18"/>
+<use href="#i-mic" class="ico" x="76" y="496" width="38" height="38"/>
+<text class="h2" x="124" y="516">Microfone</text>
+<text class="s" x="124" y="538">16 kHz · áudio cru</text>
+<path id="mw" class="wave" d=""/>
+<text id="micTxt" class="ms" x="190" y="648" text-anchor="middle">blocos de 4096 · int16</text>
+<g id="bub" style="visibility:hidden"><rect x="84" y="626" width="212" height="32" rx="16" style="fill:var(--wake)"/><text class="pk" x="190" y="647" text-anchor="middle" style="font-size:15px">você: “Ei Fioti!”</text></g>
+</g>
+
+<g class="node" id="n2">
+<rect class="card" x="408" y="206" width="222" height="464" rx="18"/>
+<use href="#i-cloud" class="ico" x="426" y="222" width="38" height="38"/>
+<text class="h2" x="474" y="242">Cloudflare</text>
+<text class="s" x="474" y="264">borda HTTPS</text>
+<g id="url">
+<text class="ms" x="426" y="398">https://</text>
+<text class="ms" x="426" y="420">ei-fioti-xxxx.</text>
+<text class="ms" x="426" y="442">trycloudflare.com</text>
+</g>
+<use href="#i-lock" class="ico" x="426" y="484" width="28" height="28"/>
+<text class="s" x="462" y="498" style="font-size:15.5px">só com HTTPS</text>
+<text class="s" x="462" y="520" style="font-size:15.5px">o celular libera</text>
+<text class="s" x="462" y="542" style="font-size:15.5px">o microfone</text>
+<g class="pill" id="st2"><rect x="426" y="618" width="186" height="34" rx="17"/><text x="519" y="640" text-anchor="middle"></text></g>
+</g>
+
+<g class="node" id="n3">
+<rect class="card fc" x="710" y="206" width="200" height="464" rx="18"/>
+<use href="#i-box" class="ico" x="728" y="222" width="38" height="38"/>
+<g class="badge"><rect x="856" y="224" width="38" height="24" rx="6"/><text x="875" y="241" text-anchor="middle">T3</text></g>
+<text class="h2" x="728" y="290">cloudflared</text>
+<text class="s" x="728" y="312">container Docker</text>
+<text class="ms" x="728" y="398">tunnel --url</text>
+<text class="ms" x="728" y="420">host.docker.</text>
+<text class="ms" x="728" y="442">internal:8000</text>
+<text class="s" x="728" y="498" style="font-size:15.5px">conexão de saída:</text>
+<text class="s" x="728" y="520" style="font-size:15.5px">nenhuma porta</text>
+<text class="s" x="728" y="542" style="font-size:15.5px">aberta no roteador</text>
+<g class="pill" id="st3"><rect x="728" y="618" width="164" height="34" rx="17"/><text x="810" y="640" text-anchor="middle"></text></g>
+</g>
+
+<g class="node" id="n4">
+<rect class="card fc" x="960" y="206" width="320" height="464" rx="18"/>
+<use href="#i-term" class="ico" x="978" y="222" width="38" height="38"/>
+<g class="badge"><rect x="1226" y="224" width="38" height="24" rx="6"/><text x="1245" y="241" text-anchor="middle">T2</text></g>
+<text class="h2" x="1026" y="242">servidor.py</text>
+<text class="s" x="1026" y="264">FastAPI · uvicorn :8000</text>
+<text class="ms" x="980" y="304">GET /     → celular.html</text>
+<text class="ms" x="980" y="362">WS /ouvir ← blocos de áudio</text>
+<text class="s" x="980" y="398">janela</text>
+<text class="ms" x="1260" y="398" text-anchor="end">1,5 s = 24 000 amostras</text>
+<rect x="980" y="408" width="280" height="40" rx="6" style="fill:var(--card)"/>
+<g id="bufG" clip-path="url(#clipBuf)"></g>
+<text class="ms" x="980" y="470">classifica a cada 0,5 s</text>
+<rect id="decR" x="980" y="488" width="280" height="104" rx="10" style="fill:var(--surface);stroke:var(--line);stroke-width:1.5"/>
+<text class="s" x="996" y="516" style="fill:var(--ink)">WakeWord ≥ 0,80 ?</text>
+<text id="decV" class="val" x="1244" y="516" text-anchor="end"></text>
+<text class="ms" x="996" y="540">e mais de 1,5 s do último</text>
+<rect id="decC" x="996" y="554" width="176" height="28" rx="14"/>
+<text id="decT" class="ms" x="1084" y="573" text-anchor="middle"></text>
+<g class="pill" id="st4"><rect x="978" y="618" width="284" height="34" rx="17"/><text x="1120" y="640" text-anchor="middle"></text></g>
+</g>
+
+<g class="node" id="n5">
+<rect class="card fc" x="1340" y="206" width="200" height="464" rx="18"/>
+<use href="#i-box" class="ico" x="1358" y="222" width="38" height="38"/>
+<g class="badge"><rect x="1486" y="224" width="38" height="24" rx="6"/><text x="1505" y="241" text-anchor="middle">T1</text></g>
+<text class="h2" x="1358" y="290">container</text>
+<text class="s" x="1358" y="312">Edge Impulse · :1337</text>
+<text class="ms" x="1358" y="374">/api/info</text>
+<text class="ms" x="1358" y="396">/api/features</text>
+<rect id="mR" class="box" x="1358" y="414" width="164" height="34" rx="8"/><text id="mT" class="box-t" x="1440" y="436" text-anchor="middle">MFCC</text>
+<rect id="nR" class="box" x="1358" y="458" width="164" height="34" rx="8"/><text id="nT" class="box-t" x="1440" y="480" text-anchor="middle">Rede neural</text>
+<g id="cscores"></g>
+<g class="pill" id="st5"><rect x="1358" y="618" width="164" height="34" rx="17"/><text x="1440" y="640" text-anchor="middle"></text></g>
+</g>
+
+<g id="pkts"></g>
+
+<foreignObject x="40" y="712" width="1520" height="280">
+<div class="cap">
+<div class="cap-head"><div class="cap-num" id="capNum">1</div><div class="cap-txt"><div class="cap-title" id="capTitle"></div><div class="cap-desc" id="capDesc"></div></div></div>
+<div class="msg" id="msg"></div>
+</div>
+</foreignObject>
+</svg>
+</div>
+
+<div class="ctrl">
+<button id="bPlay" type="button">Pausar</button>
+<button id="bPrev" type="button">Etapa anterior</button>
+<button id="bNext" type="button">Próxima etapa</button>
+<button id="bReset" type="button">Reiniciar</button>
+<div class="seg" role="group" aria-label="Velocidade">
+<button type="button" data-s="0.5" aria-pressed="false">0,5×</button>
+<button type="button" data-s="1" aria-pressed="true">1×</button>
+<button type="button" data-s="2" aria-pressed="false">2×</button>
+</div>
+<button id="bFull" type="button">Tela cheia</button>
+</div>
+<p class="hint">Atalhos: espaço pausa ou retoma, setas avançam ou voltam uma etapa. Fase A (etapas 1 a 3) é a ordem dos terminais do ROTEIRO.md; fase B (4 a 13) é o que acontece a cada “Ei Fioti”. Nas probabilidades, verde é WakeWord, âmbar é desconhecido e cinza é ruido; os valores são de exemplo.</p>
+</main>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+const ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const sub=(p,a,b)=>clamp((p-a)/(b-a));
+const COL=k=>`var(--${k})`;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt=v=>v.toFixed(2).replace('.',',');
+// Onda de áudio desenhada como barras verticais; env(x) dá a amplitude de 0 a 1
+function wavePath(x0,x1,ym,h,env,t,n){
+  let d='';const st=(x1-x0)/(n-1);
+  for(let k=0;k<n;k++){
+    const x=x0+k*st,f=k/(n-1);
+    const j=.35+.65*Math.abs(Math.sin(k*1.93+t*.011)*Math.cos(k*.61-t*.007));
+    const a=Math.max(.6,h*clamp(env(f))*j);
+    d+=`M${x.toFixed(1)} ${(ym-a).toFixed(1)}V${(ym+a).toFixed(1)}`;
+  }
+  return d;
+}
+function setPill(id,txt,cls){const g=$(id);g.querySelector('text').textContent=txt;g.classList.toggle('ok',cls==='ok');g.classList.toggle('busy',cls==='busy');}
+
+function Diagram(cfg){
+  const {steps,segs,render,msg,label}=cfg;
+  segs.forEach(g=>{g.L=Math.hypot(g.b[0]-g.a[0],g.b[1]-g.a[1]);});
+  const lits=segs.map(g=>{
+    el('line',{x1:g.a[0],y1:g.a[1],x2:g.b[0],y2:g.b[1],class:'base'},$('baseLines'));
+    const l=el('line',{x1:g.a[0],y1:g.a[1],x2:g.b[0],y2:g.b[1],class:'lit'},$('litLines'));
+    l.style.strokeDasharray=g.L;l.style.strokeDashoffset=g.L;return l;
+  });
+  let T=0;steps.forEach(s=>{s.s=T;T+=s.d;s.moves=s.moves||[];});
+  const END=T,REST=2600;
+  const first=segs.map(()=>null);
+  steps.forEach((s,i)=>s.moves.forEach(m=>{
+    m.route=m.route||[m.seg];m.c=m.c||s.c;m.n=m.n||1;m.a=m.a??0;m.b=m.b??1;
+    m.lens=m.route.map(k=>segs[k].L);m.tot=m.lens.reduce((a,b)=>a+b,0);
+    let acc=0;m.route.forEach((k,j)=>{const c0=acc/m.tot,c1=(acc+m.lens[j])/m.tot;acc+=m.lens[j];if(!first[k])first[k]={i,m,c0,c1};});
+  }));
+  function routePt(m,f){
+    let d=f*m.tot;
+    for(let j=0;j<m.route.length;j++){
+      const g=segs[m.route[j]],L=m.lens[j];
+      if(d<=L||j===m.route.length-1){const u=clamp(d/L);const A=m.rev?g.b:g.a,B=m.rev?g.a:g.b;return[A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u];}
+      d-=L;
+    }
+  }
+  const pool=[];
+  for(let k=0;k<14;k++){const g=el('g',{},$('pkts'));const r=el('rect',{},g);const t=el('text',{class:'pk','text-anchor':'middle',y:5},g);g.style.visibility='hidden';pool.push({g,r,t,lab:null});}
+  function showPkt(k,x,y,lab,c){
+    const P=pool[k];
+    if(P.lab!==lab){P.lab=lab;P.t.textContent=lab;
+      if(lab){const w=lab.length*8.5+24;P.r.setAttribute('x',-w/2);P.r.setAttribute('width',w);P.r.setAttribute('y',-16);P.r.setAttribute('height',32);P.r.setAttribute('rx',16);}
+      else{P.r.setAttribute('x',-8);P.r.setAttribute('width',16);P.r.setAttribute('y',-8);P.r.setAttribute('height',16);P.r.setAttribute('rx',8);}}
+    P.r.style.fill=c;P.g.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)})`);P.g.style.visibility='visible';
+  }
+  const bars=[],N=steps.length,BW=30,GAP=6,bx=1560-(N*BW+(N-1)*GAP);
+  for(let k=0;k<N;k++)bars.push(el('rect',{x:bx+k*(BW+GAP),y:74,width:BW,height:8,rx:4},$('stepBar')));
+  const nodes=[...document.querySelectorAll('.node')];
+  let reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+  const S={t:0,speed:1,playing:!reduce,cap:-1};
+  function where(){
+    const t=S.t;if(t>=END)return[N-1,1];
+    let i=0;while(i<N-1&&t>=steps[i].s+steps[i].d)i++;
+    return[i,clamp((t-steps[i].s)/steps[i].d)];
+  }
+  function caption(i){
+    const s=steps[i],m=msg(i);
+    $('capNum').textContent=i+1;$('capNum').style.background=COL(s.c);
+    $('capTitle').textContent=s.t;$('capDesc').textContent=s.x;
+    let h=`<div class="msg-kind">${esc(m.kind)}</div>`;
+    m.rows.forEach(r=>{h+=`<div class="row" style="--kc:${COL(r.c||s.c)}"><span class="k">${esc(r.k)}</span><span class="v">${esc(r.v)}</span>${r.n?`<span class="note">${esc(r.n)}</span>`:''}</div>`;});
+    $('msg').innerHTML=`<div class="msg-in">${h}</div>`;
+    $('stepTxt').textContent=label(i);
+    bars.forEach((r,k)=>{r.style.fill=k<i?'var(--muted)':k===i?COL(s.c):'var(--line)';r.style.opacity=k<i?'.45':'1';});
+  }
+  function draw(now){
+    const[i,p]=where(),s=steps[i];
+    nodes.forEach(n=>{const on=(s.on||[]).includes(n.id);n.classList.toggle('on',on);if(on)n.style.setProperty('--c',COL(s.c));});
+    segs.forEach((g,k)=>{const F=first[k];let f=0;
+      if(F){if(i>F.i)f=1;else if(i===F.i)f=sub(sub(p,F.m.a,F.m.b),F.c0,F.c1);}
+      lits[k].style.stroke=F?COL(F.m.c):'none';
+      lits[k].style.strokeDashoffset=((F&&F.m.rev)?-1:1)*g.L*(1-f);});
+    let used=0;
+    s.moves.forEach(m=>{
+      if(p<m.a||p>m.b||S.t>=END)return;const q=sub(p,m.a,m.b);
+      for(let k=0;k<m.n;k++){
+        let f;
+        if(m.n===1)f=ease(q);
+        else{const w=m.w||.3,s0=k*(1-w)/(m.n-1);f=sub(q,s0,s0+w);if(f<=0||f>=1)continue;}
+        const[x,y]=routePt(m,f);if(used<pool.length)showPkt(used++,x,y,m.label||'',COL(m.c));
+      }
+    });
+    for(let k=used;k<pool.length;k++)pool[k].g.style.visibility='hidden';
+    render(i,p,now);
+    if(i!==S.cap){S.cap=i;caption(i);}
+  }
+  function goStep(i){S.t=steps[clamp(i,0,N-1)].s+1;}
+  function next(){const[i]=where();if(i<N-1&&S.t<END)goStep(i+1);else S.t=0;}
+  function prev(){const[i,p]=where();if(S.t>=END||p*steps[i].d>900)goStep(i);else goStep(i-1);}
+  const bPlay=$('bPlay');
+  function setPlay(v){S.playing=v;bPlay.textContent=v?'Pausar':'Reproduzir';bPlay.setAttribute('aria-pressed',String(!v));}
+  bPlay.addEventListener('click',()=>setPlay(!S.playing));
+  $('bNext').addEventListener('click',next);
+  $('bPrev').addEventListener('click',prev);
+  $('bReset').addEventListener('click',()=>{S.t=0;});
+  document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{S.speed=+b.dataset.s;document.querySelectorAll('.seg button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));}));
+  const stage=$('stage'),bFull=$('bFull');
+  bFull.addEventListener('click',()=>{try{if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}else if(stage.requestFullscreen){stage.requestFullscreen().catch(()=>{});}}catch(e){}});
+  document.addEventListener('fullscreenchange',()=>{bFull.textContent=document.fullscreenElement?'Sair da tela cheia':'Tela cheia';});
+  document.addEventListener('keydown',e=>{
+    if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){e.preventDefault();setPlay(!S.playing);}
+    else if(e.key==='ArrowRight'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'){e.preventDefault();prev();}
+  });
+  setPlay(S.playing);
+  let last=performance.now();
+  function frame(now){const dt=Math.min(100,now-last);last=now;if(S.playing){S.t+=dt*S.speed;if(S.t>=END+REST)S.t=0;}draw(now);requestAnimationFrame(frame);}
+  draw(last);requestAnimationFrame(frame);
+}
+
+const CL=['wake','unk','noise'],CN=['WakeWord','desconhecido','ruido'];
+const SN=[.01,.03,.96],SW=[.93,.05,.02];
+
+// Probabilidades na página e no container
+function scoreRows(g,x0,y0,dy,lab,bx,bw,vx){
+  const bars=[],vals=[];
+  CN.forEach((n,k)=>{const y=y0+k*dy;
+    if(lab){const t=el('text',{x:x0,y,class:'ms',style:`fill:var(--${CL[k]})`},g);t.textContent=n;}
+    else el('circle',{cx:x0+6,cy:y-5,r:6,style:`fill:var(--${CL[k]})`},g);
+    el('rect',{x:bx,y:y-9,width:bw,height:8,rx:4,class:'bar-bg'},g);
+    bars.push(el('rect',{x:bx,y:y-9,width:0,height:8,rx:4,style:`fill:var(--${CL[k]})`},g));
+    const v=el('text',{x:vx,y,class:'ms','text-anchor':'end',style:'fill:var(--ink)'},g);v.textContent='–';vals.push(v);
+  });
+  return(s,f=1)=>CN.forEach((_,k)=>{bars[k].setAttribute('width',s?(bw*s[k]*f).toFixed(1):0);vals[k].textContent=s?fmt(s[k]*f):'–';});
+}
+const pageSc=scoreRows($('pscores'),76,370,28,true,184,78,304);
+const contSc=scoreRows($('cscores'),1358,526,28,false,1380,94,1522);
+
+// Janela do servidor: blocos de 4096 amostras (24 000 / 4096 ≈ 5,86 blocos)
+const BW=280/5.86,blocks=[];
+for(let k=0;k<8;k++)blocks.push(el('rect',{y:412,height:32,width:BW-4,rx:4},$('bufG')));
+const WAKE=[9,10,11];
+
+const steps=[
+{c:'ship',d:3400,on:['n5'],t:'Terminal 1: o modelo sobe',x:'O container do Edge Impulse baixa o seu impulse com a chave de API, compila e abre a porta 1337.'},
+{c:'ship',d:4400,on:['n4','n5'],t:'Terminal 2: o servidor sobe',x:'O servidor.py pergunta ao container o tamanho da janela e passa a atender na porta 8000.',
+ moves:[{seg:4,label:'GET /api/info',a:.08,b:.42},{seg:4,rev:true,label:'24 000',a:.52,b:.86}]},
+{c:'proc',d:3800,on:['n3','n2'],t:'Terminal 3: o túnel',x:'O cloudflared liga o notebook à Cloudflare e ganha um endereço HTTPS público.',
+ moves:[{seg:2,rev:true,label:'túnel',a:.08,b:.5}]},
+{c:'proc',d:6200,on:['n0','n2','n3','n4'],t:'O celular abre o endereço',x:'O pedido atravessa a Cloudflare e o túnel até o servidor.py, que devolve a página.',
+ moves:[{route:[1,2,3],label:'GET /',a:0,b:.44},{route:[3,2,1],rev:true,label:'celular.html',a:.52,b:.98}]},
+{c:'proc',d:4600,on:['n0','n1'],t:'Toque em Ouvir',x:'A página liga o microfone a 16 kHz e abre um WebSocket até o servidor, que fica aberto.',
+ moves:[{route:[1,2,3],label:'WS /ouvir',a:.3,b:.9}]},
+{c:'acq',d:5400,on:['n1','n4'],t:'O áudio vira blocos',x:'A cada ≈ 0,25 s a página manda 4096 amostras. O servidor guarda só os últimos 1,5 s.',
+ moves:[{route:[0,1,2,3],n:6,w:.3,a:0,b:1}]},
+{c:'wake',d:5000,on:['n1','n4'],t:'Você diz “Ei Fioti”',x:'A fala entra nos blocos seguintes e passa a ocupar a janela de 1,5 s.',
+ moves:[{route:[0,1,2,3],n:5,w:.3,a:0,b:1}]},
+{c:'ship',d:3200,on:['n4','n5'],t:'A janela vai ao modelo',x:'A cada 0,5 s de áudio novo, o servidor manda as 24 000 amostras ao container.',
+ moves:[{seg:4,label:'POST 24 000',a:.08,b:.75}]},
+{c:'ship',d:3600,on:['n5'],t:'O container classifica',x:'O mesmo MFCC e a mesma rede do treino transformam a janela em três probabilidades.'},
+{c:'ship',d:2800,on:['n4','n5'],t:'As probabilidades voltam',x:'O container responde com um JSON: uma probabilidade por classe.',
+ moves:[{seg:4,rev:true,label:'scores',a:.08,b:.75}]},
+{c:'wake',d:3400,on:['n4'],t:'O servidor decide',x:'WakeWord passou do limiar de 0,80 e não houve disparo no último 1,5 s: disparou.'},
+{c:'wake',d:4400,on:['n0','n2','n3','n4'],t:'A resposta volta ao celular',x:'Pelo mesmo WebSocket e pelo mesmo túnel, o servidor avisa a página.',
+ moves:[{route:[3,2,1],rev:true,label:'disparou: true',a:.05,b:.9}]},
+{c:'wake',d:3800,on:['n0'],t:'“Pois não?”',x:'A página chama wakeWord(): o fundo fica verde e o celular fala “Pois não?”.'}
+];
+const segs=[
+{a:[190,480],b:[190,450]},{a:[322,330],b:[408,330]},{a:[630,330],b:[710,330]},{a:[910,330],b:[960,330]},{a:[1280,330],b:[1340,330]}
+];
+function msg(i){switch(i){
+case 0:return{kind:'Terminal 1',rows:[{k:'Comando',v:'docker run --rm -it -p 1337:1337 public.ecr.aws/g7a8t7v6/inference-container:v1.95.15 --api-key ei_•••• --run-http-server 1337'},{k:'Pronto quando',v:'HTTP Server now running',c:'wake',n:'enquanto compila, o servidor.py não consegue falar com ele'}]};
+case 1:return{kind:'Terminal 2 · pasta celular',rows:[{k:'Comando',v:'.\\venv\\Scripts\\python.exe -m uvicorn servidor:app --port 8000'},{k:'Ao iniciar',v:'GET http://localhost:1337/api/info → input_features_count = 24 000',n:'o servidor lê o tamanho da janela do próprio modelo, sem número fixo no código'}]};
+case 2:return{kind:'Terminal 3',rows:[{k:'Comando',v:'docker run --rm -it cloudflare/cloudflared tunnel --url http://host.docker.internal:8000'},{k:'Endereço',v:'https://….trycloudflare.com',n:'muda a cada execução, e qualquer um com o link abre a página: feche ao terminar'}]};
+case 3:return{kind:'Navegador do celular',rows:[{k:'Pedido',v:'GET https://….trycloudflare.com/'},{k:'Caminho',v:'Cloudflare → cloudflared → localhost:8000'},{k:'Resposta',v:'celular.html',n:'o celular não precisa estar na mesma rede do notebook'}]};
+case 4:return{kind:'celular.html',rows:[{k:'Microfone',v:'getUserMedia sem echoCancellation, noiseSuppression e autoGainControl',n:'áudio cru, como nas gravações do treino'},{k:'Taxa',v:'AudioContext a 16 000 Hz, a mesma do impulse'},{k:'Conexão',v:'WebSocket wss://…/ouvir'}]};
+case 5:return{kind:'Fluxo de áudio',rows:[{k:'Bloco',v:'4096 amostras ≈ 0,25 s · float −1..1 → int16'},{k:'Janela',v:'o servidor guarda só as últimas 24 000 amostras'},{k:'Enquanto isso',v:'cada janela só com ruído volta com ruido ≈ 0,96',c:'noise',n:'as etapas 8 a 11 rodam a cada 0,5 s, sem parar'}]};
+case 6:return{kind:'Fluxo de áudio',rows:[{k:'Fala',v:'“Ei Fioti” dura menos de 1,5 s e cabe numa janela'},{k:'Janela',v:'os blocos novos entram pela direita e empurram os mais antigos para fora',c:'acq'}]};
+case 7:return{kind:'servidor.py → container',rows:[{k:'Requisição',v:'POST http://localhost:1337/api/features'},{k:'Corpo',v:'{"features": [ … 24 000 inteiros … ]}'}]};
+case 8:return{kind:'Dentro do container',rows:[{k:'MFCC',v:'24 000 amostras → 975 features'},{k:'Rede neural',v:'975 features → 3 probabilidades',n:'é exatamente o impulse treinado no Edge Impulse'}]};
+case 9:return{kind:'container → servidor.py · valores de exemplo',rows:[{k:'Resposta',v:'{"result": {"classification": {"WakeWord": 0.93, "desconhecido": 0.05, "ruido": 0.02}}}'}]};
+case 10:return{kind:'servidor.py',rows:[{k:'Limiar',v:'scores["WakeWord"] >= LIMIAR  # 0.80'},{k:'Pausa',v:'time.time() - ultimo_disparo > PAUSA  # 1,5 s'},{k:'Terminal 2',v:'>>> WAKE WORD! <<<'}]};
+case 11:return{kind:'servidor.py → celular · WebSocket',rows:[{k:'Mensagem',v:'{"scores": {"WakeWord": 0.93, …}, "disparou": true}'},{k:'Caminho',v:'cloudflared → Cloudflare → celular',c:'proc'}]};
+default:return{kind:'celular.html · wakeWord()',rows:[{k:'Tela',v:'fundo verde e barras atualizadas'},{k:'Voz',v:'speechSynthesis fala “Pois não?” em pt-BR',n:'troque o conteúdo de wakeWord() para o celular fazer outra coisa'}]};
+}}
+const noiseEnv=()=>.18,wakeEnv=f=>.08+.95*Math.exp(-Math.pow((f-.36)/.09,2))+.85*Math.exp(-Math.pow((f-.62)/.12,2));
+function render(i,p,now){
+  // Estados dos terminais
+  setPill('st5',i===0&&p<.12?'parado':i===0&&p<.7?'compilando…':'rodando :1337',i===0&&p<.12?'':i===0&&p<.7?'busy':'ok');
+  setPill('st4',i<1?'parado':i===1&&p<.88?'iniciando…':'rodando :8000',i<1?'':i===1&&p<.88?'busy':'ok');
+  const tun=i>2||(i===2&&p>.55);
+  setPill('st3',i<2?'parado':tun?'túnel aberto':'conectando…',i<2?'':tun?'ok':'busy');
+  setPill('st2',tun?'endereço no ar':'sem túnel',tun?'ok':'');
+  $('url').style.opacity=tun?1:.2;
+  // Página
+  const loaded=i>3||(i===3&&p>.96);
+  $('pg').style.opacity=loaded?1:.3;
+  const fired=i===12&&p>.08,listen=i>4||(i===4&&p>.15);
+  $('pgCard').style.fill=fired?'color-mix(in srgb,var(--wake) 22%,var(--card))':'';
+  $('btnR').style.fill=fired||!listen?'var(--wake)':'var(--surface)';
+  $('btnR').style.stroke=fired||!listen?'transparent':'var(--line)';
+  $('btnIco').style.visibility=fired?'visible':'hidden';
+  $('btnT').textContent=fired?'Pois não?':listen?'Ouvindo…':'Ouvir';
+  $('btnT').setAttribute('x',fired?204:190);
+  $('btnT').style.fill=fired||!listen?'var(--on-accent)':'var(--muted)';
+  pageSc(fired||(i===11&&p>.95)?SW:(i>5||(i===5&&p>.6))?SN:null);
+  // Microfone
+  const micOn=i>4||(i===4&&p>.3);
+  let env=()=>0,col='var(--line)';
+  if(micOn){env=noiseEnv;col='var(--acq)';}
+  if(i===6){const k=sub(p,.1,.3)-sub(p,.75,.95);env=f=>Math.max(.18,wakeEnv(f)*k);col='var(--wake)';}
+  $('mw').style.stroke=col;$('mw').setAttribute('d',wavePath(76,304,588,24,env,micOn?now:0,46));
+  $('bub').style.visibility=i===6&&p>.08&&p<.92?'visible':'hidden';
+  $('micTxt').style.visibility=i===6&&p>.08&&p<.92?'hidden':'visible';
+  // Janela no servidor
+  const b=i<5?0:i===5?8*p:i===6?8+6*p:14;
+  blocks.forEach((r,j)=>{
+    const k=Math.floor(b)-7+j;
+    if(b<=0||k<0){r.style.visibility='hidden';return;}
+    const x=1260-(b-k)*BW+2;
+    r.setAttribute('x',x.toFixed(1));r.style.visibility='visible';
+    r.style.fill=WAKE.includes(k)?'var(--wake)':'color-mix(in srgb,var(--noise) 40%,var(--surface))';
+  });
+  // Container
+  const mOn=i===8&&p<.45,nOn=i===8&&p>=.4&&p<.75;
+  $('mR').style.fill=mOn?'var(--ship)':'';$('mT').style.fill=mOn?'var(--on-accent)':'';
+  $('nR').style.fill=nOn?'var(--ship)':'';$('nT').style.fill=nOn?'var(--on-accent)':'';
+  contSc(i>8?SW:i===8&&p>.6?SW:null,i===8?ease(sub(p,.6,.95)):1);
+  // Decisão
+  const dec=i>10||(i===10&&p>.45);
+  $('decR').style.stroke=i===10?'var(--wake)':'var(--line)';$('decR').style.strokeWidth=i===10?2.5:1.5;
+  $('decV').textContent=i>=10?'0,93 ✓':'';$('decV').style.fill='var(--wake)';
+  $('decC').style.fill=dec?'var(--wake)':'var(--card)';
+  $('decT').textContent=dec?'disparou: true':'disparou: false';
+  $('decT').style.fill=dec?'var(--on-accent)':'var(--muted)';
+}
+Diagram({steps,segs,render,msg,label:i=>i<3?`Fase A · subir a arquitetura · Etapa ${i+1} de ${steps.length}`:`Fase B · “Ei Fioti” · Etapa ${i+1} de ${steps.length}`});
+})();
+</script>
+
+</body></html>

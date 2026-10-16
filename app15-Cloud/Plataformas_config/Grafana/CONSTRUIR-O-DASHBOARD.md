@@ -8,7 +8,7 @@ Três iterações no dashboard de medições e uma no canvas. Cada uma roda.
 4. **Outro dashboard**, o canvas: as medições em cima da foto da bag.
 
 O Node-RED e o n8n olham o dado passando. O Grafana olha o dado **guardado** — então o
-[Fluxo_2](../NodeRED/Fluxo_2_envio_InfluxDB.json) precisa estar gravando antes de começar.
+[Fluxo_2](../NodeRED/Fluxo_2_INFLUXDBCLOUD.json) precisa estar gravando antes de começar.
 
 > **A ordem importa em um ponto só:** a consulta vem primeiro. Os nomes `temp`, `dist` e
 > companhia só existem depois que ela roda — antes disso não há o que escolher em
@@ -364,9 +364,10 @@ Temperatura e umidade não levam seta — elas não são da bag, são do ambient
 
 ---
 
-Os dois prontos estão em [dashboard_nexolog.json](dashboard_nexolog.json) e
-[dashboard_nexolog_canvas.json](dashboard_nexolog_canvas.json) — Import, para comparar
-com os seus.
+Os dois prontos estão em [dashboard_nexolog_INFLUXDBCLOUD.json](dashboard_nexolog_INFLUXDBCLOUD.json) e
+[dashboard_nexolog_canvas_INFLUXDBCLOUD.json](dashboard_nexolog_canvas_INFLUXDBCLOUD.json) — Import, para comparar
+com os seus. Para o InfluxDB local da IoT-platform, os mesmos painéis em Flux estão nos
+`*_INFLUXDBLOCAL.json` — veja o [README](README.md).
 
 > **Antes de importar os prontos:** na importação, escolha `influxdb-sql` como fonte de
 > dados. As consultas usam a variável **Measurement**, na caixa do topo, em vez de

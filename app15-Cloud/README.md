@@ -92,9 +92,9 @@ A assinatura acontece novamente em cada reconexão. O `mqttClient.loop()` já es
    Para montar em vez de importar: [CONSTRUIR-O-FLUXO.md](Plataformas_config/NodeRED/CONSTRUIR-O-FLUXO.md), em duas iterações — a decisão com os dois switches, depois o LED no dashboard.
    O dashboard tem um widget **LED da caixa**, que acende junto com o LED do dispositivo. É o `node-red-contrib-ui-led` — instale pelo Manage palette, como o `ui-level`.
 3. Configure o broker e faça Deploy. Dois switches **em série** fazem o E: `A tampa está aberta?` só entrega ao `E está sacudindo?` o que passou de 25 cm; quem passa dos dois vai ao `Alerta ON`. As saídas `otherwise` dos dois caem no mesmo `Alerta OFF`. É uma condição composta desenhada no canvas, sem escrever código.
-4. Para histórico, use [Fluxo_2_envio_InfluxDB.json](Plataformas_config/NodeRED/Fluxo_2_envio_InfluxDB.json). Mantenha apenas uma cópia do fluxo de gravação ativa.
+4. Para histórico, use [Fluxo_2_INFLUXDBCLOUD.json](Plataformas_config/NodeRED/Fluxo_2_INFLUXDBCLOUD.json) (InfluxDB Cloud) ou [Fluxo_2_INFLUXDBLOCAL.json](Plataformas_config/NodeRED/Fluxo_2_INFLUXDBLOCAL.json) (o InfluxDB da IoT-platform: `http://influxdb:8086`, org `fiapiot`, bucket `sensores`, já preenchidos). Mantenha apenas uma cópia do fluxo de gravação ativa.
 5. Para notificações, importe [fluxo_mqtt.json](Plataformas_config/n8n/fluxo_mqtt.json) no n8n. Ele assina `dados` direto do ESP32, em paralelo com o Node-RED. Configure credenciais MQTT, Telegram e `SEU_CHAT_ID`. Ative apenas um workflow por equipe.
-6. Para o histórico em tela, os dois dashboards do [Grafana](Plataformas_config/Grafana/README.md). Grafana local lendo o InfluxDB Cloud: um com gauges e séries, outro em **canvas**, com as medições posicionadas sobre a foto da bag.
+6. Para o histórico em tela, os dois dashboards do [Grafana](Plataformas_config/Grafana/README.md). Grafana local lendo o InfluxDB Cloud (SQL) ou o InfluxDB local da IoT-platform (Flux) — o nome do arquivo diz qual: um com gauges e séries, outro em **canvas**, com as medições posicionadas sobre a foto da bag.
 
 O dashboard mostra a condição calculada pela plataforma. A confirmação física são os LEDs ou a Serial; este firmware não publica confirmação de atuação.
 

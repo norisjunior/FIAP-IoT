@@ -1587,7 +1587,7 @@
       "hideTimepicker": false,
       "fiscalYearStartMonth": 0
     },
-    "title": "NexoLog - Medições",
+    "title": "NexoLog - Medições (InfluxDB Cloud)",
     "variables": [
       {
         "kind": "TextVariable",

@@ -1,0 +1,161 @@
+[
+  {
+    "id": "172491b9e0590118",
+    "type": "tab",
+    "label": "NexoLog 15 - InfluxDB local",
+    "disabled": false,
+    "info": "Equipe01. Ajuste os topicos para sua equipe.\nGrava no InfluxDB da IoT-platform (influxdb:8086)."
+  },
+  {
+    "id": "f2c0000000000101",
+    "type": "mqtt in",
+    "z": "172491b9e0590118",
+    "name": "Dados da caixa",
+    "topic": "FIAPIoT/nexolog/equipe01/dados",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "6c9a71ebeeca9850",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 140,
+    "y": 120,
+    "wires": [
+      [
+        "f2c0000000000102"
+      ]
+    ]
+  },
+  {
+    "id": "f2c0000000000102",
+    "type": "json",
+    "z": "172491b9e0590118",
+    "name": "JSON para objeto",
+    "property": "payload",
+    "action": "obj",
+    "pretty": false,
+    "x": 360,
+    "y": 120,
+    "wires": [
+      [
+        "f2c0000000000103",
+        "f2c0000000000104"
+      ]
+    ]
+  },
+  {
+    "id": "f2c0000000000103",
+    "type": "debug",
+    "z": "172491b9e0590118",
+    "name": "Objeto recebido",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 610,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "f2c0000000000107",
+    "type": "comment",
+    "z": "172491b9e0590118",
+    "name": "InfluxDB local da IoT-platform: confira o token",
+    "info": "InfluxDB local (IoT-platform)\n\nValores do .env da IoT-platform:\n  URL           http://influxdb:8086\n  Organization  fiapiot      (INFLUXDB_ORG)\n  Bucket        sensores     (INFLUXDB_BUCKET)\n  Token         INFLUXDB_TOKEN\n\nO token vai no arquivo com o valor do .env.exemplo.\nSe voce mudou o INFLUXDB_TOKEN no .env, cole o seu\nno no de configuracao (lapis do \"Gravar leituras\").\n\ninfluxdb e o nome do conteiner na rede Docker:\nfunciona de dentro do Node-RED, nao do navegador.\nNo navegador, o InfluxDB fica em http://localhost:8086.",
+    "x": 700,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "f2c0000000000104",
+    "type": "function",
+    "z": "172491b9e0590118",
+    "name": "Campos e tags",
+    "func": "// device sai dos campos e vira tag. Mandar nos dois lugares e conflito de schema.\nconst {device, ...campos} = msg.payload;\nmsg.payload = [campos, {device}];\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 610,
+    "y": 180,
+    "wires": [
+      [
+        "f2c0000000000105"
+      ]
+    ]
+  },
+  {
+    "id": "f2c0000000000105",
+    "type": "influxdb out",
+    "z": "172491b9e0590118",
+    "influxdb": "f2c0000000000106",
+    "name": "Gravar leituras",
+    "measurement": "nexolog",
+    "precision": "",
+    "retentionPolicy": "",
+    "database": "database",
+    "precisionV18FluxV20": "ms",
+    "retentionPolicyV18Flux": "",
+    "org": "fiapiot",
+    "bucket": "sensores",
+    "x": 860,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "f2c0000000000106",
+    "type": "influxdb",
+    "hostname": "influxdb",
+    "port": 8086,
+    "protocol": "http",
+    "database": "database",
+    "name": "InfluxDB local",
+    "usetls": false,
+    "tls": "",
+    "influxdbVersion": "2.0",
+    "url": "http://influxdb:8086",
+    "timeout": 10,
+    "rejectUnauthorized": false,
+    "credentials": {
+      "token": "TOKEN_SUPER_SECRETO_1234567890"
+    }
+  },
+  {
+    "id": "6c9a71ebeeca9850",
+    "type": "mqtt-broker",
+    "name": "Mosquitto - plataforma IoT",
+    "broker": "mosquitto",
+    "port": 1883,
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": 4,
+    "keepalive": 60,
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  }
+]

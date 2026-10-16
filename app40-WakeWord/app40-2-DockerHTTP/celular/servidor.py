@@ -12,7 +12,7 @@ JANELA = INFO["input_features_count"]  # ~1,5 s: o tamanho que o modelo pede
 PASSO = 8000          # classifica a cada 0,5 s
 CLASSE = "WakeWord"
 LIMIAR = 0.80
-PAUSA = 1.5           # segundos sem disparar de novo
+PAUSA = 5           # segundos sem disparar de novo
 
 app = FastAPI()
 

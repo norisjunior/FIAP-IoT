@@ -1,0 +1,513 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Treino do Ei Fioti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: palco 16:9 em colunas por camada, linhas nos corredores, legenda fixa embaixo */
+:root{--bg:#EDF0F4;--frame:#FAFBFC;--surface:#FFFFFF;--card:#EFF2F6;--line:#D3DAE3;--ink:#141A22;--muted:#5A6676;--acq:#2563C9;--acq-tint:#EAF1FD;--proc:#5B4CD6;--proc-tint:#F0EEFD;--ship:#C2410C;--wake:#0E8A6D;--unk:#A35F08;--noise:#64748B;--on-accent:#FFFFFF;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B0E12;--frame:#11151A;--surface:#171C23;--card:#202731;--line:#2E3743;--ink:#E6EAF0;--muted:#97A3B4;--acq:#6FA2F2;--acq-tint:#15223A;--proc:#A196F5;--proc-tint:#1D1A36;--ship:#F08A5D;--wake:#3CC7A3;--unk:#F0B45A;--noise:#94A3B8;--on-accent:#0B0E12;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B0E12;--frame:#11151A;--surface:#171C23;--card:#202731;--line:#2E3743;--ink:#E6EAF0;--muted:#97A3B4;--acq:#6FA2F2;--acq-tint:#15223A;--proc:#A196F5;--proc-tint:#1D1A36;--ship:#F08A5D;--wake:#3CC7A3;--unk:#F0B45A;--noise:#94A3B8;--on-accent:#0B0E12;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+main{max-width:1320px;margin:0 auto;padding-block:20px;padding-inline:16px;display:flex;flex-direction:column;gap:14px}
+#stage{background:var(--frame);border:1px solid var(--line);border-radius:20px;overflow-x:auto}
+#stage svg{display:block;width:100%;height:auto;min-width:0}
+#stage:fullscreen{display:flex;align-items:center;justify-content:center;border:0;border-radius:0;padding:2vh 2vw;box-sizing:border-box}
+#stage:fullscreen svg{width:100%;height:100%;max-height:96vh}
+.ttl{font:500 34px var(--sans);fill:var(--ink)}
+.sub{font:400 19px var(--sans);fill:var(--muted)}
+.h{font:500 24px var(--sans);fill:var(--ink)}
+.h2{font:500 20px var(--sans);fill:var(--ink)}
+.s{font:400 17px var(--sans);fill:var(--muted)}
+.m{font:400 15.5px var(--mono);fill:var(--muted)}
+.ms{font:400 13.5px var(--mono);fill:var(--muted)}
+.val{font:500 15.5px var(--mono);fill:var(--ink);font-variant-numeric:tabular-nums}
+.cont{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.cont-hl{fill:var(--proc-tint);stroke:var(--proc);stroke-width:2}
+.cont-ac{fill:var(--acq-tint);stroke:var(--acq);stroke-width:2}
+.card{fill:var(--card);stroke:transparent;stroke-width:2.5;transition:stroke .25s}
+.card.fc{fill:var(--surface)}
+.ring{fill:var(--surface);stroke:var(--line);stroke-width:1.5;transition:stroke .25s,fill .25s}
+.ico{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+.node.on .card,.node.on .ring{stroke:var(--c)}
+.node.on .ring{stroke-width:3;fill:color-mix(in srgb,var(--c) 14%,var(--surface))}
+.node.on>.ico,.node.on .hdr .ico{stroke:var(--c)}
+.base{stroke:var(--line);stroke-width:3;stroke-dasharray:2 8;stroke-linecap:round;fill:none}
+.lit{stroke-width:3.5;stroke-linecap:round;fill:none}
+.bar-bg{fill:var(--line)}
+.pk{font:500 14px var(--mono);fill:var(--on-accent)}
+.wave{fill:none;stroke-width:2.4;stroke-linecap:round}
+.badge rect{fill:var(--ink)}
+.badge text{font:500 13px var(--mono);fill:var(--bg)}
+.pill rect{fill:var(--card);stroke:var(--line);stroke-width:1.2}
+.pill text{font:500 14px var(--mono);fill:var(--muted)}
+.pill.ok rect{fill:color-mix(in srgb,var(--wake) 16%,var(--surface));stroke:var(--wake)}
+.pill.ok text{fill:var(--wake)}
+.pill.busy rect{fill:color-mix(in srgb,var(--unk) 14%,var(--surface));stroke:var(--unk)}
+.pill.busy text{fill:var(--unk)}
+.cap{height:280px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:18px 24px;box-sizing:border-box;font-family:var(--sans)}
+.cap-head{display:flex;align-items:center;gap:20px}
+.cap-num{flex:none;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:500 28px var(--sans);color:var(--on-accent);background:var(--acq);transition:background .25s}
+.cap-txt{flex:1;min-width:0}
+.cap-title{font:500 28px var(--sans);color:var(--ink);line-height:1.2}
+.cap-desc{font:400 21px var(--sans);color:var(--muted);line-height:1.3;margin-top:3px}
+.msg{flex:1;min-height:0;background:var(--card);border-radius:14px;padding:12px 20px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.msg-in{display:flex;flex-direction:column;gap:8px;max-width:100%;min-width:0}
+.msg-kind{font:500 15px var(--sans);color:var(--muted);letter-spacing:.02em}
+.row{display:grid;grid-template-columns:150px minmax(0,1fr);column-gap:16px;align-items:start}
+.k{justify-self:start;font:500 14px var(--sans);line-height:18px;color:var(--on-accent);background:var(--kc);border-radius:999px;padding:3px 12px;margin-top:1px}
+.v{font:400 17px var(--mono);color:var(--ink);line-height:1.4;word-break:break-word;min-width:0}
+.note{grid-column:2;font:400 15px var(--sans);color:var(--muted);line-height:1.35;margin-top:1px}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:500 14px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--acq);outline-offset:2px}
+#bPlay{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:110px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.seg button[aria-pressed="true"]{background:var(--acq-tint);color:var(--acq)}
+.hint{font-size:13px;color:var(--muted);margin:0;line-height:1.5;max-width:90ch}
+@media (prefers-reduced-motion:reduce){.card,.ring,.ico,.cap-num{transition:none}}
+
+.row-hl{fill:transparent;transition:fill .2s}
+.row-hl.on{fill:color-mix(in srgb,var(--rc) 14%,var(--surface))}
+.blk{transition:fill .2s}
+.blk.on{fill:var(--proc)}
+</style>
+
+<main>
+<div id="stage">
+<svg id="scene" viewBox="0 0 1600 1010" role="img" aria-labelledby="sceneTitle sceneDesc">
+<title id="sceneTitle">Gravação e treino da wake word Ei Fioti no Edge Impulse</title>
+<desc id="sceneDesc">Animação: o celular conecta ao Edge Impulse pelo QR code e grava amostras de 2 segundos das classes WakeWord, desconhecido e ruido. As amostras sobem pela internet para o Data acquisition, são divididas em treino e teste, passam pela janela de 1,5 s, pelo MFCC e pela rede neural, que devolve três probabilidades. Depois do teste, o modelo é publicado como container Docker.</desc>
+<defs>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M10.5 18.3h3"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9M12 3c-2.6 2.6-3.9 5.6-3.9 9s1.3 6.4 3.9 9"/></symbol>
+<symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></symbol>
+<symbol id="i-split" viewBox="0 0 24 24"><path d="M3 12h6.5l4.5-5.5h7M9.5 12l4.5 5.5h7M18 4l3 2.5-3 2.5M18 15l3 2.5-3 2.5"/></symbol>
+<symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h1.5M7 8.5v7M10.5 5v14M14 9v6M17.5 6.5v11M21 11v2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16.5 9"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3 13h18v2.5a5.5 5.5 0 0 1-5.5 5.5h-7A5.5 5.5 0 0 1 3 15.5z"/><path d="M5 9h3.5v4H5zM8.5 9H12v4H8.5zM12 9h3.5v4H12zM8.5 5H12v4H8.5z"/></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M7 10l3 2.5-3 2.5M12.5 15H17"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .3-8 6 6 0 0 0-11.5 1.6A3.5 3.5 0 0 0 7 18.5z"/></symbol>
+<symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+
+</defs>
+
+<text class="ttl" x="40" y="62">Como a wake word “Ei Fioti” é treinada</text>
+<text class="sub" x="40" y="94">Do celular gravando amostras ao modelo empacotado num container Docker</text>
+<text class="s" id="stepTxt" x="1560" y="58" text-anchor="end">Etapa 1 de 12</text>
+<g id="stepBar"></g>
+
+<rect class="cont" x="40" y="120" width="300" height="570" rx="24"/>
+<text class="h" x="190" y="160" text-anchor="middle">Celular</text>
+<text class="s" x="190" y="186" text-anchor="middle">coleta pelo navegador</text>
+
+<rect class="cont-hl" x="530" y="120" width="700" height="570" rx="24"/>
+<text class="h" x="880" y="160" text-anchor="middle">Edge Impulse Studio</text>
+<text class="s" x="880" y="186" text-anchor="middle">na nuvem · o seu projeto</text>
+
+<rect class="cont" x="1270" y="120" width="290" height="570" rx="24"/>
+<text class="h" x="1415" y="160" text-anchor="middle">Deployment</text>
+<text class="s" x="1415" y="186" text-anchor="middle">o modelo vira container</text>
+
+<g id="baseLines"></g>
+<g id="litLines"></g>
+
+<g class="node" id="nr">
+<circle class="ring" cx="435" cy="550" r="44"/>
+<use href="#i-globe" class="ico" x="414" y="529" width="42" height="42"/>
+<text class="h2" x="435" y="626" text-anchor="middle">Internet</text>
+<text class="s" x="435" y="650" text-anchor="middle">HTTPS</text>
+</g>
+
+<g class="node" id="n0">
+<rect class="card" x="60" y="206" width="260" height="194" rx="18"/>
+<use href="#i-phone" class="ico" x="78" y="222" width="40" height="40"/>
+<text class="h2" x="130" y="242">Celular</text>
+<text class="s" x="130" y="264">vira um device</text>
+<g id="qr"></g>
+<text class="ms" x="180" y="314">Devices →</text>
+<text class="ms" x="180" y="336">Connect a new</text>
+<text class="ms" x="180" y="358">device → QR code</text>
+</g>
+
+<g class="node" id="n1">
+<rect class="card" x="60" y="430" width="260" height="240" rx="18"/>
+<use href="#i-mic" class="ico" x="78" y="446" width="40" height="40"/>
+<text class="h2" x="130" y="466">Gravação</text>
+<text class="s" x="130" y="488">2000 ms · 16 kHz</text>
+<g id="lblPill"><rect x="78" y="506" width="224" height="34" rx="17" style="fill:var(--surface);stroke:var(--line)"/><text id="lblTxt" class="val" x="190" y="528" text-anchor="middle">Label: —</text></g>
+<path id="wave1" class="wave" d="" style="stroke:var(--muted)"/>
+<rect class="bar-bg" x="78" y="646" width="224" height="4" rx="2"/><rect id="recBar" x="78" y="646" width="0" height="4" rx="2"/>
+</g>
+
+<g class="node" id="n2">
+<rect class="card fc" x="550" y="206" width="320" height="234" rx="18"/>
+<use href="#i-db" class="ico" x="568" y="222" width="38" height="38"/>
+<text class="h2" x="618" y="242">Data acquisition</text>
+<text class="s" x="618" y="264">amostras rotuladas</text>
+<g id="rows"></g>
+</g>
+
+<g class="node" id="n3">
+<rect class="card fc" x="550" y="470" width="320" height="200" rx="18"/>
+<use href="#i-split" class="ico" x="568" y="486" width="38" height="38"/>
+<text class="h2" x="618" y="506">Train / test split</text>
+<text class="s" x="618" y="528">separação automática</text>
+<rect id="trainR" x="570" y="556" width="224" height="30" rx="6" style="fill:var(--line)"/>
+<rect id="testR" x="794" y="556" width="56" height="30" rx="6" style="fill:var(--line)"/>
+<g id="splitLbl" opacity="0">
+<text class="val" x="570" y="614" style="fill:var(--proc)">treino ≈ 80%</text>
+<text class="val" x="850" y="614" text-anchor="end" style="fill:var(--ship)">teste ≈ 20%</text>
+</g>
+<text class="s" x="570" y="648" style="font-size:15.5px">o teste fica guardado até o fim</text>
+</g>
+
+<g class="node" id="n4">
+<rect class="card fc" x="900" y="206" width="310" height="464" rx="18"/>
+<use href="#i-wave" class="ico" x="918" y="220" width="34" height="34"/>
+<text class="h2" x="962" y="245">Impulse design</text>
+<text class="s blk-t" id="tA" x="920" y="290">Janela 1,5 s</text>
+<text class="ms" x="1190" y="290" text-anchor="end">24 000 amostras</text>
+<path id="wave2" class="wave" d="" style="stroke:var(--wake);stroke-width:2"/>
+<rect id="win" x="920" y="298" width="202" height="54" rx="6" style="fill:color-mix(in srgb,var(--proc) 16%,transparent);stroke:var(--proc);stroke-width:2"/>
+<text class="s blk-t" id="tB" x="920" y="384">MFCC</text>
+<text class="ms" x="1190" y="384" text-anchor="end">13 × 75 = 975</text>
+<rect x="920" y="392" width="270" height="78" rx="4" style="fill:var(--card)"/>
+<g id="heat"></g>
+<text class="s blk-t" id="tC" x="920" y="502">Rede neural</text>
+<text class="ms" id="netTxt" x="1190" y="502" text-anchor="end"></text>
+<g id="net"></g>
+<text class="s blk-t" id="tD" x="920" y="606">Saída</text>
+<g id="outs"></g>
+</g>
+
+<g class="node" id="n5">
+<rect class="card" x="1290" y="206" width="250" height="234" rx="18"/>
+<use href="#i-check" class="ico" x="1308" y="222" width="38" height="38"/>
+<text class="h2" x="1356" y="242">Model testing</text>
+<text class="s" x="1356" y="264">o conjunto de teste</text>
+<g id="dots"></g>
+<text class="s" x="1415" y="420" text-anchor="middle" style="font-size:15.5px">nunca vistas no treino</text>
+</g>
+
+<g class="node" id="n6">
+<rect class="card" x="1290" y="470" width="250" height="200" rx="18"/>
+<use href="#i-box" class="ico" x="1308" y="486" width="38" height="38"/>
+<text class="h2" x="1356" y="506">Docker container</text>
+<text class="s" x="1356" y="528">o impulse inteiro</text>
+<g id="dk" opacity=".4">
+<text class="ms" x="1310" y="566">inference-container</text>
+<text class="ms" x="1310" y="590">MFCC + rede neural</text>
+<text class="ms" x="1310" y="614">--api-key ei_••••</text>
+</g>
+<rect class="bar-bg" x="1310" y="640" width="210" height="4" rx="2"/><rect id="dkBar" x="1310" y="640" width="0" height="4" rx="2" style="fill:var(--ship)"/>
+</g>
+
+<g id="pkts"></g>
+
+<foreignObject x="40" y="712" width="1520" height="280">
+<div class="cap">
+<div class="cap-head"><div class="cap-num" id="capNum">1</div><div class="cap-txt"><div class="cap-title" id="capTitle"></div><div class="cap-desc" id="capDesc"></div></div></div>
+<div class="msg" id="msg"></div>
+</div>
+</foreignObject>
+</svg>
+</div>
+
+<div class="ctrl">
+<button id="bPlay" type="button">Pausar</button>
+<button id="bPrev" type="button">Etapa anterior</button>
+<button id="bNext" type="button">Próxima etapa</button>
+<button id="bReset" type="button">Reiniciar</button>
+<div class="seg" role="group" aria-label="Velocidade">
+<button type="button" data-s="0.5" aria-pressed="false">0,5×</button>
+<button type="button" data-s="1" aria-pressed="true">1×</button>
+<button type="button" data-s="2" aria-pressed="false">2×</button>
+</div>
+<button id="bFull" type="button">Tela cheia</button>
+</div>
+<p class="hint">Atalhos: espaço pausa ou retoma, setas avançam ou voltam uma etapa. As cores identificam as classes: verde para WakeWord, âmbar para desconhecido e cinza para ruido. Os números da saída da rede são um exemplo de janela com “Ei Fioti”.</p>
+</main>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+const ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const sub=(p,a,b)=>clamp((p-a)/(b-a));
+const COL=k=>`var(--${k})`;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt=v=>v.toFixed(2).replace('.',',');
+// Onda de áudio desenhada como barras verticais; env(x) dá a amplitude de 0 a 1
+function wavePath(x0,x1,ym,h,env,t,n){
+  let d='';const st=(x1-x0)/(n-1);
+  for(let k=0;k<n;k++){
+    const x=x0+k*st,f=k/(n-1);
+    const j=.35+.65*Math.abs(Math.sin(k*1.93+t*.011)*Math.cos(k*.61-t*.007));
+    const a=Math.max(.6,h*clamp(env(f))*j);
+    d+=`M${x.toFixed(1)} ${(ym-a).toFixed(1)}V${(ym+a).toFixed(1)}`;
+  }
+  return d;
+}
+function setPill(id,txt,cls){const g=$(id);g.querySelector('text').textContent=txt;g.classList.toggle('ok',cls==='ok');g.classList.toggle('busy',cls==='busy');}
+
+function Diagram(cfg){
+  const {steps,segs,render,msg,label}=cfg;
+  segs.forEach(g=>{g.L=Math.hypot(g.b[0]-g.a[0],g.b[1]-g.a[1]);});
+  const lits=segs.map(g=>{
+    el('line',{x1:g.a[0],y1:g.a[1],x2:g.b[0],y2:g.b[1],class:'base'},$('baseLines'));
+    const l=el('line',{x1:g.a[0],y1:g.a[1],x2:g.b[0],y2:g.b[1],class:'lit'},$('litLines'));
+    l.style.strokeDasharray=g.L;l.style.strokeDashoffset=g.L;return l;
+  });
+  let T=0;steps.forEach(s=>{s.s=T;T+=s.d;s.moves=s.moves||[];});
+  const END=T,REST=2600;
+  const first=segs.map(()=>null);
+  steps.forEach((s,i)=>s.moves.forEach(m=>{
+    m.route=m.route||[m.seg];m.c=m.c||s.c;m.n=m.n||1;m.a=m.a??0;m.b=m.b??1;
+    m.lens=m.route.map(k=>segs[k].L);m.tot=m.lens.reduce((a,b)=>a+b,0);
+    let acc=0;m.route.forEach((k,j)=>{const c0=acc/m.tot,c1=(acc+m.lens[j])/m.tot;acc+=m.lens[j];if(!first[k])first[k]={i,m,c0,c1};});
+  }));
+  function routePt(m,f){
+    let d=f*m.tot;
+    for(let j=0;j<m.route.length;j++){
+      const g=segs[m.route[j]],L=m.lens[j];
+      if(d<=L||j===m.route.length-1){const u=clamp(d/L);const A=m.rev?g.b:g.a,B=m.rev?g.a:g.b;return[A[0]+(B[0]-A[0])*u,A[1]+(B[1]-A[1])*u];}
+      d-=L;
+    }
+  }
+  const pool=[];
+  for(let k=0;k<14;k++){const g=el('g',{},$('pkts'));const r=el('rect',{},g);const t=el('text',{class:'pk','text-anchor':'middle',y:5},g);g.style.visibility='hidden';pool.push({g,r,t,lab:null});}
+  function showPkt(k,x,y,lab,c){
+    const P=pool[k];
+    if(P.lab!==lab){P.lab=lab;P.t.textContent=lab;
+      if(lab){const w=lab.length*8.5+24;P.r.setAttribute('x',-w/2);P.r.setAttribute('width',w);P.r.setAttribute('y',-16);P.r.setAttribute('height',32);P.r.setAttribute('rx',16);}
+      else{P.r.setAttribute('x',-8);P.r.setAttribute('width',16);P.r.setAttribute('y',-8);P.r.setAttribute('height',16);P.r.setAttribute('rx',8);}}
+    P.r.style.fill=c;P.g.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)})`);P.g.style.visibility='visible';
+  }
+  const bars=[],N=steps.length,BW=30,GAP=6,bx=1560-(N*BW+(N-1)*GAP);
+  for(let k=0;k<N;k++)bars.push(el('rect',{x:bx+k*(BW+GAP),y:74,width:BW,height:8,rx:4},$('stepBar')));
+  const nodes=[...document.querySelectorAll('.node')];
+  let reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+  const S={t:0,speed:1,playing:!reduce,cap:-1};
+  function where(){
+    const t=S.t;if(t>=END)return[N-1,1];
+    let i=0;while(i<N-1&&t>=steps[i].s+steps[i].d)i++;
+    return[i,clamp((t-steps[i].s)/steps[i].d)];
+  }
+  function caption(i){
+    const s=steps[i],m=msg(i);
+    $('capNum').textContent=i+1;$('capNum').style.background=COL(s.c);
+    $('capTitle').textContent=s.t;$('capDesc').textContent=s.x;
+    let h=`<div class="msg-kind">${esc(m.kind)}</div>`;
+    m.rows.forEach(r=>{h+=`<div class="row" style="--kc:${COL(r.c||s.c)}"><span class="k">${esc(r.k)}</span><span class="v">${esc(r.v)}</span>${r.n?`<span class="note">${esc(r.n)}</span>`:''}</div>`;});
+    $('msg').innerHTML=`<div class="msg-in">${h}</div>`;
+    $('stepTxt').textContent=label(i);
+    bars.forEach((r,k)=>{r.style.fill=k<i?'var(--muted)':k===i?COL(s.c):'var(--line)';r.style.opacity=k<i?'.45':'1';});
+  }
+  function draw(now){
+    const[i,p]=where(),s=steps[i];
+    nodes.forEach(n=>{const on=(s.on||[]).includes(n.id);n.classList.toggle('on',on);if(on)n.style.setProperty('--c',COL(s.c));});
+    segs.forEach((g,k)=>{const F=first[k];let f=0;
+      if(F){if(i>F.i)f=1;else if(i===F.i)f=sub(sub(p,F.m.a,F.m.b),F.c0,F.c1);}
+      lits[k].style.stroke=F?COL(F.m.c):'none';
+      lits[k].style.strokeDashoffset=((F&&F.m.rev)?-1:1)*g.L*(1-f);});
+    let used=0;
+    s.moves.forEach(m=>{
+      if(p<m.a||p>m.b||S.t>=END)return;const q=sub(p,m.a,m.b);
+      for(let k=0;k<m.n;k++){
+        let f;
+        if(m.n===1)f=ease(q);
+        else{const w=m.w||.3,s0=k*(1-w)/(m.n-1);f=sub(q,s0,s0+w);if(f<=0||f>=1)continue;}
+        const[x,y]=routePt(m,f);if(used<pool.length)showPkt(used++,x,y,m.label||'',COL(m.c));
+      }
+    });
+    for(let k=used;k<pool.length;k++)pool[k].g.style.visibility='hidden';
+    render(i,p,now);
+    if(i!==S.cap){S.cap=i;caption(i);}
+  }
+  function goStep(i){S.t=steps[clamp(i,0,N-1)].s+1;}
+  function next(){const[i]=where();if(i<N-1&&S.t<END)goStep(i+1);else S.t=0;}
+  function prev(){const[i,p]=where();if(S.t>=END||p*steps[i].d>900)goStep(i);else goStep(i-1);}
+  const bPlay=$('bPlay');
+  function setPlay(v){S.playing=v;bPlay.textContent=v?'Pausar':'Reproduzir';bPlay.setAttribute('aria-pressed',String(!v));}
+  bPlay.addEventListener('click',()=>setPlay(!S.playing));
+  $('bNext').addEventListener('click',next);
+  $('bPrev').addEventListener('click',prev);
+  $('bReset').addEventListener('click',()=>{S.t=0;});
+  document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{S.speed=+b.dataset.s;document.querySelectorAll('.seg button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));}));
+  const stage=$('stage'),bFull=$('bFull');
+  bFull.addEventListener('click',()=>{try{if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}else if(stage.requestFullscreen){stage.requestFullscreen().catch(()=>{});}}catch(e){}});
+  document.addEventListener('fullscreenchange',()=>{bFull.textContent=document.fullscreenElement?'Sair da tela cheia':'Tela cheia';});
+  document.addEventListener('keydown',e=>{
+    if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){e.preventDefault();setPlay(!S.playing);}
+    else if(e.key==='ArrowRight'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'){e.preventDefault();prev();}
+  });
+  setPlay(S.playing);
+  let last=performance.now();
+  function frame(now){const dt=Math.min(100,now-last);last=now;if(S.playing){S.t+=dt*S.speed;if(S.t>=END+REST)S.t=0;}draw(now);requestAnimationFrame(frame);}
+  draw(last);requestAnimationFrame(frame);
+}
+
+const CL=['wake','unk','noise'],CN=['WakeWord','desconhecido','ruido'];
+const ENV=[
+  f=>.06+.95*Math.exp(-Math.pow((f-.36)/.07,2))+.85*Math.exp(-Math.pow((f-.58)/.1,2)),
+  f=>.12+.75*Math.pow(Math.abs(Math.sin(f*11.5+.6)),1.4)*(f>.08&&f<.92?1:.15),
+  f=>.22+.08*Math.sin(f*40)
+];
+
+// QR code ilustrativo
+const qr=[];
+(()=>{const g=$('qr'),c=80/11,x0=80,y0=290,F=[[0,0],[0,8],[8,0]];
+  const inF=(r,k)=>F.some(([fr,fk])=>r>=fr&&r<fr+3&&k>=fk&&k<fk+3);
+  F.forEach(([r,k])=>{qr.push(el('rect',{x:x0+k*c+1,y:y0+r*c+1,width:3*c-2,height:3*c-2,rx:2,style:'fill:none;stroke:var(--ink);stroke-width:2.2'},g));
+    qr.push(el('rect',{x:x0+(k+1)*c,y:y0+(r+1)*c,width:c-.6,height:c-.6,rx:1,style:'fill:var(--ink)'},g));});
+  for(let r=0;r<11;r++)for(let k=0;k<11;k++){
+    if(inF(r,k)||(r*7+k*13+r*k*3)%5>1)continue;
+    qr.push(el('rect',{x:x0+k*c,y:y0+r*c,width:c-.6,height:c-.6,rx:1,style:'fill:var(--ink)'},g));
+  }})();
+
+// Linhas do Data acquisition
+const cnt=[],cbar=[],rowHl=[];
+CN.forEach((n,k)=>{const y=310+k*42,g=$('rows');
+  const h=el('rect',{x:562,y:y-24,width:296,height:36,rx:8,class:'row-hl',style:`--rc:var(--${CL[k]})`},g);rowHl.push(h);
+  el('circle',{cx:580,cy:y-6,r:6,style:`fill:var(--${CL[k]})`},g);
+  const t=el('text',{x:594,y:y,class:'val'},g);t.textContent=n;
+  el('rect',{x:722,y:y-10,width:84,height:8,rx:4,class:'bar-bg'},g);
+  cbar.push(el('rect',{x:722,y:y-10,width:0,height:8,rx:4,style:`fill:var(--${CL[k]})`},g));
+  const c=el('text',{x:852,y:y,class:'val','text-anchor':'end'},g);c.textContent='0';cnt.push(c);
+});
+
+// MFCC: 27 colunas × 13 linhas
+const heatCols=[];
+(()=>{const g=$('heat'),C=27,R=13,w=10,h=6;
+  for(let c=0;c<C;c++){const col=el('g',{opacity:0},g);heatCols.push(col);
+    for(let r=0;r<R;r++){
+      const e=clamp(ENV[0](.04+c/C*.72)*.75);
+      const v=clamp(e*(.35+.65*Math.abs(Math.sin(r*1.1+c*.37)))*(1-r/18)+.06*Math.abs(Math.sin(c*r+1)));
+      el('rect',{x:920+c*w,y:392+r*h,width:w-.8,height:h-.8,style:`fill:color-mix(in srgb,var(--proc) ${Math.round(v*100)}%,var(--surface))`},col);
+    }}})();
+
+// Rede neural
+const neurons=[],edges=[];
+(()=>{const g=$('net'),L=[[960,5],[1055,4],[1150,3]],ys=n=>Array.from({length:n},(_,k)=>546+(k-(n-1)/2)*16);
+  const eg=el('g',{},g);
+  for(let a=0;a<2;a++)ys(L[a][1]).forEach(y1=>ys(L[a+1][1]).forEach(y2=>edges.push(el('line',{x1:L[a][0],y1,x2:L[a+1][0],y2,style:'stroke:var(--line);stroke-width:1.4'},eg))));
+  L.forEach(([x,n],a)=>ys(n).forEach((y,k)=>neurons.push({c:el('circle',{cx:x,cy:y,r:6.5,style:'fill:var(--surface);stroke:var(--muted);stroke-width:1.5'},g),out:a===2?k:-1})));
+})();
+
+// Saída
+const OUT=[.94,.04,.02],obar=[],oval=[];
+CN.forEach((n,k)=>{const y=626+k*19,g=$('outs');
+  const t=el('text',{x:920,y,class:'ms',style:`fill:var(--${CL[k]})`},g);t.textContent=n;
+  el('rect',{x:1040,y:y-9,width:100,height:8,rx:4,class:'bar-bg'},g);
+  obar.push(el('rect',{x:1040,y:y-9,width:0,height:8,rx:4,style:`fill:var(--${CL[k]})`},g));
+  const v=el('text',{x:1190,y,class:'ms','text-anchor':'end',style:'fill:var(--ink)'},g);v.textContent='–';oval.push(v);
+});
+
+// Amostras de teste
+const TD=[0,1,2,0,2,1,0,1,0,2,1,0,2,0,1,2,0,1,2,1,0],tdots=[];
+TD.forEach((c,k)=>{const r=Math.floor(k/7),q=k%7;tdots.push(el('circle',{cx:1322+q*31,cy:308+r*34,r:10,style:'fill:none;stroke:var(--line);stroke-width:1.5'},$('dots')));});
+
+$('wave2').setAttribute('d',wavePath(920,1190,325,22,ENV[0],0,64));
+
+const steps=[
+{c:'acq',d:3000,on:['n0'],t:'Conectar o celular',x:'No Edge Impulse: Devices → Connect a new device → Use your mobile phone. O QR code transforma o celular num coletor.'},
+{c:'wake',d:5200,on:['n1','nr','n2'],t:'Gravar a wake word',x:'Label WakeWord: pelo menos 40 gravações de 2 s dizendo “Ei Fioti”, variando distância, ritmo e entonação.',
+ moves:[{route:[0,1,2],n:5,w:.26,label:'2 s',a:.04,b:.96}]},
+{c:'unk',d:4600,on:['n1','nr','n2'],t:'Gravar o que não é a wake word',x:'Label desconhecido: outras palavras, inclusive parecidas, para o modelo aprender quando não disparar.',
+ moves:[{route:[0,1,2],n:5,w:.26,label:'2 s',a:.04,b:.96}]},
+{c:'noise',d:4200,on:['n1','nr','n2'],t:'Gravar o ruído',x:'Label ruido: o som do ambiente sem ninguém falando, gravado em lugares diferentes.',
+ moves:[{route:[0,1,2],n:5,w:.26,label:'2 s',a:.04,b:.96}]},
+{c:'acq',d:2800,on:['n2'],t:'Dataset pronto',x:'Cada gravação subiu pela internet e caiu no Data acquisition, já com o rótulo da sua classe.'},
+{c:'proc',d:3000,on:['n2','n3'],t:'Separar treino e teste',x:'Perform train/test split: cerca de 80% para treinar e 20% guardados para provar o modelo no final.',
+ moves:[{seg:3,label:'dataset',a:0,b:.35}]},
+{c:'proc',d:4200,on:['n4'],t:'Janela de 1,5 s',x:'O impulse olha 1,5 s por vez. A janela desliza sobre cada gravação de 2 s e gera vários exemplos de treino.',
+ moves:[{seg:4,label:'treino',a:0,b:.25}]},
+{c:'proc',d:3600,on:['n4'],t:'MFCC: o som vira uma imagem',x:'O bloco MFCC transforma as 24 000 amostras da janela em 975 números que descrevem o timbre ao longo do tempo.'},
+{c:'proc',d:4000,on:['n4'],t:'A rede neural aprende',x:'A cada ciclo de treino, a rede compara o que previu com o rótulo certo e ajusta os pesos para errar menos.'},
+{c:'proc',d:3000,on:['n4'],t:'Três probabilidades',x:'Para cada janela, a rede devolve uma probabilidade por classe. As três somam 1.'},
+{c:'ship',d:3600,on:['n5'],t:'Model testing',x:'O modelo classifica as amostras de teste, que nunca viu no treino. É a prova de que ele generaliza.',
+ moves:[{seg:5,label:'modelo',a:0,b:.25}]},
+{c:'ship',d:4200,on:['n6'],t:'Deployment: Docker container',x:'O impulse inteiro, MFCC e rede neural, vira uma imagem Docker que roda em qualquer computador com a sua chave de API.',
+ moves:[{seg:6,label:'deploy',a:0,b:.4}]}
+];
+const segs=[
+{a:[320,550],b:[435,550]},{a:[435,550],b:[435,323]},{a:[435,323],b:[550,323]},
+{a:[710,440],b:[710,470]},{a:[870,570],b:[900,570]},{a:[1210,313],b:[1290,313]},{a:[1415,440],b:[1415,470]}
+];
+function msg(i){switch(i){
+case 0:return{kind:'Edge Impulse · Devices',rows:[{k:'Caminho',v:'Devices → Connect a new device → Use your mobile phone'},{k:'QR code',v:'abre o coletor no navegador do celular',n:'o celular passa a aparecer como device do projeto, pronto para gravar'}]};
+case 1:return{kind:'Data acquisition · aba do celular',rows:[{k:'Label',v:'WakeWord'},{k:'Sample length',v:'2000 ms · 16 kHz = 32 000 amostras',c:'acq'},{k:'Variação',v:'perto e longe, rápido e devagar, com ruído de fundo, outras vozes',c:'muted',n:'fale “Ei Fioti” no meio dos 2 s, não no comecinho'}]};
+case 2:return{kind:'Data acquisition · aba do celular',rows:[{k:'Label',v:'desconhecido'},{k:'Exemplos',v:'fiot, fiap, ei, oi, sensor, projeto, contar de 1 a 20',c:'muted',n:'é esta classe que ensina o modelo a NÃO disparar com palavras parecidas'}]};
+case 3:return{kind:'Data acquisition · aba do celular',rows:[{k:'Label',v:'ruido'},{k:'Exemplos',v:'sala vazia, ar-condicionado, passos, cadeira, digitação',c:'muted',n:'grave em mais de um ambiente, senão o modelo decora um lugar só'}]};
+case 4:return{kind:'Dataset no Edge Impulse',rows:[{k:'WakeWord',v:'40+ amostras de 2 s',c:'wake'},{k:'desconhecido',v:'40+ amostras de 2 s',c:'unk'},{k:'ruido',v:'40+ amostras de 2 s',c:'noise'}]};
+case 5:return{kind:'Data acquisition · menu ⋮',rows:[{k:'Ação',v:'Perform train/test split'},{k:'Treino',v:'≈ 80% das amostras',c:'proc'},{k:'Teste',v:'≈ 20%, separado para o Model testing',c:'ship'}]};
+case 6:return{kind:'Impulse design · Time series data',rows:[{k:'Window size',v:'1500 ms'},{k:'Frequência',v:'16 000 Hz → 1,5 × 16 000 = 24 000 amostras por janela'},{k:'Por quê',v:'“Ei Fioti” inteiro cabe em 1,5 s',c:'muted',n:'a mesma janela de 1,5 s vai ser usada pelo servidor.py na hora de ouvir'}]};
+case 7:return{kind:'Impulse design · Processing block',rows:[{k:'Bloco',v:'MFCC (Audio)'},{k:'Entrada',v:'24 000 amostras int16'},{k:'Saída',v:'975 features = 13 coeficientes × 75 quadros',n:'é o “desenho” do som que a rede enxerga, como uma imagem'}]};
+case 8:return{kind:'Impulse design · Learning block',rows:[{k:'Bloco',v:'Classification (rede neural)'},{k:'Entrada',v:'975 features do MFCC'},{k:'Treino',v:'ciclos de treino ajustando os pesos sobre os 80% de treino'}]};
+case 9:return{kind:'Saída da rede para uma janela com “Ei Fioti” (exemplo)',rows:[{k:'WakeWord',v:'0,94',c:'wake'},{k:'desconhecido',v:'0,04',c:'unk'},{k:'ruido',v:'0,02',c:'noise',n:'as três somam 1: são probabilidades'}]};
+case 10:return{kind:'Model testing',rows:[{k:'Ação',v:'Classify all'},{k:'Dados',v:'os ≈ 20% do teste, nunca usados no treino'},{k:'Resultado',v:'acurácia e matriz de confusão por classe',n:'se o teste for bem pior que o treino, faltou variedade nas gravações'}]};
+default:return{kind:'Deployment → Docker container',rows:[{k:'Comando',v:'docker run --rm -it -p 1337:1337 public.ecr.aws/g7a8t7v6/inference-container:v1.95.15 --api-key ei_•••• --run-http-server 1337'},{k:'O que faz',v:'baixa o seu impulse com a chave e abre uma API HTTP na porta 1337',c:'muted',n:'a chave é sua: não publique'}]};
+}}
+const blkT=['tA','tB','tC','tD'].map($);
+function render(i,p,now){
+  // QR
+  qr.forEach((r,k)=>r.style.opacity=i>0||k/qr.length<p*1.6?1:.12);
+  // Contadores
+  const rec=i>=1&&i<=3?i-1:-1;
+  for(let k=0;k<3;k++){
+    const f=i>k+1?1:i===k+1?sub(p,.04,.96):0;
+    cbar[k].setAttribute('width',(84*f).toFixed(1));
+    cnt[k].textContent=f>=1?'40+':String(Math.round(f*40));
+    rowHl[k].classList.toggle('on',rec===k||i===4);
+  }
+  // Gravação
+  if(rec>=0){
+    $('lblTxt').textContent='Label: '+CN[rec];$('lblTxt').style.fill=COL(CL[rec]);
+    $('wave1').style.stroke=COL(CL[rec]);
+    $('wave1').setAttribute('d',wavePath(80,300,590,24,ENV[rec],now,44));
+    $('recBar').style.fill=COL(CL[rec]);$('recBar').setAttribute('width',(224*((sub(p,.04,.96)*5)%1)).toFixed(1));
+  }else{
+    $('lblTxt').textContent=i===0?'Label: —':'coleta concluída';$('lblTxt').style.fill='';
+    $('wave1').style.stroke='var(--line)';$('wave1').setAttribute('d',wavePath(80,300,590,24,()=>0,0,44));
+    $('recBar').setAttribute('width',0);
+  }
+  // Split
+  const fs=i>5?1:i===5?ease(sub(p,.35,.85)):0;
+  $('trainR').style.fill=fs>0?'var(--proc)':'var(--line)';
+  $('testR').style.fill=fs>0?'var(--ship)':'var(--line)';
+  $('testR').setAttribute('x',(794+10*fs).toFixed(1));$('testR').setAttribute('width',(56-10*fs).toFixed(1));
+  $('splitLbl').setAttribute('opacity',fs.toFixed(2));
+  // Impulse
+  const blk=i>=6&&i<=9?i-6:-1;
+  blkT.forEach((t,k)=>{t.style.fill=k===blk?'var(--proc)':'';t.style.fontWeight=k===blk?'500':'';});
+  const sl=i===6?.5-.5*Math.cos(sub(p,.25,1)*Math.PI*4):0;
+  $('win').setAttribute('x',(920+68*sl).toFixed(1));$('win').style.opacity=i>=6?1:.25;
+  $('wave2').style.opacity=i>=6?1:.35;
+  const rev=i>7?27:i===7?Math.floor(sub(p,.05,.85)*27):0;
+  heatCols.forEach((c,k)=>c.setAttribute('opacity',k<rev?1:0));
+  const tr=i===8,done=i>8;
+  edges.forEach((e,k)=>{const a=tr?(Math.sin(now*.007+k*1.7)>.2?1:.25):done?.45:1;e.style.stroke=tr||done?'var(--proc)':'var(--line)';e.style.opacity=a;});
+  neurons.forEach((n,k)=>{const on=tr||done;n.c.style.fill=on?(n.out>=0?COL(CL[n.out]):'var(--proc)'):'var(--surface)';n.c.style.stroke=on?'transparent':'var(--muted)';n.c.style.opacity=tr&&n.out<0?(.55+.45*Math.abs(Math.sin(now*.005+k))):1;});
+  $('netTxt').textContent=tr?'ajustando os pesos':done?'treinada':'';
+  const fo=i>9?1:i===9?ease(sub(p,.1,.75)):0;
+  OUT.forEach((v,k)=>{obar[k].setAttribute('width',(100*v*fo).toFixed(1));oval[k].textContent=fo>0?fmt(v*fo):'–';});
+  // Teste
+  const nt=i>10?TD.length:i===10?Math.floor(sub(p,.3,.95)*TD.length):0;
+  tdots.forEach((d,k)=>{d.style.fill=k<nt?COL(CL[TD[k]]):'none';d.style.stroke=k<nt?'transparent':'var(--line)';});
+  // Docker
+  const fd=i===11?sub(p,.4,.9):0;
+  $('dkBar').setAttribute('width',(210*fd).toFixed(1));$('dk').setAttribute('opacity',i===11?.4+.6*fd:.4);
+}
+Diagram({steps,segs,render,msg,label:i=>`Etapa ${i+1} de ${steps.length}`});
+})();
+</script>
+
+</body></html>

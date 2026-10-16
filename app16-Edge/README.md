@@ -17,7 +17,7 @@ Importe os mesmos arquivos, sem alterar nada dentro deles:
 | Arquivo | Onde | O que faz |
 |---|---|---|
 | `Fluxo_1_dashboard_graphs_e_cmd.json` | Node-RED | dashboard e comandos |
-| `Fluxo_2_envio_InfluxDB.json` | Node-RED | histórico, opcional |
+| `Fluxo_2_INFLUXDBCLOUD.json` | Node-RED | histórico, opcional |
 | `fluxo_mqtt.json` | n8n | notificações |
 
 Configure as conexões no Raspberry: na rede Docker, o broker pode ser `mosquitto`; em uma instalação nativa, `localhost`. O ESP32 usa o IP do Raspberry. Preserve tópicos, payload e regras do app anterior.

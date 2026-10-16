@@ -2,12 +2,9 @@
   "apiVersion": "dashboard.grafana.app/v2",
   "kind": "Dashboard",
   "metadata": {
-    "name": "nexolog-canvas",
+    "name": "nexolog-canvas-local",
     "namespace": "default",
-    "uid": "9bccf39b-8cff-4256-81a0-08aff4cc8c3e",
-    "labels": {
-      "grafana.app/deprecatedInternalID": "432427047157760"
-    },
+    "uid": "95b22fcd-cb2b-47ca-82ab-05b5bf30139f",
     "annotations": {
       "grafana.app/createdBy": "user:bfs4gdkx6xx4wf",
       "grafana.app/saved-from-ui": "Grafana v13.2.1 (56cd3e9288)",
@@ -62,10 +59,7 @@
                         "name": "${DS_INFLUXDB}"
                       },
                       "spec": {
-                        "query": "SELECT time, temp, umid, dist, movimentacao\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
-                        "rawSql": "SELECT time, temp, umid, dist, movimentacao\nFROM \"${measurement}\"\nWHERE time >= now() - interval '5 minutes'\nORDER BY time DESC\nLIMIT 1",
-                        "rawQuery": true,
-                        "editorMode": "code"
+                        "query": "from(bucket: \"${bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"${measurement}\")\n  |> filter(fn: (r) => r._field == \"temp\" or r._field == \"umid\" or r._field == \"dist\" or r._field == \"movimentacao\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 1)\n  |> keep(columns: [\"_time\", \"temp\", \"umid\", \"dist\", \"movimentacao\"])"
                       }
                     },
                     "refId": "A",
@@ -772,8 +766,23 @@
       "hideTimepicker": false,
       "fiscalYearStartMonth": 0
     },
-    "title": "NexoLog — A bag (canvas)",
+    "title": "NexoLog — A bag (canvas) (InfluxDB local)",
     "variables": [
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "bucket",
+          "label": "Bucket",
+          "description": "O bucket do InfluxDB da IoT-platform. Padrão: sensores (INFLUXDB_BUCKET no .env).",
+          "current": {
+            "text": "sensores",
+            "value": "sensores"
+          },
+          "query": "sensores",
+          "hide": "dontHide",
+          "skipUrlSync": false
+        }
+      },
       {
         "kind": "TextVariable",
         "spec": {
