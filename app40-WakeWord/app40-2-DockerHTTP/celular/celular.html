@@ -24,7 +24,7 @@
 // ===== O que fazer quando ouvir a wake word =====
 function wakeWord() {
   setTimeout(() => (document.body.style.background = ""), 1000);
-  falar("Pois não?");
+  falar("Estou aqui para ajudá-lo. Diga sua necessidade.");
   document.body.style.background = "#1b5e20";
 
   // Abrir um endereço da web:
@@ -36,9 +36,9 @@ function wakeWord() {
 
 function falar(texto) {
   const fala = new SpeechSynthesisUtterance(texto);
-  fala.lang = "pt-BR";
+  fala.lang = "pt";
   speechSynthesis.speak(fala);
-  setTimeout(() => (document.body.style.background = ""), 1000);
+  setTimeout(() => (document.body.style.background = ""), 2000);
 }
 
 // ===== Daqui para baixo: microfone e servidor =====

@@ -1,0 +1,442 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Do Sensor ao InfluxDB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: palco 16:9 com três colunas (Edge, Fog, Cloud), rede nos corredores, legenda fixa embaixo */
+:root{--bg:#EDF0F4;--frame:#FAFBFC;--surface:#FFFFFF;--card:#EFF2F6;--line:#D3DAE3;--ink:#141A22;--muted:#5A6676;--fog:#2563C9;--fog-tint:#EAF1FD;--mqtt:#0E8A6D;--https:#5B4CD6;--topic:#A35F08;--topic-tint:#FCF1E1;--on-accent:#FFFFFF;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B0E12;--frame:#11151A;--surface:#171C23;--card:#202731;--line:#2E3743;--ink:#E6EAF0;--muted:#97A3B4;--fog:#6FA2F2;--fog-tint:#15223A;--mqtt:#3CC7A3;--https:#A196F5;--topic:#F0B45A;--topic-tint:#2B2216;--on-accent:#0B0E12;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B0E12;--frame:#11151A;--surface:#171C23;--card:#202731;--line:#2E3743;--ink:#E6EAF0;--muted:#97A3B4;--fog:#6FA2F2;--fog-tint:#15223A;--mqtt:#3CC7A3;--https:#A196F5;--topic:#F0B45A;--topic-tint:#2B2216;--on-accent:#0B0E12;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+main{max-width:1320px;margin:0 auto;padding-block:20px;padding-inline:16px;display:flex;flex-direction:column;gap:14px}
+#stage{background:var(--frame);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+#stage svg{display:block;width:100%;height:auto}
+#stage:fullscreen{display:flex;align-items:center;justify-content:center;border:0;border-radius:0;padding:2vh 2vw;box-sizing:border-box}
+#stage:fullscreen svg{width:100%;height:100%;max-height:96vh}
+.ttl{font:500 34px var(--sans);fill:var(--ink)}
+.sub{font:400 19px var(--sans);fill:var(--muted)}
+.h{font:500 24px var(--sans);fill:var(--ink)}
+.s{font:400 17px var(--sans);fill:var(--muted)}
+.m{font:400 15.5px var(--mono);fill:var(--muted)}
+.val{font:500 18px var(--mono);fill:var(--ink);transition:fill .2s}
+.cont{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.cont-fog{fill:var(--fog-tint);stroke:var(--fog);stroke-width:2}
+.dock{fill:none;stroke:var(--fog);stroke-opacity:.45;stroke-width:1.5;stroke-dasharray:7 6}
+.card{fill:var(--card);stroke:transparent;stroke-width:2.5;transition:stroke .25s}
+.card.fc{fill:var(--surface)}
+.ring{fill:var(--surface);stroke:var(--line);stroke-width:1.5;transition:stroke .25s,fill .25s}
+.ico{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+.node.on .card,.node.on .ring{stroke:var(--c)}
+.node.on .ring{stroke-width:3;fill:color-mix(in srgb,var(--c) 14%,var(--surface))}
+.node.on .ico{stroke:var(--c)}
+.sens.on .ico{stroke:var(--mqtt)}
+.sens.on .val{fill:var(--mqtt)}
+.base{stroke:var(--line);stroke-width:3;stroke-dasharray:2 8;stroke-linecap:round;fill:none}
+.lit{stroke-width:3.5;stroke-linecap:round;fill:none}
+.bar-bg{fill:var(--line)}
+.bar{fill:var(--c)}
+.np rect{fill:var(--card);stroke:var(--line);stroke-width:1;transition:fill .2s}
+.np text{font:500 13.5px var(--mono);fill:var(--muted)}
+.np.on rect{fill:var(--fog);stroke:var(--fog)}
+.np.on text{fill:var(--on-accent)}
+.pk{font:500 14px var(--mono);fill:var(--on-accent)}
+.slot rect{fill:var(--topic-tint);stroke:var(--topic);stroke-width:1.2;transition:stroke-width .2s,fill .2s}
+.slot.on rect{stroke-width:2.6;fill:color-mix(in srgb,var(--topic) 20%,var(--surface))}
+.slot-k{font:500 14px var(--sans);fill:var(--topic)}
+.slot-v{font:400 15.5px var(--mono);fill:var(--ink)}
+.thd{font:500 14px var(--mono);fill:var(--muted)}
+.td{font:400 15px var(--mono);fill:var(--ink);font-variant-numeric:tabular-nums}
+.empty{font:400 16px var(--sans);fill:var(--muted)}
+.hl{fill:color-mix(in srgb,var(--https) 22%,transparent);transition:opacity 2.2s ease-out .7s}
+.hl.fade{opacity:0}
+.cap{height:280px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:18px 24px;box-sizing:border-box;font-family:var(--sans)}
+.cap-head{display:flex;align-items:center;gap:20px}
+.cap-num{flex:none;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:500 28px var(--sans);color:var(--on-accent);background:var(--mqtt);transition:background .25s}
+.cap-txt{flex:1;min-width:0}
+.cap-title{font:500 28px var(--sans);color:var(--ink);line-height:1.2}
+.cap-desc{font:400 21px var(--sans);color:var(--muted);line-height:1.3;margin-top:3px}
+.msg{flex:1;min-height:0;background:var(--card);border-radius:14px;padding:12px 20px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.msg-in{display:flex;flex-direction:column;gap:8px;max-width:100%;min-width:0}
+.msg-kind{font:500 15px var(--sans);color:var(--muted);letter-spacing:.02em}
+.row{display:grid;grid-template-columns:130px minmax(0,1fr);column-gap:16px;align-items:start}
+.k{justify-self:start;font:500 14px var(--sans);line-height:18px;color:var(--on-accent);background:var(--kc);border-radius:999px;padding:3px 12px;margin-top:1px}
+.v{font:400 17px var(--mono);color:var(--ink);line-height:1.4;word-break:break-all;min-width:0}
+.note{grid-column:2;font:400 15px var(--sans);color:var(--muted);line-height:1.35;margin-top:1px}
+.r-topic{--kc:var(--topic)}.r-topic .v{color:var(--topic)}
+.r-payload{--kc:var(--mqtt)}
+.r-https{--kc:var(--https)}
+.r-plain{--kc:var(--muted)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:500 14px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--fog);outline-offset:2px}
+#bPlay{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:110px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.seg button[aria-pressed="true"]{background:var(--fog-tint);color:var(--fog)}
+.hint{font-size:13px;color:var(--muted);margin:0;line-height:1.5}
+@media (prefers-reduced-motion:reduce){.card,.ring,.ico,.val,.np rect,.hl,.cap-num{transition:none}}
+</style>
+
+<main>
+<div id="stage">
+<svg id="scene" viewBox="0 0 1600 1010" role="img" aria-labelledby="sceneTitle sceneDesc">
+<title id="sceneTitle">Fluxo de uma medição IoT do ESP32 ao InfluxDB na cloud</title>
+<desc id="sceneDesc">Animação: os sensores medem o ambiente, o ESP32 monta um JSON e o publica via Wi-Fi e Internet no broker Mosquitto do Raspberry Pi; o Node-RED assina o tópico pela rede local, converte os dados e os envia via Wi-Fi e Internet ao InfluxDB na cloud, que grava o registro.</desc>
+<defs>
+<symbol id="i-temp" viewBox="0 0 24 24"><path d="M10 13.5V5a2 2 0 0 1 4 0v8.5a4 4 0 1 1-4 0z"/><path d="M12 9.5v6"/></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3.5c3.6 4.3 6 7.6 6 10.6a6 6 0 0 1-12 0c0-3 2.4-6.3 6-10.6z"/></symbol>
+<symbol id="i-dist" viewBox="0 0 24 24"><path d="M5.5 12h13M8.5 9l-3 3 3 3M15.5 9l3 3-3 3M2.5 6v12M21.5 6v12"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></symbol>
+<symbol id="i-move" viewBox="0 0 24 24"><path d="M12 13V3.5M12 13l8 4.6M12 13l-8 4.6M9.8 5.7 12 3.5l2.2 2.2M17.2 19.4l2.8-1.8-.4-3.1M4.4 14.5 4 17.6l2.8 1.8"/></symbol>
+<symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></symbol>
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M3 9.2a12.5 12.5 0 0 1 18 0M6.2 12.6a8 8 0 0 1 11.6 0M9.4 16a3.6 3.6 0 0 1 5.2 0"/><path d="M12 19.3h.01" stroke-width="2.8"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9M12 3c-2.6 2.6-3.9 5.6-3.9 9s1.3 6.4 3.9 9"/></symbol>
+<symbol id="i-cast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.3 8.3a5.2 5.2 0 0 0 0 7.4M15.7 8.3a5.2 5.2 0 0 1 0 7.4M5.4 5.4a9.3 9.3 0 0 0 0 13.2M18.6 5.4a9.3 9.3 0 0 1 0 13.2"/></symbol>
+<symbol id="i-flow" viewBox="0 0 24 24"><rect x="2.5" y="3.5" width="6.5" height="5" rx="1.3"/><rect x="15" y="3.5" width="6.5" height="5" rx="1.3"/><rect x="8.75" y="15.5" width="6.5" height="5" rx="1.3"/><path d="M9 6h6M5.75 8.5V12H12v3.5M18.25 8.5V12H12"/></symbol>
+<symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></symbol>
+<symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14.5h18M9.5 9v11"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3 13h18v2.5a5.5 5.5 0 0 1-5.5 5.5h-7A5.5 5.5 0 0 1 3 15.5z"/><path d="M5 9h3.5v4H5zM8.5 9H12v4H8.5zM12 9h3.5v4H12zM8.5 5H12v4H8.5z"/></symbol>
+</defs>
+
+<text class="ttl" x="40" y="62">O caminho de uma medição IoT</text>
+<text class="sub" x="40" y="94">Do sensor no ESP32 ao armazenamento no InfluxDB na cloud</text>
+<text class="s" id="stepTxt" x="1560" y="58" text-anchor="end">Etapa 1 de 10 · Leitura #1</text>
+<g id="stepBar"></g>
+
+<rect class="cont" x="40" y="120" width="350" height="570" rx="24"/>
+<text class="h" x="215" y="160" text-anchor="middle">Camada Edge</text>
+<text class="s" x="215" y="186" text-anchor="middle">aquisição de dados</text>
+
+<rect class="cont-fog" x="555" y="120" width="450" height="570" rx="24"/>
+<text class="h" x="780" y="160" text-anchor="middle">Camada Fog · Raspberry Pi</text>
+<text class="s" x="780" y="186" text-anchor="middle">processamento na rede local</text>
+<rect class="dock" x="575" y="202" width="410" height="470" rx="18"/>
+<use href="#i-box" class="ico" x="591" y="211" width="22" height="22" style="stroke:var(--fog)"/>
+<text class="s" x="620" y="228" style="font-size:15px">Docker / Compose</text>
+
+<rect class="cont" x="1170" y="120" width="390" height="570" rx="24"/>
+<text class="h" x="1365" y="160" text-anchor="middle">Camada Cloud</text>
+<text class="s" x="1365" y="186" text-anchor="middle">armazenamento de séries temporais</text>
+
+<g id="baseLines"></g>
+<g id="litLines"></g>
+
+<g class="node" id="n0" style="--c:var(--mqtt)">
+<rect class="card" x="65" y="206" width="300" height="232" rx="18"/>
+<text class="h" x="215" y="240" text-anchor="middle">Ambiente</text>
+<g class="sens" id="s0"><use href="#i-temp" class="ico" x="99" y="258" width="32" height="32"/><text class="val" id="v0" x="115" y="318" text-anchor="middle">26.0 °C</text></g>
+<g class="sens" id="s1"><use href="#i-drop" class="ico" x="199" y="258" width="32" height="32"/><text class="val" id="v1" x="215" y="318" text-anchor="middle">61.7 %</text></g>
+<g class="sens" id="s2"><use href="#i-dist" class="ico" x="299" y="258" width="32" height="32"/><text class="val" id="v2" x="315" y="318" text-anchor="middle">90.0 cm</text></g>
+<g class="sens" id="s3"><use href="#i-sun" class="ico" x="149" y="334" width="32" height="32"/><text class="val" id="v3" x="165" y="394" text-anchor="middle">1200 lx</text></g>
+<g class="sens" id="s4"><use href="#i-move" class="ico" x="249" y="334" width="32" height="32"/><text class="val" id="v4" x="265" y="394" text-anchor="middle">0.99 g</text></g>
+<rect class="bar-bg" x="85" y="414" width="260" height="4" rx="2"/><rect class="bar" id="b0" x="85" y="414" width="0" height="4" rx="2"/>
+</g>
+
+<g class="node" id="n1" style="--c:var(--mqtt)">
+<rect class="card" x="65" y="478" width="300" height="192" rx="18"/>
+<use href="#i-chip" class="ico" x="191" y="492" width="48" height="48"/>
+<text class="h" x="215" y="570" text-anchor="middle">ESP32</text>
+<text class="s" x="215" y="597" text-anchor="middle">lê sensores · monta JSON</text>
+<text class="m" x="215" y="629" text-anchor="middle" style="font-size:16.5px">mag = √(x² + y² + z²)</text>
+<rect class="bar-bg" x="95" y="650" width="240" height="4" rx="2"/><rect class="bar" id="b1" x="95" y="650" width="0" height="4" rx="2"/>
+</g>
+
+<g class="node" id="n2" style="--c:var(--mqtt)">
+<circle class="ring" cx="472" cy="565" r="50"/>
+<use href="#i-wifi" class="ico" x="448" y="541" width="48" height="48"/>
+<text class="h" x="472" y="648" text-anchor="middle">Wi-Fi</text>
+<text class="s" x="472" y="673" text-anchor="middle">IEEE 802.11</text>
+</g>
+
+<g class="node" id="n3" style="--c:var(--mqtt)">
+<circle class="ring" cx="472" cy="320" r="50"/>
+<use href="#i-globe" class="ico" x="448" y="296" width="48" height="48"/>
+<text class="h" x="472" y="230" text-anchor="middle">Internet</text>
+<text class="s" x="472" y="255" text-anchor="middle">TCP/IP · MQTT</text>
+</g>
+
+<g class="node" id="n4" style="--c:var(--mqtt)">
+<rect class="card fc" x="595" y="245" width="370" height="150" rx="18"/>
+<use href="#i-cast" class="ico" x="615" y="261" width="42" height="42"/>
+<text class="h" x="674" y="282">Mosquitto MQTT</text>
+<text class="s" x="674" y="306">broker · porta 1883</text>
+<g class="slot" id="slot"><rect x="615" y="321" width="330" height="36" rx="9"/><text class="slot-k" x="631" y="344">tópico</text><text class="slot-v" x="694" y="344">fiap/iot/esp32/sensores</text></g>
+<rect class="bar-bg" x="615" y="371" width="330" height="4" rx="2"/><rect class="bar" id="b4" x="615" y="371" width="0" height="4" rx="2"/>
+</g>
+
+<g class="node" id="n5" style="--c:var(--fog)">
+<rect class="card fc" x="595" y="455" width="370" height="200" rx="18"/>
+<use href="#i-flow" class="ico" x="615" y="473" width="42" height="42"/>
+<text class="h" x="674" y="497">Node-RED</text>
+<text class="s" x="674" y="524">assina o tópico · resgata o payload</text>
+<g class="np" id="np0"><rect x="615" y="548" width="73" height="34" rx="8"/><text x="651.5" y="570" text-anchor="middle">mqtt in</text></g>
+<g class="np" id="np1"><rect x="698" y="548" width="48" height="34" rx="8"/><text x="722" y="570" text-anchor="middle">json</text></g>
+<g class="np" id="np2"><rect x="756" y="548" width="81" height="34" rx="8"/><text x="796.5" y="570" text-anchor="middle">function</text></g>
+<g class="np" id="np3"><rect x="847" y="548" width="98" height="34" rx="8"/><text x="896" y="570" text-anchor="middle">influx out</text></g>
+<text class="m" x="780" y="614" text-anchor="middle">JSON → line protocol</text>
+<rect class="bar-bg" x="615" y="634" width="330" height="4" rx="2"/><rect class="bar" id="b5" x="615" y="634" width="0" height="4" rx="2"/>
+</g>
+
+<g class="node" id="n6" style="--c:var(--https)">
+<circle class="ring" cx="1088" cy="565" r="50"/>
+<use href="#i-wifi" class="ico" x="1064" y="541" width="48" height="48"/>
+<text class="h" x="1088" y="648" text-anchor="middle">Wi-Fi</text>
+<text class="s" x="1088" y="673" text-anchor="middle">IEEE 802.11</text>
+</g>
+
+<g class="node" id="n7" style="--c:var(--https)">
+<circle class="ring" cx="1088" cy="320" r="50"/>
+<use href="#i-globe" class="ico" x="1064" y="296" width="48" height="48"/>
+<text class="h" x="1088" y="230" text-anchor="middle">Internet</text>
+<text class="s" x="1088" y="255" text-anchor="middle">TCP/IP · HTTPS</text>
+</g>
+
+<g class="node" id="n8" style="--c:var(--https)">
+<rect class="card" x="1190" y="245" width="350" height="150" rx="18"/>
+<use href="#i-db" class="ico" x="1210" y="299" width="42" height="42"/>
+<text class="h" x="1269" y="290">InfluxDB</text>
+<text class="s" x="1269" y="317">API de escrita · token</text>
+<text class="m" x="1269" y="347">POST /api/v2/write</text>
+<rect class="bar-bg" x="1210" y="371" width="310" height="4" rx="2"/><rect class="bar" id="b8" x="1210" y="371" width="0" height="4" rx="2"/>
+</g>
+
+<g class="node" id="n9" style="--c:var(--https)">
+<rect class="card" x="1190" y="455" width="350" height="215" rx="18"/>
+<use href="#i-table" class="ico" x="1208" y="472" width="26" height="26"/>
+<text class="h" x="1244" y="493" style="font-size:22px">Registros no banco</text>
+<text class="thd" x="1208" y="525">hora</text>
+<text class="thd" x="1328" y="525" text-anchor="end">temp</text>
+<text class="thd" x="1378" y="525" text-anchor="end">umid</text>
+<text class="thd" x="1428" y="525" text-anchor="end">dist</text>
+<text class="thd" x="1478" y="525" text-anchor="end">lux</text>
+<text class="thd" x="1524" y="525" text-anchor="end">mag</text>
+<line x1="1204" y1="534" x2="1526" y2="534" style="stroke:var(--line)" stroke-width="1"/>
+<g id="rows"><text class="empty" x="1365" y="600" text-anchor="middle">Aguardando o primeiro registro…</text></g>
+</g>
+
+<g id="dots">
+<circle r="7" cx="115" cy="274" style="fill:var(--mqtt);visibility:hidden"/>
+<circle r="7" cx="215" cy="274" style="fill:var(--mqtt);visibility:hidden"/>
+<circle r="7" cx="315" cy="274" style="fill:var(--mqtt);visibility:hidden"/>
+<circle r="7" cx="165" cy="350" style="fill:var(--mqtt);visibility:hidden"/>
+<circle r="7" cx="265" cy="350" style="fill:var(--mqtt);visibility:hidden"/>
+</g>
+<g id="pkt" style="visibility:hidden"><rect id="pktB" x="-34" y="-17" width="68" height="34" rx="17" style="fill:var(--mqtt)"/><path id="pktA" d="M0 0" style="display:none"/><text id="pktTA" class="pk" x="0" y="5" text-anchor="middle"></text><text id="pktTB" class="pk" x="0" y="5" text-anchor="middle" style="display:none"></text></g>
+
+<foreignObject x="40" y="712" width="1520" height="280">
+<div class="cap">
+<div class="cap-head"><div class="cap-num" id="capNum">1</div><div class="cap-txt"><div class="cap-title" id="capTitle">Coleta no ambiente</div><div class="cap-desc" id="capDesc"></div></div></div>
+<div class="msg" id="msg"></div>
+</div>
+</foreignObject>
+</svg>
+</div>
+
+<div class="ctrl">
+<button id="bPlay" type="button">Pausar</button>
+<button id="bNext" type="button">Próxima etapa</button>
+<button id="bNew" type="button">Nova leitura</button>
+<button id="bReset" type="button">Reiniciar</button>
+<div class="seg" role="group" aria-label="Velocidade">
+<button type="button" data-s="0.5" aria-pressed="false">0,5×</button>
+<button type="button" data-s="1" aria-pressed="true">1×</button>
+<button type="button" data-s="2" aria-pressed="false">2×</button>
+</div>
+<button id="bFull" type="button">Tela cheia</button>
+</div>
+<p class="hint">Atalhos: espaço pausa ou retoma, seta para a direita avança uma etapa. Reiniciar volta à leitura #1 com a tabela vazia. Na mensagem MQTT, o tópico (laranja) é o endereço no broker e o payload (verde) é o conteúdo que o Node-RED resgata. As leituras 1 a 3 seguem a sequência definida (−10% sobre a anterior); da 4ª em diante, os valores variam pouco em torno da leitura anterior.</p>
+</main>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const COL={mqtt:'var(--mqtt)',fog:'var(--fog)',https:'var(--https)',topic:'var(--topic)'};
+const steps=[
+{c:'mqtt',d:1800,t:'Coleta no ambiente',x:'Os sensores medem temperatura, umidade, distância de obstáculo, luminosidade e aceleração nos três eixos.'},
+{c:'mqtt',d:2200,t:'ESP32 monta a mensagem MQTT',x:'Calcula mag = √(x²+y²+z²) e monta a mensagem com um tópico (para onde vai) e um payload (o que vai).'},
+{c:'mqtt',d:1200,t:'Saída pelo Wi-Fi',x:'A mensagem sai do ESP32 pelo Wi-Fi (IEEE 802.11, 2,4 GHz) até o roteador.'},
+{c:'mqtt',d:1200,t:'Trânsito pela Internet',x:'O pacote MQTT, com tópico e payload, viaja sobre TCP/IP pela Internet até o broker.'},
+{c:'mqtt',d:2200,t:'Broker recebe o publish',x:'O Mosquitto usa o tópico para decidir a quem entregar e repassa o payload a quem assinou esse tópico.'},
+{c:'fog',d:2600,t:'Node-RED processa',x:'O Node-RED assinou o mesmo tópico, resgata o payload, converte o JSON e monta um ponto do InfluxDB.'},
+{c:'https',d:1100,t:'Saída do Fog Node',x:'O Raspberry Pi envia o ponto ao InfluxDB em uma requisição HTTPS, saindo pelo Wi-Fi da rede local.'},
+{c:'https',d:1100,t:'Rumo à cloud',x:'A requisição, protegida por TLS e com o token de acesso, trafega pela Internet até a cloud.'},
+{c:'https',d:1800,t:'InfluxDB recebe o ponto',x:'A API de escrita valida o token e separa o ponto em measurement, tag, fields e timestamp.'},
+{c:'https',d:2000,t:'Armazenado no banco',x:'O ponto é gravado no bucket iot e entra como nova linha na tabela de registros.'}
+];
+const TP=[['tópico','topic'],['payload','mqtt']];
+const segs=[
+{a:[215,438],b:[215,478],c:'mqtt',parts:[]},
+{a:[365,565],b:[422,565],c:'mqtt',parts:TP},
+{a:[472,515],b:[472,370],c:'mqtt',parts:TP},
+{a:[522,320],b:[595,320],c:'mqtt',parts:TP},
+{a:[780,395],b:[780,455],c:'mqtt',parts:[['payload','mqtt']]},
+{a:[965,565],b:[1038,565],c:'https',parts:[['HTTPS','https']]},
+{a:[1088,515],b:[1088,370],c:'https',parts:[['HTTPS','https']]},
+{a:[1138,320],b:[1190,320],c:'https',parts:[['HTTPS','https']]},
+{a:[1365,395],b:[1365,455],c:'https',parts:[['grava','https']]}
+];
+const SENS=[[115,274],[215,274],[315,274],[165,350],[265,350]];
+const BARS={0:260,1:240,4:330,5:330,8:310};
+let reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+const S={t:0,speed:1,playing:!reduce,cycle:1,inserted:false,cap:-1,ts:Date.now()};
+
+const mkLine=(g,cls)=>{const l=document.createElementNS(NS,'line');l.setAttribute('x1',g.a[0]);l.setAttribute('y1',g.a[1]);l.setAttribute('x2',g.b[0]);l.setAttribute('y2',g.b[1]);l.setAttribute('class',cls);return l};
+const lits=segs.map(g=>{
+g.L=Math.hypot(g.b[0]-g.a[0],g.b[1]-g.a[1]);
+$('baseLines').appendChild(mkLine(g,'base'));
+const l=mkLine(g,'lit');l.style.stroke=COL[g.c];l.style.strokeDasharray=g.L;l.style.strokeDashoffset=g.L;$('litLines').appendChild(l);return l;
+});
+
+const phases=[];let T=0;
+steps.forEach((s,i)=>{s.ph={k:'dwell',i,s:T,d:s.d};phases.push(s.ph);T+=s.d;
+if(i<segs.length){const g=segs[i];const d=i===0?1200:Math.round(650+g.L*3.2);g.ph={k:'move',i,s:T,d};phases.push(g.ph);T+=d;}});
+phases.push({k:'rest',s:T,d:1200});T+=1200;const CYCLE=T;
+
+const nodes=steps.map((_,i)=>$('n'+i));
+const sens=[0,1,2,3,4].map(i=>$('s'+i));
+const dots=[...document.querySelectorAll('#dots circle')];
+const pills=[0,1,2,3].map(i=>$('np'+i));
+const pkt=$('pkt'),pktB=$('pktB'),pktA=$('pktA'),pktTA=$('pktTA'),pktTB=$('pktTB');let pktSeg=null;
+function setPkt(g){
+if(pktSeg===g)return;pktSeg=g;
+const ws=g.parts.map(p=>p[0].length*8.4+20),w=ws.reduce((a,b)=>a+b,0),x0=-w/2,r=17;
+pktB.setAttribute('x',x0.toFixed(1));pktB.setAttribute('width',w.toFixed(1));pktB.style.fill=COL[g.parts[g.parts.length-1][1]];
+pktTA.textContent=g.parts[0][0];
+if(g.parts.length===2){const wa=ws[0];
+pktA.setAttribute('d',`M${(x0+r).toFixed(1)},-17 H${(x0+wa).toFixed(1)} V17 H${(x0+r).toFixed(1)} A17,17 0 0 1 ${(x0+r).toFixed(1)},-17 Z`);
+pktA.style.fill=COL[g.parts[0][1]];pktA.style.display='';
+pktTA.setAttribute('x',(x0+wa/2).toFixed(1));pktTB.textContent=g.parts[1][0];pktTB.setAttribute('x',(x0+wa+ws[1]/2).toFixed(1));pktTB.style.display='';
+}else{pktA.style.display='none';pktTA.setAttribute('x',0);pktTB.style.display='none';}
+}
+const bars=[];
+for(let k=0;k<10;k++){const r=document.createElementNS(NS,'rect');r.setAttribute('x',1206+k*36);r.setAttribute('y',74);r.setAttribute('width',30);r.setAttribute('height',8);r.setAttribute('rx',4);$('stepBar').appendChild(r);bars.push(r);}
+
+const rnd=(a,b)=>a+Math.random()*(b-a),r1=v=>Math.round(v*10)/10,r2=v=>Math.round(v*100)/100,cl=(v,a,b)=>Math.min(b,Math.max(a,v));
+const f1=v=>v.toFixed(1),f2=v=>v.toFixed(2);
+const BASE={temp:26,umid:61.7,dist:90,lux:1200,ax:0.02,ay:-0.01,az:0.99};
+const V={};
+function gen(n){
+if(n<=3){
+const f=Math.pow(0.9,n-1);
+V.temp=r1(BASE.temp*f);V.umid=r1(BASE.umid*f);V.dist=r1(BASE.dist*f);V.lux=Math.round(BASE.lux*f);
+V.ax=r2(BASE.ax*f);V.ay=r2(BASE.ay*f);V.az=r2(BASE.az*f);
+}else{
+V.temp=r1(cl(V.temp+rnd(-0.4,0.4),15,35));
+V.umid=r1(cl(V.umid+rnd(-1.2,1.2),30,85));
+V.dist=r1(cl(V.dist*(1+rnd(-0.06,0.06)),5,99.9));
+V.lux=Math.round(cl(V.lux*(1+rnd(-0.04,0.04)),100,2000));
+V.ax=r2(cl(V.ax+rnd(-0.01,0.01),-0.1,0.1));V.ay=r2(cl(V.ay+rnd(-0.01,0.01),-0.1,0.1));V.az=r2(cl(V.az+rnd(-0.02,0.02),0.7,1.05));
+}
+V.mag=r2(Math.hypot(V.ax,V.ay,V.az));
+}
+const hhmmss=ts=>new Date(ts).toLocaleTimeString('pt-BR',{hour12:false});
+let rows=[];
+function drawRows(fresh){
+if(!rows.length){$('rows').innerHTML='<text class="empty" x="1365" y="600" text-anchor="middle">Aguardando o primeiro registro…</text>';return;}
+const cols=[1328,1378,1428,1478,1524],last=rows.length-1;let h='';
+rows.forEach((r,k)=>{const y=557+k*23;
+if(k===last&&fresh)h+=`<rect class="hl" id="hl" x="1200" y="${y-17}" width="330" height="23" rx="6"/>`;
+h+=`<text class="td" x="1208" y="${y}">${r.time}</text>`;
+[r.temp,r.umid,r.dist,r.lux,r.mag].forEach((v,c)=>{h+=`<text class="td" x="${cols[c]}" y="${y}" text-anchor="end">${v}</text>`});});
+$('rows').innerHTML=h;
+if(fresh)requestAnimationFrame(()=>requestAnimationFrame(()=>{const e=$('hl');if(e)e.classList.add('fade')}));
+}
+function insertRow(){rows.push({time:hhmmss(S.ts),temp:f1(V.temp),umid:f1(V.umid),dist:f1(V.dist),lux:String(V.lux),mag:f2(V.mag)});if(rows.length>5)rows.shift();drawRows(true);}
+function setAmbient(){
+$('v0').textContent=f1(V.temp)+' °C';$('v1').textContent=f1(V.umid)+' %';
+$('v2').textContent=f1(V.dist)+' cm';$('v3').textContent=V.lux+' lx';$('v4').textContent=f2(V.mag)+' g';
+}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const TOPIC='fiap/iot/esp32/sensores';
+const jsonStr=()=>`{"device":"esp32-01","temp":${f1(V.temp)},"umid":${f1(V.umid)},"dist":${f1(V.dist)},"lux":${V.lux},"acc_x":${f2(V.ax)},"acc_y":${f2(V.ay)},"acc_z":${f2(V.az)},"mag":${f2(V.mag)}}`;
+const fieldsStr=sep=>`temp=${f1(V.temp)}${sep}umid=${f1(V.umid)}${sep}dist=${f1(V.dist)}${sep}lux=${V.lux}${sep}acc_x=${f2(V.ax)}${sep}acc_y=${f2(V.ay)}${sep}acc_z=${f2(V.az)}${sep}mag=${f2(V.mag)}`;
+const lpStr=()=>`sensores,device=esp32-01 ${fieldsStr(',')} ${S.ts}`;
+function msg(i){
+const iso=new Date(S.ts).toISOString().replace(/\.\d{3}Z$/,'Z');
+const nT='o “endereço” no broker onde quem publica e quem assina se encontram';
+const nP='o conteúdo da mensagem: é ele que o Node-RED resgata e envia adiante';
+const mq=k=>({kind:k,rows:[{k:'Tópico',c:'topic',v:TOPIC,n:nT},{k:'Payload',c:'payload',v:jsonStr(),n:nP}]});
+const req=k=>({kind:k,rows:[{k:'Requisição',c:'https',v:'POST /api/v2/write?bucket=iot&precision=ms'},{k:'Cabeçalho',c:'https',v:'Authorization: Token ••••••••••••'},{k:'Corpo',c:'https',v:lpStr()}]});
+switch(i){
+case 0:return{kind:'Leitura dos sensores',rows:[{k:'Ambiente',c:'plain',v:`temperatura ${f1(V.temp)} °C · umidade ${f1(V.umid)} % · distância ${f1(V.dist)} cm · luminosidade ${V.lux} lx`},{k:'Acelerômetro',c:'plain',v:`acc_x ${f2(V.ax)} g · acc_y ${f2(V.ay)} g · acc_z ${f2(V.az)} g`}]};
+case 1:return mq('Mensagem MQTT montada pelo ESP32 · PUBLISH');
+case 2:return mq('Mensagem MQTT em trânsito · Wi-Fi');
+case 3:return mq('Mensagem MQTT em trânsito · Internet (TCP/IP)');
+case 4:return{kind:'Mensagem MQTT no broker Mosquitto',rows:[{k:'Tópico',c:'topic',v:TOPIC,n:'o ESP32 publicou neste tópico e o Node-RED assina este mesmo tópico'},{k:'Payload',c:'payload',v:jsonStr(),n:'o broker entrega este conteúdo a todos os assinantes do tópico'}]};
+case 5:return{kind:'Node-RED · entrada pelo MQTT e saída em line protocol',rows:[{k:'Tópico',c:'topic',v:TOPIC},{k:'Payload',c:'payload',v:jsonStr()},{k:'Saída',c:'https',v:lpStr()}]};
+case 6:return req('Requisição HTTPS de escrita · saindo pelo Wi-Fi');
+case 7:return req('Requisição HTTPS de escrita · Internet (TLS)');
+case 8:return{kind:'Ponto recebido pelo InfluxDB · partes do line protocol',rows:[{k:'Measurement',c:'https',v:'sensores · tag device=esp32-01'},{k:'Fields',c:'https',v:fieldsStr(', ')},{k:'Timestamp',c:'https',v:`${S.ts} ms · ${iso}`}]};
+default:return{kind:'Registro gravado no bucket iot',rows:[{k:'Registro',c:'https',v:`_time ${iso} · device esp32-01 · temp ${f1(V.temp)} · umid ${f1(V.umid)} · dist ${f1(V.dist)} · lux ${V.lux} · mag ${f2(V.mag)}`},{k:'Resposta',c:'https',v:'HTTP 204 No Content · escrita confirmada'}]};
+}}
+function renderMsg(i){
+const m=msg(i);let h=`<div class="msg-kind">${esc(m.kind)}</div>`;
+m.rows.forEach(r=>{h+=`<div class="row r-${r.c}"><span class="k">${esc(r.k)}</span><span class="v">${esc(r.v)}</span>${r.n?`<span class="note">${esc(r.n)}</span>`:''}</div>`;});
+$('msg').innerHTML=`<div class="msg-in">${h}</div>`;
+}
+function caption(i){
+const s=steps[i];
+$('capNum').textContent=i+1;$('capNum').style.background=COL[s.c];
+$('capTitle').textContent=s.t;$('capDesc').textContent=s.x;
+renderMsg(i);
+$('stepTxt').textContent=`Etapa ${i+1} de 10 · Leitura #${S.cycle}`;
+bars.forEach((r,k)=>{r.style.fill=k<i?'var(--muted)':k===i?COL[s.c]:'var(--line)';r.style.opacity=k<i?'.45':'1';});
+}
+const ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+
+function render(){
+const t=S.t;let ph=phases[phases.length-1];
+for(const q of phases){if(t>=q.s&&t<q.s+q.d){ph=q;break;}}
+const p=Math.min(1,Math.max(0,(t-ph.s)/ph.d));
+let step=0;for(const s of steps){if(s.ph.s<=t)step=s.ph.i;}
+nodes.forEach((el,i)=>el.classList.toggle('on',ph.k==='dwell'&&ph.i===i));
+for(const k in BARS){$('b'+k).setAttribute('width',(ph.k==='dwell'&&ph.i===+k)?(BARS[k]*p).toFixed(1):0);}
+segs.forEach((g,i)=>{const f=t>=g.ph.s+g.ph.d?1:t<g.ph.s?0:(t-g.ph.s)/g.ph.d;lits[i].style.strokeDashoffset=(g.L*(1-ease(f))).toFixed(1);});
+if(ph.k==='move'){
+const g=segs[ph.i],e=ease(p);
+if(ph.i===0){pkt.style.visibility='hidden';dots.forEach((d,j)=>{const[sx,sy]=SENS[j];d.setAttribute('cx',(sx+(g.b[0]-sx)*e).toFixed(1));d.setAttribute('cy',(sy+(g.b[1]-sy)*e).toFixed(1));d.style.visibility='visible';});}
+else{dots.forEach(d=>d.style.visibility='hidden');
+setPkt(g);
+const x=g.a[0]+(g.b[0]-g.a[0])*e,y=g.a[1]+(g.b[1]-g.a[1])*e;
+pkt.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)})`);pkt.style.visibility='visible';}
+}else{pkt.style.visibility='hidden';dots.forEach(d=>d.style.visibility='hidden');}
+const sj=(ph.k==='dwell'&&ph.i===0)?Math.min(4,Math.floor(p*5)):-1;
+sens.forEach((el,j)=>el.classList.toggle('on',j===sj||(ph.k==='move'&&ph.i===0)));
+const nd=steps[5].ph;const cnt=t>=nd.s+nd.d?4:t<nd.s?0:Math.min(4,Math.ceil(((t-nd.s)/nd.d)*4.4));
+pills.forEach((el,j)=>el.classList.toggle('on',j<cnt));
+const sa=steps[4].ph.s,sb=steps[5].ph.s+steps[5].ph.d;$('slot').classList.toggle('on',t>=sa&&t<sb);
+if(step===9&&!S.inserted){S.inserted=true;insertRow();}
+if(step!==S.cap){S.cap=step;caption(step);}
+}
+function startCycle(n){S.t=0;S.cycle=n;S.inserted=false;S.cap=-1;S.ts=Date.now();gen(n);setAmbient();}
+function newCycle(){startCycle(S.cycle+1);}
+function restart(){rows=[];drawRows(false);startCycle(1);}
+function next(){const n=steps.find(s=>s.ph.s>S.t+1);if(n)S.t=n.ph.s;else newCycle();}
+
+const bPlay=$('bPlay');
+function setPlay(v){S.playing=v;bPlay.textContent=v?'Pausar':'Reproduzir';bPlay.setAttribute('aria-pressed',String(!v));}
+bPlay.addEventListener('click',()=>setPlay(!S.playing));
+$('bNext').addEventListener('click',next);
+$('bNew').addEventListener('click',newCycle);
+$('bReset').addEventListener('click',restart);
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{S.speed=+b.dataset.s;document.querySelectorAll('.seg button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));}));
+const stage=$('stage'),bFull=$('bFull');
+bFull.addEventListener('click',()=>{try{if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}else if(stage.requestFullscreen){stage.requestFullscreen().catch(()=>{});}}catch(e){}});
+document.addEventListener('fullscreenchange',()=>{bFull.textContent=document.fullscreenElement?'Sair da tela cheia':'Tela cheia';});
+document.addEventListener('keydown',e=>{
+if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){e.preventDefault();setPlay(!S.playing);}
+else if(e.key==='ArrowRight'){e.preventDefault();next();}
+});
+
+restart();
+setPlay(S.playing);
+let lastT=performance.now();
+function frame(now){const dt=Math.min(100,now-lastT);lastT=now;if(S.playing){S.t+=dt*S.speed;if(S.t>=CYCLE)newCycle();}render();requestAnimationFrame(frame);}
+render();requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
