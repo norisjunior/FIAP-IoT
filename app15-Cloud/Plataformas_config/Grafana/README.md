@@ -1,14 +1,23 @@
 # Grafana — dois dashboards da NexoLog
 
-Grafana **local**, lendo o **InfluxDB Cloud** — o mesmo banco onde o
-[Fluxo_2](../NodeRED/Fluxo_2_envio_InfluxDB.json) do Node-RED grava.
+Grafana **local**, lendo um destes dois bancos, o mesmo em que o Fluxo_2 do Node-RED grava:
+
+| Banco | Fluxo do Node-RED | Linguagem | Dashboards |
+|---|---|---|---|
+| **InfluxDB Cloud** | [Fluxo_2_INFLUXDBCLOUD.json](../NodeRED/Fluxo_2_INFLUXDBCLOUD.json) | SQL | `*_INFLUXDBCLOUD.json` |
+| **InfluxDB local**, o contêiner da IoT-platform | [Fluxo_2_INFLUXDBLOCAL.json](../NodeRED/Fluxo_2_INFLUXDBLOCAL.json) | Flux | `*_INFLUXDBLOCAL.json` |
+
+Os painéis são os mesmos nos dois; só a consulta muda. O InfluxDB local é a versão 2.7, que
+não entende SQL — por isso Flux.
 
 O Node-RED e o n8n olham o dado passando. O Grafana olha o dado guardado.
 
 | Arquivo | O que é |
 |---|---|
-| [dashboard_nexolog.json](dashboard_nexolog.json) | gauges, séries e tabela. O de todo dia |
-| [dashboard_nexolog_canvas.json](dashboard_nexolog_canvas.json) | a foto da bag com as medições em cima |
+| [dashboard_nexolog_INFLUXDBCLOUD.json](dashboard_nexolog_INFLUXDBCLOUD.json) | gauges, séries e tabela. O de todo dia — nuvem, SQL |
+| [dashboard_nexolog_canvas_INFLUXDBCLOUD.json](dashboard_nexolog_canvas_INFLUXDBCLOUD.json) | a foto da bag com as medições em cima — nuvem, SQL |
+| [dashboard_nexolog_INFLUXDBLOCAL.json](dashboard_nexolog_INFLUXDBLOCAL.json) | gauges, séries e tabela — contêiner local, Flux |
+| [dashboard_nexolog_canvas_INFLUXDBLOCAL.json](dashboard_nexolog_canvas_INFLUXDBLOCAL.json) | a foto da bag — contêiner local, Flux |
 | [CONSTRUIR-O-DASHBOARD.md](CONSTRUIR-O-DASHBOARD.md) | montar os dois do zero, em vez de importar |
 
 ---
@@ -31,6 +40,25 @@ Connections > Add new connection > **InfluxDB**.
 O Grafana roda local, o banco está na nuvem: quem precisa de internet é o Grafana,
 não o ESP32.
 
+### InfluxDB local (IoT-platform), em Flux
+
+Para os arquivos `*_INFLUXDBLOCAL.json`, uma segunda conexão. Os valores são os do `.env`
+da IoT-platform:
+
+| Campo | Valor |
+|---|---|
+| Name | `influxdb-local` |
+| Query language | **Flux** |
+| URL | `http://influxdb:8086` — o nome do contêiner, não `localhost` |
+| Auth | tudo desligado |
+| Organization | `fiapiot` (`INFLUXDB_ORG`) |
+| Token | `INFLUXDB_TOKEN` |
+| Default Bucket | `sensores` (`INFLUXDB_BUCKET`) |
+
+**Save & test** responde *datasource is working. N buckets found*.
+
+O Grafana e o InfluxDB estão na mesma rede Docker: nada sai do computador.
+
 ## 2. Importar
 
 Dashboards > New > **Import** > Upload JSON file.
@@ -39,6 +67,8 @@ Na tela de import, o Grafana pergunta qual é a fonte de dados InfluxDB — esco
 você acabou de criar. Depois de abrir, no topo tem a caixa **Measurement**, que já
 vem com `nexolog` — o nome que o Node-RED grava. Se o seu grava em outra, escreva o nome
 e dê Enter. Todos os painéis usam essa caixa, então é um lugar só.
+
+Nos `*_INFLUXDBLOCAL.json` há uma segunda caixa, **Bucket**, que já vem com `sensores`.
 
 > Os arquivos foram exportados do Grafana 13.2.1, no schema `dashboard.grafana.app/v2`.
 > Se a sua versão recusar a variável **Measurement** na importação, crie à mão:
@@ -79,6 +109,23 @@ ORDER BY time
 ```
 
 Os indicadores invertem: `ORDER BY time DESC LIMIT 1`, olhando os últimos 5 minutos.
+
+No InfluxDB local, a mesma consulta em Flux. O `pivot` é o passo que transforma o Flux
+— uma linha por campo — na tabela que o SQL já entrega, com `temp` e `umid` lado a lado:
+
+```flux
+from(bucket: "${bucket}")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "${measurement}")
+  |> filter(fn: (r) => r._field == "temp" or r._field == "umid")
+  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+  |> group()
+  |> sort(columns: ["_time"])
+  |> keep(columns: ["_time", "temp", "umid"])
+```
+
+Os indicadores trocam o fim por `sort(columns: ["_time"], desc: true)` e `limit(n: 1)`,
+com `range(start: -5m)`.
 
 Repare que é o mesmo painel do Node-RED, com uma diferença: aqui você pode voltar no
 tempo. Mude o intervalo no topo para 24 horas e veja a entrega inteira.
@@ -121,6 +168,8 @@ valores lado a lado — cada elemento pega o seu pelo nome.
 |---|---|
 | `table ... not found` | a caixa **Measurement** no topo, ou o Database da fonte de dados |
 | `unauthorized` | o token da fonte de dados |
+| `bucket ... not found` (local) | a caixa **Bucket** no topo: `sensores`, ou o `INFLUXDB_BUCKET` do seu `.env` |
+| Conexão local recusada | a URL é `http://influxdb:8086`; `localhost` dentro do contêiner do Grafana é o próprio Grafana |
 | Gauge com "No data" e a série cheia | o gauge olha os últimos 5 minutos: o ESP32 parou de publicar. A "Última leitura" confirma |
 | Canvas com fundo escuro | a URL da imagem em **Background > Image**, no frame de fora |
 | Canvas mostra o rótulo e não o número | o elemento está em Fixed em vez de Field, ou o nome do campo não bate |

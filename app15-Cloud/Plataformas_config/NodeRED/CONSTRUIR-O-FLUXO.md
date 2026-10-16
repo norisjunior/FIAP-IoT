@@ -137,5 +137,5 @@ O fluxo completo está em
 [Fluxo_1_dashboard_graphs_e_cmd.json](Fluxo_1_dashboard_graphs_e_cmd.json) — ≡ > Import,
 para comparar com o seu.
 
-Falta o histórico: [Fluxo_2_envio_InfluxDB.json](Fluxo_2_envio_InfluxDB.json) e os
+Falta o histórico: [Fluxo_2_INFLUXDBCLOUD.json](Fluxo_2_INFLUXDBCLOUD.json) e os
 [dashboards do Grafana](../Grafana/README.md).
