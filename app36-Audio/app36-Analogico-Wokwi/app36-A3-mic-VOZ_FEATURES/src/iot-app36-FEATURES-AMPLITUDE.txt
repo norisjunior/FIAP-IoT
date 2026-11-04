@@ -1,0 +1,49 @@
+#include <Arduino.h>
+
+#define MIC_PIN 35
+
+int centro = 0;
+
+// === Janela de análise ===
+const int JANELA_MS = 50;           // tamanho da janela em ms
+unsigned long inicioJanela = 0;
+int picoJanela = 0;
+
+void calibrarCentro() {
+  long soma = 0;
+  const int amostras = 500;
+  for (int i = 0; i < amostras; i++) {
+    soma += analogRead(MIC_PIN);
+    delay(2);
+  }
+  centro = soma / amostras;
+}
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Calibrando...");
+  delay(1000);
+  calibrarCentro();
+  Serial.printf("Centro calibrado: %d\n", centro);
+  inicioJanela = millis();
+}
+
+void loop() {
+  int raw = analogRead(MIC_PIN);
+  int amplitude = abs(raw - centro);
+
+  // Guarda o maior valor da janela
+  if (amplitude > picoJanela) {
+    picoJanela = amplitude;
+  }
+
+  // Quando a janela fecha, publica o pico e reseta
+  if (millis() - inicioJanela >= JANELA_MS) {
+    Serial.printf(">amplitude:%d\n", amplitude);
+    Serial.printf(">pico_janela:%d\n", picoJanela);
+    picoJanela = 0;
+    inicioJanela = millis();
+  }
+
+  delayMicroseconds(500);
+}
