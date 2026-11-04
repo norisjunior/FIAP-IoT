@@ -3,9 +3,8 @@
 Detecção de wake word rodando no celular, sem internet.
 Edge Impulse (MFCC + CNN) → C++ nativo → Flutter via FFI.
 
-> **Implementação:** aqui (`FIAP-IoT-eval`).
-> **Plano, auditoria e material de aula:** `FIAP-IoT-develop`, em
-> `app-FIoT-Audio/android-wakeword/`
+> **Implementação:** aqui.
+> **Plano, auditoria e material de aula:** em [`docs/`](docs/).
 
 - Wake word: **"Ei Fioti"**
 - Janela de 1,5 s a 16 kHz, avaliada a cada 500 ms
@@ -60,7 +59,7 @@ adb install -r build\app\outputs\flutter-apk\app-debug.apk
 
 ## Documentos
 
-Ficam no repositório `FIAP-IoT-develop`, em `app-FIoT-Audio/android-wakeword/`:
+Ficam em [`docs/`](docs/):
 
 | Arquivo | O que é |
 |---|---|

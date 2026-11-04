@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ei Fioti no ESP32</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: uma coluna de leitura, como um caderno de bancada; o simulador de ganho é a única peça larga. */
+:root {
+  --paper: #f4f6f7;
+  --panel: #ffffff;
+  --ink: #14212b;
+  --muted: #586977;
+  --line: #d3dbe1;
+  --signal: #1d5bb8;
+  --voice: #8eb0e2;
+  --data: #dfe8f4;
+  --clip: #cf3327;
+  --clip-soft: #fbe3e0;
+  --ok: #1b7f52;
+  --ok-soft: #dcf1e6;
+  --warn: #9a6a00;
+  --warn-soft: #f7ecd2;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1418; --panel: #151d23; --ink: #e5ecf1; --muted: #93a3af; --line: #27333c;
+    --signal: #72a6ff; --voice: #3f6bb0; --data: #1d2a36; --clip: #ff6a5c; --clip-soft: #3a1c1a;
+    --ok: #3fcb8b; --ok-soft: #133024; --warn: #e3b341; --warn-soft: #33290f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1418; --panel: #151d23; --ink: #e5ecf1; --muted: #93a3af; --line: #27333c;
+  --signal: #72a6ff; --voice: #3f6bb0; --data: #1d2a36; --clip: #ff6a5c; --clip-soft: #3a1c1a;
+  --ok: #3fcb8b; --ok-soft: #133024; --warn: #e3b341; --warn-soft: #33290f; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--f-body); font-size: 1.0625rem; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 2.5rem 4rem;
+}
+main { max-width: 46rem; margin: 0 auto; display: grid; gap: 3.25rem; }
+section { display: grid; gap: 1rem; min-width: 0; }
+h1, h2 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.1rem, 6vw, 3.1rem); line-height: 1.05; font-weight: 800; }
+h2 { font-size: clamp(1.4rem, 3.4vw, 1.75rem); line-height: 1.15; font-weight: 700; }
+p { margin: 0; max-width: 65ch; }
+code, .mono { font-family: var(--f-mono); font-size: 0.9em; }
+p code, li code, td code { background: var(--data); padding: 0.05em 0.35em; border-radius: 4px; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lead { font-size: 1.15rem; color: var(--ink); }
+.muted { color: var(--muted); }
+
+/* Antes / depois */
+.scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.75rem; margin-top: 0.5rem; }
+.score { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; display: grid; gap: 0.55rem; }
+.score .label { font-size: 0.9rem; color: var(--muted); }
+.score .value { font-family: var(--f-display); font-weight: 800; font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.score.bad .value { color: var(--clip); }
+.score.good .value { color: var(--ok); }
+.bar { position: relative; height: 10px; background: var(--data); border-radius: 5px; }
+.bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 5px; }
+.score.bad .bar > span { background: var(--clip); }
+.score.good .bar > span { background: var(--ok); }
+.bar::after { content: ""; position: absolute; left: 80%; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.score small { font-size: 0.85rem; color: var(--muted); }
+
+/* Fatos do sinal */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1.25rem; margin: 0.25rem 0 0; }
+.facts div { border-top: 2px solid var(--ink); padding-top: 0.6rem; display: grid; gap: 0.2rem; }
+.facts dt { font-family: var(--f-display); font-weight: 700; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.facts dd { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+/* Simulador */
+.lab { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem; display: grid; gap: 1rem; min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
+.shift { display: grid; gap: 0.3rem; flex: 1 1 16rem; min-width: 0; }
+.shift label { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; font-size: 0.9rem; color: var(--muted); }
+.shift output { font-family: var(--f-mono); font-weight: 600; font-size: 1.25rem; color: var(--ink); }
+input[type="range"] { width: 100%; accent-color: var(--signal); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button, .presets button {
+  font: inherit; font-size: 0.9rem; color: var(--ink); background: transparent; border: 0; padding: 0.45rem 0.8rem; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.presets { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.presets button { border: 1px solid var(--line); border-radius: 8px; }
+.presets button:hover, .seg button:hover { background: var(--data); }
+.seg button[aria-pressed="true"]:hover { background: var(--ink); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+.bits-wrap { overflow-x: auto; }
+.bits { display: grid; grid-template-columns: repeat(32, minmax(8px, 1fr)); gap: 2px; min-width: 18rem; }
+.bit { height: 26px; border-radius: 3px; background: var(--data); border: 2px solid transparent; }
+.bit.voice { background: var(--voice); }
+.bit.zero { background: repeating-linear-gradient(135deg, var(--data) 0 3px, transparent 3px 6px); }
+.bit.lost { background: var(--clip); }
+.bit.dim { opacity: 0.4; }
+.bit.win { border-top-color: var(--ink); border-bottom-color: var(--ink); }
+.bit.win-l { border-left-color: var(--ink); }
+.bit.win-r { border-right-color: var(--ink); }
+.bit-axis { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; min-width: 18rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; font-size: 0.82rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.legend i { width: 14px; height: 12px; border-radius: 2px; display: inline-block; background: var(--data); }
+.legend i.voice { background: var(--voice); }
+.legend i.zero { background: repeating-linear-gradient(135deg, var(--voice) 0 2px, transparent 2px 4px); }
+.legend i.lost { background: var(--clip); }
+.legend i.win { background: transparent; border: 2px solid var(--ink); }
+
+.scope { position: relative; width: 100%; height: 230px; }
+canvas { display: block; width: 100%; height: 100%; }
+.status { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: baseline; }
+.pill { font-family: var(--f-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 999px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.bad { background: var(--clip-soft); color: var(--clip); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.status p { font-size: 0.98rem; }
+
+pre { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 0.85rem 1rem; overflow-x: auto; font-family: var(--f-mono); font-size: 0.9rem; line-height: 1.5; }
+pre .c { color: var(--muted); }
+pre .hl { color: var(--ok); font-weight: 600; }
+
+/* Tabela dos ajustes */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--line); }
+thead th { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 400; border-bottom: 2px solid var(--ink); }
+tbody th { font-weight: 700; }
+td.sym { color: var(--clip); }
+
+/* Passos de diagnóstico */
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; counter-reset: passo; }
+ol.steps li { counter-increment: passo; display: grid; grid-template-columns: 2.2rem 1fr; gap: 0.75rem; align-items: start; }
+ol.steps li::before { content: counter(passo); font-family: var(--f-display); font-weight: 800; font-size: 1.15rem; width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; }
+ol.steps strong { display: block; }
+ol.steps li > div { min-width: 0; }
+.readout { font-family: var(--f-mono); font-size: 0.88rem; display: grid; gap: 0.15rem; margin-top: 0.4rem; }
+
+footer { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<main>
+  <header style="display:grid;gap:0.9rem">
+    <span class="eyebrow">app36-4 · ESP32-S3 + INMP441 · modelo WakeWord-EiFIOT</span>
+    <h1>Por que o ESP32 só ouvia ruído</h1>
+    <p class="lead">O modelo do Edge Impulse que acertava "Ei Fioti" no celular respondia <code>ruido</code> na placa. Nenhuma mensagem de erro apareceu. O defeito estava no caminho entre o microfone e o modelo.</p>
+    <div class="scores">
+      <div class="score bad">
+        <span class="label">Antes, com o ganho do exemplo</span>
+        <span class="value">0,52</span>
+        <div class="bar" aria-hidden="true"><span style="width:52%"></span></div>
+        <small>WakeWord, quase empatada com desconhecido (0,46). O traço é o limiar de 0,80.</small>
+      </div>
+      <div class="score good">
+        <span class="label">Depois do ajuste de ganho</span>
+        <span class="value">0,99</span>
+        <div class="bar" aria-hidden="true"><span style="width:99%"></span></div>
+        <small>WakeWord, falando a uns 30 cm do microfone.</small>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <h2>O som vira número</h2>
+    <p>O microfone mede a pressão do ar muitas vezes por segundo. Cada medida é um número: positivo quando o ar empurra a membrana, negativo quando puxa. Em silêncio, os números ficam perto de zero.</p>
+    <dl class="facts">
+      <div><dt>15 967</dt><dd>medidas por segundo, a taxa em que o modelo foi treinado</dd></div>
+      <div><dt>23 950</dt><dd>números em cada janela de 1,5 s, que o modelo transforma em uma decisão</dd></div>
+      <div><dt>24 → 16</dt><dd>bits por medida: o INMP441 entrega 24, o modelo espera 16</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>O ganho escolhe quais 16 bits ficam</h2>
+    <p>O INMP441 manda cada medida num pacote de 32 bits: 24 de som e 8 zeros no fim. O modelo usa <code>int16</code>, que vai de −32 768 a +32 767. Sobram bits, e o deslocamento <code>&gt;&gt; N</code> decide quais 16 entram.</p>
+
+    <div class="lab">
+      <div class="controls">
+        <div class="shift">
+          <label for="ganho">Deslocamento <output id="ganho-out" for="ganho">&gt;&gt; 13</output></label>
+          <input id="ganho" type="range" min="12" max="19" step="1" value="13">
+          <span class="muted" id="ganho-eq" style="font-size:0.85rem">igual a × 8, como no exemplo da Edge Impulse</span>
+        </div>
+        <div style="display:grid;gap:0.3rem">
+          <span class="muted" style="font-size:0.9rem">Distância de quem fala</span>
+          <div class="seg" role="group" aria-label="Distância de quem fala">
+            <button type="button" id="d30" aria-pressed="true">30 cm</button>
+            <button type="button" id="d5" aria-pressed="false">5 cm</button>
+          </div>
+        </div>
+      </div>
+      <div class="presets">
+        <button type="button" id="p13">Exemplo da Edge Impulse: &gt;&gt; 13</button>
+        <button type="button" id="p16">O que funcionou: &gt;&gt; 16</button>
+      </div>
+
+      <div>
+        <div class="bits-wrap">
+          <div class="bits" id="bits" aria-hidden="true"></div>
+          <div class="bit-axis"><span>bit 31</span><span>bit 0</span></div>
+        </div>
+        <p class="muted" id="bits-cap" style="font-size:0.9rem;margin-top:0.35rem"></p>
+        <div class="legend" style="margin-top:0.4rem">
+          <span><i class="win"></i>vai para o modelo</span>
+          <span><i class="voice"></i>usado pela voz</span>
+          <span><i></i>livre</span>
+          <span><i class="zero"></i>sempre zero</span>
+          <span><i class="lost"></i>perdido no topo</span>
+        </div>
+      </div>
+
+      <div class="scope"><canvas id="scope" aria-label="Forma de onda de Ei Fioti depois do deslocamento"></canvas></div>
+      <div class="status" aria-live="polite"><span class="pill" id="pill"></span><p id="status"></p></div>
+    </div>
+
+    <p>Um <code>int16</code> não para no teto. Quando o valor passa de 32 767, ele dá a volta para o lado negativo: 40 000 vira −25 536. A onda vira riscos de ponta a ponta, e o modelo lê esses riscos como ruído.</p>
+    <p>Com <code>&gt;&gt; 16</code> ficam exatamente os 16 bits de cima, então a conta nunca estoura. O <code>× 8</code> do exemplo foi feito para o microfone da placa ESP-EYE, que é mais fraco que o INMP441.</p>
+<pre><span class="c">// em capture_samples(), no wakeword.ino</span>
+sampleBuffer[x] = (int16_t)(rawBuffer[x] <span class="hl">&gt;&gt; 16</span>);</pre>
+  </section>
+
+  <section>
+    <h2>Os outros ajustes</h2>
+    <p>O exemplo da biblioteca foi escrito para outro microfone. Quase todo erro nessa adaptação tem o mesmo sintoma: o modelo responde <code>ruido</code> e nada avisa.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">O quê</th><th scope="col">No exemplo</th><th scope="col">No INMP441</th><th scope="col">Se ficar errado</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Tamanho da leitura</th><td>16 bits</td><td>32 bits, com 24 de som</td><td class="sym">lê a metade errada de cada medida</td></tr>
+          <tr><th scope="row">Canal</th><td>direito</td><td>esquerdo, com L/R no GND</td><td class="sym">lê silêncio: sempre <code>ruido</code></td></tr>
+          <tr><th scope="row">Pinos</th><td>26 · 32 · 33</td><td>SCK 5 · WS 6 · SD 7</td><td class="sym">lê silêncio: sempre <code>ruido</code></td></tr>
+          <tr><th scope="row">Ganho</th><td>× 8</td><td><code>&gt;&gt; 16</code>, sem ganho</td><td class="sym">a voz dá a volta e vira ruído</td></tr>
+          <tr><th scope="row">Memória</th><td>padrão da biblioteca</td><td>pedir no mínimo 1 byte</td><td class="sym"><code>MFCC failed (-1002)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:0.95rem">O ajuste de memória é do ESP32-S3: um pedido de 0 bytes volta vazio e o cálculo do MFCC desiste.</p>
+  </section>
+
+  <section>
+    <h2>Quando não reconhecer, olhe nesta ordem</h2>
+    <ol class="steps">
+      <li><div><strong>A onda, antes do modelo.</strong> Rode o <code>app36-1-mic-RAW</code> com o mesmo deslocamento e olhe o Teleplot. Fale a uns 30 cm: colado no microfone, o sopro do "F" de Fioti também entra no sinal. Nenhum pico pode encostar em ±32 000.</div></li>
+      <li><div><strong>Todas as notas, não só a vencedora.</strong> Cada classe conta uma parte da história:
+        <div class="readout"><span>silêncio      → ruido perto de 1,0</span><span>outra palavra → desconhecido</span><span>"Ei Fioti"    → WakeWord acima de 0,80</span></div>
+      </div></li>
+      <li><div><strong>Só então, o modelo.</strong> Se a onda está limpa e WakeWord para entre 0,5 e 0,7, o problema é o microfone: o treino foi gravado no celular, que soa diferente do INMP441. A correção é gravar amostras pelo INMP441 e treinar de novo.</div></li>
+    </ol>
+  </section>
+
+  <footer>Trilha app36-Audio · app36-4-WakeWord-ESP32 · ESP32-S3 Super Mini + INMP441. A onda do simulador é sintética, calibrada para dar picos de ±6 000 com <code>&gt;&gt; 16</code> a 30 cm, como na bancada.</footer>
+</main>
+
+<script>
+(function () {
+  const PTS = 6000, T = 1.5;
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n).toLocaleString("pt-BR").replace(/\./g, " ");
+
+  // Onda sintética de "Ei Fioti": vogais com harmônicos, o "F" e o "t" como chiado.
+  function makeVoice() {
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const seg = [
+      { a: 0.12, b: 0.42, f: [150, 128], v: 1 },
+      { a: 0.50, b: 0.585, noise: 0.32 },
+      { a: 0.585, b: 0.86, f: [142, 120], v: 0.95 },
+      { a: 0.925, b: 0.95, noise: 0.55 },
+      { a: 0.95, b: 1.18, f: [136, 112], v: 0.8 },
+    ];
+    const harm = [1, 0.62, 0.44, 0.3, 0.2, 0.12];
+    const x = new Float64Array(PTS), sopro = new Float64Array(PTS);
+    let max = 0;
+    for (let i = 0; i < PTS; i++) {
+      const t = (i / PTS) * T;
+      let s = (rnd() - 0.5) * 0.03;
+      for (const g of seg) {
+        if (t < g.a || t > g.b) continue;
+        const u = (t - g.a) / (g.b - g.a);
+        const env = Math.pow(Math.sin(Math.PI * u), 0.6);
+        if (g.noise) { s += (rnd() - 0.5) * 2 * g.noise * env; continue; }
+        const f = g.f[0] + (g.f[1] - g.f[0]) * u;
+        let h = 0;
+        for (let k = 0; k < harm.length; k++) h += harm[k] * Math.sin(2 * Math.PI * (k + 1) * f * t);
+        s += (g.v * env * h) / 1.8;
+      }
+      x[i] = s;
+      sopro[i] = 0.55 * Math.exp(-(((t - 0.55) / 0.09) ** 2)) + 0.4 * Math.exp(-(((t - 0.94) / 0.05) ** 2));
+      max = Math.max(max, Math.abs(s));
+    }
+    for (let i = 0; i < PTS; i++) x[i] /= max;
+    return { x, sopro };
+  }
+  const voz = makeVoice();
+
+  const state = { n: 13, dist: 30 };
+  const DOIS31 = 2147483647;
+
+  function compute() {
+    const pico = (state.dist === 30 ? 6000 : 24000) * 65536;
+    const div = Math.pow(2, state.n);
+    const raw = new Float64Array(PTS), v = new Float64Array(PTS), w = new Float64Array(PTS);
+    let peakRaw = 0, peakV = 0, over = 0;
+    for (let i = 0; i < PTS; i++) {
+      let r = voz.x[i] * pico + (state.dist === 5 ? voz.sopro[i] * 0.45 * pico : 0);
+      r = Math.max(-DOIS31 - 1, Math.min(DOIS31, r));
+      r = Math.round(r / 256) * 256; // os 8 bits de baixo são sempre zero
+      raw[i] = r;
+      const s = Math.floor(r / div);
+      v[i] = s;
+      w[i] = ((((s + 32768) % 65536) + 65536) % 65536) - 32768;
+      if (s > 32767 || s < -32768) over++;
+      peakRaw = Math.max(peakRaw, Math.abs(r));
+      peakV = Math.max(peakV, Math.abs(s));
+    }
+    return { v, w, over, peakV, topBit: Math.floor(Math.log2(peakRaw)) };
+  }
+
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function drawBits(r) {
+    const box = $("bits");
+    if (!box.children.length) for (let b = 31; b >= 0; b--) { const d = document.createElement("div"); d.className = "bit"; box.appendChild(d); }
+    const lo = state.n, hi = Math.min(31, state.n + 15), signo = state.n + 15;
+    [...box.children].forEach((el, idx) => {
+      const b = 31 - idx;
+      const cls = ["bit"];
+      if (b < 8) cls.push("zero");
+      else if (b <= r.topBit) cls.push(b >= signo && b < 31 ? "lost" : "voice");
+      if (b < lo) cls.push("dim");
+      if (b >= lo && b <= hi) { cls.push("win"); if (b === hi) cls.push("win-l"); if (b === lo) cls.push("win-r"); }
+      el.className = cls.join(" ");
+    });
+    $("bits-cap").textContent = state.n + 15 > 31
+      ? `A janela pega os bits ${lo} a 31 e repete o sinal no espaço que sobra. Os bits abaixo do ${lo} são descartados.`
+      : `A janela pega os bits ${lo} a ${hi}. Os bits abaixo do ${lo} são descartados${hi < 31 ? `; o que a voz usar acima do bit ${hi - 1} se perde` : ""}.`;
+  }
+
+  function drawScope(r) {
+    const c = $("scope"), box = c.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    const W = box.clientWidth, H = box.clientHeight;
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    const g = c.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    const left = 58, right = 8, top = 10, bottom = 10;
+    const pw = W - left - right, ph = H - top - bottom;
+    const Y = (val) => top + ph / 2 - (val / 40000) * (ph / 2);
+    g.font = `11px ${css("--f-mono") || "monospace"}`;
+    g.textBaseline = "middle"; g.textAlign = "right";
+    g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.lineWidth = 1;
+    for (const val of [-20000, 0, 20000]) {
+      g.beginPath(); g.moveTo(left, Y(val) + 0.5); g.lineTo(W - right, Y(val) + 0.5); g.stroke();
+      g.fillText(fmt(val), left - 6, Y(val));
+    }
+    g.setLineDash([4, 4]); g.strokeStyle = css("--clip");
+    for (const val of [32767, -32768]) { g.beginPath(); g.moveTo(left, Y(val) + 0.5); g.lineTo(W - right, Y(val) + 0.5); g.stroke(); }
+    g.setLineDash([]); g.fillStyle = css("--clip");
+    g.fillText("+32 767", left - 6, Y(32767)); g.fillText("−32 768", left - 6, Y(-32768));
+    const per = PTS / pw;
+    for (let px = 0; px < pw; px++) {
+      const a = Math.floor(px * per), b = Math.min(PTS, Math.floor((px + 1) * per) + 1);
+      let mn = Infinity, mx = -Infinity, wrapped = false;
+      for (let i = a; i < b; i++) {
+        mn = Math.min(mn, r.w[i]); mx = Math.max(mx, r.w[i]);
+        if (r.v[i] > 32767 || r.v[i] < -32768) wrapped = true;
+      }
+      g.strokeStyle = wrapped ? css("--clip") : css("--signal");
+      g.beginPath(); g.moveTo(left + px + 0.5, Y(mx)); g.lineTo(left + px + 0.5, Y(mn) + 1); g.stroke();
+    }
+  }
+
+  function render() {
+    const r = compute();
+    $("ganho").value = state.n;
+    $("ganho-out").textContent = ">> " + state.n;
+    const d = 16 - state.n;
+    $("ganho-eq").textContent = d > 0
+      ? `igual a × ${2 ** d} em relação aos 16 bits de cima${state.n === 13 ? ", como no exemplo da Edge Impulse" : ""}`
+      : d === 0 ? "exatamente os 16 bits de cima, sem ganho" : `igual a ÷ ${2 ** -d} em relação aos 16 bits de cima`;
+    $("d30").setAttribute("aria-pressed", state.dist === 30);
+    $("d5").setAttribute("aria-pressed", state.dist === 5);
+    const pill = $("pill"), st = $("status");
+    if (r.over > 0) {
+      pill.className = "pill bad"; pill.textContent = "estoura";
+      const pct = (100 * r.over) / PTS;
+      st.textContent = `A voz pede ±${fmt(r.peakV)}, e o int16 guarda até ±32 767. ${pct < 1 ? "Menos de 1" : fmt(pct)}% das amostras deram a volta.`;
+    } else if (r.peakV < 2000) {
+      pill.className = "pill warn"; pill.textContent = "fraco";
+      st.textContent = `Pico de ±${fmt(r.peakV)}. Cabe, mas a voz usa pouco da escala e o detalhe fino vai embora.`;
+    } else {
+      pill.className = "pill ok"; pill.textContent = "cabe";
+      st.textContent = `Pico de ±${fmt(r.peakV)}. Nenhuma amostra deu a volta.`;
+    }
+    drawBits(r);
+    drawScope(r);
+  }
+
+  $("ganho").addEventListener("input", (e) => { state.n = +e.target.value; render(); });
+  $("d30").addEventListener("click", () => { state.dist = 30; render(); });
+  $("d5").addEventListener("click", () => { state.dist = 5; render(); });
+  $("p13").addEventListener("click", () => { state.n = 13; render(); });
+  $("p16").addEventListener("click", () => { state.n = 16; render(); });
+
+  let raf = 0;
+  const redraw = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
+  new ResizeObserver(redraw).observe($("scope").parentElement);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
+  new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
+  render();
+})();
+</script>
+</body>
+</html>

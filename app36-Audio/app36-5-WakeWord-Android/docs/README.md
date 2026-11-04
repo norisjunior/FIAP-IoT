@@ -1,0 +1,30 @@
+# Wake Word no Android — "Ei Fioti"
+
+Trilho irmão das etapas do ESP32 ([`app36-Audio`](../../)), rodando no celular.
+Mesmo modelo do Edge Impulse, mesmo MFCC, outro alvo.
+
+**Este trilho é quem produziu o modelo.** O projeto `WakeWord-EiFIOT` treinado aqui é o mesmo
+que as etapas 3 a 5 do ESP32 vão usar — lá com Deployment int8, aqui com float32. Por isso a
+wake word da trilha inteira é "Ei Fioti", e não a "FIOT" que o plano antigo previa.
+
+> **Plano e documentação:** aqui, em `docs/`.
+> **Implementação:** a pasta acima, [`app36-5-WakeWord-Android/`](../).
+
+## Documentos
+
+| Arquivo | O que é |
+|---|---|
+| [PLANO.md](PLANO.md) | As etapas do projeto |
+| [AUDITORIA.md](AUDITORIA.md) | O que está feito e o que falta |
+| [ETAPA1-COLETA.md](ETAPA1-COLETA.md) | Roteiro de gravação do dataset |
+| [AULA-WakeWord.md](AULA-WakeWord.md) | Slides da aula + instruções de montagem no PowerPoint |
+
+## Resumo do que foi construído
+
+- Edge Impulse: MFCC + CNN, janela de 1,5 s a 16 kHz, 3 classes
+- Exportado como **Android library (C++)**, float32 + EON
+- App Flutter com ponte **Dart FFI** para o SDK nativo
+- Inferência: **2 a 4 ms** no Galaxy A52
+- Ao detectar, captura 5 s do acelerômetro e volta
+
+Para compilar, veja o `README.md` do lado da implementação.
