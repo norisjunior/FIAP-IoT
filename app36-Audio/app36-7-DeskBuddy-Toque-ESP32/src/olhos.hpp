@@ -17,6 +17,7 @@ namespace olhos {
 // Aparencia e tempo: mexa aqui
 const uint16_t COR         = TFT_CYAN;
 const uint16_t COR_MUDO    = TFT_RED;  // TOQUE: a cor dos olhos no modo mudo
+const uint16_t COR_FELIZ   = TFT_MAGENTA;  // TOQUE: a cor do "^ ^" depois de um toque
 const int      LARGURA     = 62;    // de cada olho, em pixels
 const int      ALTURA      = 84;
 const int      RAIO        = 18;    // arredondamento dos cantos
@@ -59,11 +60,15 @@ inline void desenhaOlho(int cx, int cy, float aberto, uint16_t cor) {  // TOQUE:
   else       quadro.fillRoundRect(cx - LARGURA / 2, cy - h / 2, LARGURA, h, min(RAIO, h / 2), cor);
 }
 
-// TOQUE: olho feliz, um arco "^": uma elipse da cor do olho com a parte de baixo apagada
-// por uma elipse preta um pouco mais larga
+// TOQUE: olho feliz, um "^": duas linhas grossas, de pontas redondas, que se encontram no alto.
+// Sem a cor de fundo, a drawWideLine le' o pixel de baixo para suavizar a borda: assim nao
+// fica uma emenda escura onde as duas linhas se cruzam.
 inline void desenhaOlhoFeliz(int cx, int cy) {
-  quadro.fillEllipse(cx, cy, LARGURA / 2, ALTURA / 3, COR);
-  quadro.fillEllipse(cx, cy + ALTURA / 4, LARGURA / 2 + 6, ALTURA / 3, TFT_BLACK);
+  const int meio = LARGURA / 2 - 6;  // da ponta ao centro, na horizontal
+  const int alto = 16;               // da ponta ao bico, na vertical (metade)
+  const int grossura = 14;
+  quadro.drawWideLine(cx - meio, cy + alto, cx, cy - alto, grossura, COR_FELIZ);
+  quadro.drawWideLine(cx, cy - alto, cx + meio, cy + alto, grossura, COR_FELIZ);
 }
 
 inline void desenhaZzz(uint32_t agora) {

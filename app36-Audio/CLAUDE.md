@@ -12,6 +12,7 @@ até uma wake word que aciona um atuador. Pastas independentes, em ordem crescen
 | `app36-5-WakeWord-Android` | a wake word no Android (Flutter + FFI), com `docs/` |
 | `app36-6-DeskBuddy-ESP32` | o app36-4 com olhos na tela redonda GC9A01 (TFT_eSPI, SPI nos GPIOs 9–13) |
 | `app36-7-DeskBuddy-Toque-ESP32` | o app36-6 com touch TTP223B no GPIO 4 e o LED RGB da placa (WS2812, GPIO 48) |
+| `app36-8-DeskBuddy-DeepSleep-ESP32` | o app36-7 com deep sleep (toque longo), LED travado com `gpio_hold_en` e acordar por ext0 no GPIO 4 |
 | `app36-Analogico-Wokwi/` | as versões antigas com microfone analógico (os antigos `app28-*`) |
 
 O plano completo está em [PLANO.md](PLANO.md); a tabela no topo dele liga os nomes antigos
