@@ -112,7 +112,7 @@ Depois:
 
 ## Decisões em aberto
 
-- [ ] Nome e número do app novo (um `app36-8-...` derivado do app36-7, que já tem toque e LED?).
+- [ ] Nome e número do app novo (um `app36-9-...` derivado do app36-8, que já tem toque, LED e deep sleep?).
 - [ ] Janela fixa ou VAD pelo RMS.
 - [ ] HTTP POST ou WebSocket.
 - [ ] Ligar a PSRAM da Super Mini ou mandar em pedaços.

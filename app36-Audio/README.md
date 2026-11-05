@@ -68,6 +68,7 @@ depois a placa, e o celular nativo quando a turma já souber Android.
 | 5 | [app36-5-WakeWord-Android](app36-5-WakeWord-Android/) | Android (Flutter + FFI) | Android library C++ |
 | 6 | [app36-6-DeskBuddy-ESP32](app36-6-DeskBuddy-ESP32/) | o app36-4 com olhos numa tela redonda, que abrem com a wake word | Arduino library |
 | 7 | [app36-7-DeskBuddy-Toque-ESP32](app36-7-DeskBuddy-Toque-ESP32/) | o app36-6 com botão touch (acordar, modo mudo) e o LED RGB da placa mostrando o estado | Arduino library |
+| 8 | [app36-8-DeskBuddy-DeepSleep-ESP32](app36-8-DeskBuddy-DeepSleep-ESP32/) | o app36-7 com deep sleep: o toque longo apaga a tela e põe para dormir, com o LED vermelho aceso | Arduino library |
 
 As próximas etapas (MQTT, ASSISTENTE com ALERTA/LOCALIZAÇÃO e EMERGÊNCIA) ainda estão só no
 [PLANO.md](PLANO.md).

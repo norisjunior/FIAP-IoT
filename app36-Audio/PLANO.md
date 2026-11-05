@@ -333,6 +333,7 @@ app36-Audio/
 ├── app36-5-WakeWord-Android/          Flutter + FFI, com docs/ do trilho Android
 ├── app36-6-DeskBuddy-ESP32/           app36-4 + olhos na tela redonda GC9A01
 ├── app36-7-DeskBuddy-Toque-ESP32/     app36-6 + botão touch e LED RGB de estado
+├── app36-8-DeskBuddy-DeepSleep-ESP32/ app36-7 + deep sleep pelo toque longo
 └── app36-Analogico-Wokwi/             KY038/MAX9814 no Wokwi (os antigos app28)
 ```
 

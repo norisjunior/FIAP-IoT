@@ -1,0 +1,6 @@
+.pio
+.vscode
+
+# Biblioteca do Edge Impulse: o .zip em lib/ vai para o Git; a pasta
+# descompactada dele (<PROJETO>_inferencing/) nao. Veja o README, passo 2.
+lib/*/

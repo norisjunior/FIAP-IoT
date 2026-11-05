@@ -12,7 +12,7 @@ versão com comando de voz, vai querer dizer "pode falar".
 |---|---|---|---|
 | **Dormindo** | ao ligar, ou 6 s sem ouvir a wake word | fechados, com "Zz" | amarelo |
 | **Acordado** | **"Ei Fioti"** ou **toque curto** | abertos, olham em volta e piscam | verde |
-| **Feliz** | toque curto quando já está acordado | arcos "^ ^" por 1,5 s | verde |
+| **Feliz** | toque curto quando já está acordado | "^ ^" em magenta por 1,5 s | verde |
 | **Mudo** | **toque longo** (2 s) | fechados, vermelhos e parados | vermelho |
 
 Outro toque longo tira do mudo, e ele volta a dormir. No mudo, nem a wake word nem o toque
@@ -81,12 +81,14 @@ A primeira compilação leva uns 3 minutos, por causa da biblioteca do Edge Impu
 
 | Arquivo | O quê |
 |---|---|
-| `olhos.hpp` | no topo: `COR`, `COR_MUDO`, `ACORDADO_MS`, `FELIZ_MS` |
+| `olhos.hpp` | no topo: `COR`, `COR_MUDO`, `COR_FELIZ`, `ACORDADO_MS`, `FELIZ_MS` |
 | `toque.hpp` | `LONGO_MS`, quanto tempo segurar para o toque longo |
 | `led.hpp` | as três cores e o brilho (40 de 255; no máximo o LED ofusca) |
 
 ## Próximos passos
 
+- **Dormir de verdade**: o toque longo põe o ESP32 em deep sleep, no lugar do mudo. Está no
+  [app36-8](../app36-8-DeskBuddy-DeepSleep-ESP32/).
 - **Botão de emergência**: um gesto do toque publica um alerta por MQTT (a etapa
   `EMERGÊNCIA` do [PLANO.md](../PLANO.md)).
 - **Apertar para falar**: com o comando de voz, gravar só enquanto o dedo está no botão. Ver
