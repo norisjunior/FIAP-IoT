@@ -1,17 +1,9 @@
-/* app17-9-accfeaturesinflux — features de aceleração por janela (1 s @ 100 Hz), publicadas via MQTT (JSON). */
-/*
-PARA USAR NO WOKWI:
-- Ajustar as credenciais WiFi e o IP do MQTT_SERVER
-- Ajustar #define MPU_TYPE:
-  - #define MPU_TYPE MPU6050
-- Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);`
-*/
+/* app17-6-accfeaturesinflux — features de aceleração por janela (1 s @ 100 Hz), publicadas via MQTT (JSON). */
 
 #include <Arduino.h>
 #include "FastIMU.h"
 #include <Wire.h>
 #include <math.h>
-#include <time.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <PubSubClient.h>
@@ -36,13 +28,6 @@ WiFiClient wifiClient;
 #define MQTT_CLIENT_ID "IoTDevJanelaFixa001"
 PubSubClient mqttClient(wifiClient);
 
-/* ---- Relógio (NTP) ---- */
-const char* NTP_SERVER_1 = "pool.ntp.org";
-const char* NTP_SERVER_2 = "time.google.com";
-uint64_t epochBaseMs        = 0;
-uint32_t millisNaSync       = 0;
-bool     relogioSincronizado = false;
-
 /* ---- Pinos ---- */
 #define BTN_COLETA   21   // inicia/para a coleta
 #define BTN_ANOMALIA 18   // seleciona NORMAL/ANOMALIA
@@ -52,7 +37,7 @@ bool     relogioSincronizado = false;
 #define SCL_PIN      23
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
-#define MPU_TYPE MPU6500
+#define MPU_TYPE MPU6050 // ou MPU6500 (WHO_AM_I = 0x70)
 MPU_TYPE mpu;
 
 calData calib = { 0 };
@@ -83,10 +68,8 @@ const int AMOSTRA_MS = 10; // 100 Hz
 
 /* ---- Protótipos ---- */
 void conectarWiFi();
-void sincronizarRelogio();
-uint64_t agoraEpochMs();
 void conectarMQTT();
-void publicarFeatures(const char* label, uint64_t ts_epoch_ms,
+void publicarFeatures(const char* label, unsigned long ts_ms,
                       float mx, float my, float mz,
                       float sx, float sy, float sz,
                       float rx, float ry, float rz, float rmag);
@@ -126,24 +109,14 @@ void setup() {
     Serial.println("Erro: MPU não encontrado");
     while (1);
   }
-  mpu.setAccelRange(8);
-  // Anti-aliasing p/ amostragem a 100 Hz (Nyquist 50 Hz): o filtro interno do
-  // acelerômetro precisa cortar abaixo de 50 Hz. São duas chamadas porque
-  // nenhuma delas sozinha cobre os dois chips:
-  mpu.setAccelLPF(41);   // MPU6500: escreve ACCEL_CONFIG2 -> 41 Hz.
-                         // MPU6050: o FastIMU não implementa, devolve -1 sem fazer nada.
-  mpu.setGyroLPF(42);    // MPU6050: o DLPF é COMPARTILHADO, então é ESTA linha que
-                         // filtra o acelerômetro (44 Hz). MPU6500: só o giroscópio.
 
   Serial.println("Mantenha o sensor parado e nivelado para calibrar...");
   delay(2000);
-  // ---- ATENÇÃO: no Wokwi, COMENTE a linha abaixo ----
-  // O simulador não implementa a FIFO do MPU, e o FastIMU divide pela contagem
-  // de pacotes lidos dela. Com zero pacotes o ESP32 ABORTA, logo depois da
-  // mensagem acima, com "Guru Meditation Error: IntegerDivideByZero".
-  // No ESP32 físico ela é necessária: é o que zera o viés do sensor.
+  // Calibração (no Wokwi, comente esta linha)
   mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
+  // Fundo de escala ±8 g
+  mpu.setAccelRange(8);
 
   Serial.println("MPU iniciado");
 
@@ -155,7 +128,6 @@ void setup() {
   digitalWrite(LED_ONBOARD, HIGH);
 
   conectarWiFi();
-  sincronizarRelogio();
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setKeepAlive(60);
@@ -168,7 +140,7 @@ void setup() {
   Serial.println("  LED aceso fixo = NORMAL | LED piscando = ANOMALIA");
   Serial.println("  NORMAL = MPU parado | ANOMALIA = movimente o MPU durante a coleta");
   Serial.printf("  Tópico MQTT: %s\r\n\r\n", MQTT_PUB_TOPIC);
-  Serial.println("ts_epoch_ms,label,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,rms_ax,rms_ay,rms_az,rms_mag");
+  Serial.println("ts_ms,label,mean_ax,mean_ay,mean_az,std_ax,std_ay,std_az,rms_ax,rms_ay,rms_az,rms_mag");
 }
 
 /* ============================== LOOP =============================== */
@@ -230,12 +202,7 @@ void loop() {
 
   // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
-    // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o atraso
-    // de um ciclo não empurra o próximo e a taxa não escorrega abaixo de 100 Hz.
     tempoAnterior += AMOSTRA_MS;
-    // Se ainda estamos mais de uma amostra atrasados (reconexão MQTT, publish
-    // lento), não adianta amostrar em rajada para recuperar: as amostras sairiam
-    // sem espaçamento real. Recomeça do agora.
     if (millis() - tempoAnterior >= AMOSTRA_MS) tempoAnterior = millis();
     AccelData accel;
     mpu.update();
@@ -247,8 +214,7 @@ void loop() {
 
     if (indice >= TAMANHO_JANELA) {
       const char* label = anomaliaAtiva ? "ligado_anomalia" : "ligado_normal";
-
-      uint64_t ts_epoch_ms = agoraEpochMs();
+      unsigned long ts_ms = millis();   // ms desde o boot
 
       float mx   = calcMean(ax_buf, TAMANHO_JANELA);
       float my   = calcMean(ay_buf, TAMANHO_JANELA);
@@ -261,11 +227,10 @@ void loop() {
       float rz   = calcRMS(az_buf,  TAMANHO_JANELA);
       float rmag = calcRMSMagnitude(ax_buf, ay_buf, az_buf, TAMANHO_JANELA);
 
-      Serial.printf("%llu,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
-                    (unsigned long long)ts_epoch_ms, label,
-                    mx, my, mz, sx, sy, sz, rx, ry, rz, rmag);
+      Serial.printf("%lu,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
+                    ts_ms, label, mx, my, mz, sx, sy, sz, rx, ry, rz, rmag);
 
-      publicarFeatures(label, ts_epoch_ms, mx, my, mz, sx, sy, sz, rx, ry, rz, rmag);
+      publicarFeatures(label, ts_ms, mx, my, mz, sx, sy, sz, rx, ry, rz, rmag);
 
       indice = 0;
     }
@@ -275,7 +240,6 @@ void loop() {
 /* ---- WiFi ---- */
 void conectarWiFi() {
   Serial.printf("Conectando ao WiFi %s", WIFI_SSID);
-  // TxPower reduzido: evita brownout/reboot ao ligar o rádio nesta placa.
   WiFi.mode(WIFI_STA);
   WiFi.setTxPower(WIFI_POWER_2dBm);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -287,30 +251,6 @@ void conectarWiFi() {
   Serial.println("");
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
-}
-
-/* ---- Relógio (NTP) ---- */
-void sincronizarRelogio() {
-  configTime(0, 0, NTP_SERVER_1, NTP_SERVER_2);   // UTC (offset 0)
-  Serial.print("Sincronizando relógio via NTP");
-  struct tm tm;
-  for (int i = 0; i < 16 && !relogioSincronizado; i++) {
-    if (getLocalTime(&tm, 500)) relogioSincronizado = true;
-    else { Serial.print('.'); delay(500); }
-  }
-  if (relogioSincronizado) {
-    epochBaseMs  = (uint64_t)time(nullptr) * 1000ULL;
-    millisNaSync = millis();
-    Serial.printf(" OK (%04d-%02d-%02d %02d:%02d:%02d UTC)\r\n",
-                  tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                  tm.tm_hour, tm.tm_min, tm.tm_sec);
-  } else {
-    Serial.println(" FALHOU. ts_epoch_ms vira uptime; a ponte usa o horário de recepção.");
-  }
-}
-
-uint64_t agoraEpochMs() {
-  return epochBaseMs + (uint64_t)(millis() - millisNaSync);
 }
 
 /* ---- MQTT ---- */
@@ -326,14 +266,14 @@ void conectarMQTT() {
   }
 }
 
-void publicarFeatures(const char* label, uint64_t ts_epoch_ms,
+void publicarFeatures(const char* label, unsigned long ts_ms,
                       float mx, float my, float mz,
                       float sx, float sy, float sz,
                       float rx, float ry, float rz, float rmag) {
   JsonDocument doc;
-  doc["device"]       = MQTT_CLIENT_ID;
-  doc["label"]        = label;
-  doc["ts_epoch_ms"]  = ts_epoch_ms;
+  doc["device"] = MQTT_CLIENT_ID;
+  doc["label"]  = label;
+  doc["ts_ms"]  = ts_ms;
   doc["mean_ax"] = serialized(String(mx, 3));
   doc["mean_ay"] = serialized(String(my, 3));
   doc["mean_az"] = serialized(String(mz, 3));

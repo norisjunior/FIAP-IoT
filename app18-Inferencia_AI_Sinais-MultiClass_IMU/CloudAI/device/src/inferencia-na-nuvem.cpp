@@ -1,43 +1,4 @@
-/* inferencia-na-nuvem — o ESP32 mede, pergunta para a nuvem e obedece.
-
-   As features são as mesmas com que o modelo foi treinado (janela de 100 amostras @ 100 Hz), mas
-   aqui o dispositivo não rotula nada: publica a janela em
-   FIAPIoT/motor/multiclasse e a classe prevista volta em
-   FIAPIoT/motor/multiclasse/cmd. Cada classe acende UMA saída:
-
-       operando          LED azul      (4)
-       inclinado_frente  LED amarelo  (21)
-       inclinado_tras    LED vermelho (18)
-       anomalia          buzzer       (19)
-
-   Repare no que não existe aqui: nenhum if sobre vibração ou inclinação, nenhum
-   limiar — e nenhum botão. O app de coleta tinha botões porque era um GERADOR DE
-   DATASET, onde um humano rotulava cada janela e a coleta parava em 30. Este é
-   um MONITOR de condição: roda sem parar, e quem rotula é o modelo.
-
-   Os pinos 21 e 18 eram justamente os dois BOTÕES do app de coleta — de entrada do
-   rótulo humano viraram saída do rótulo do modelo.
-
-   Como a nuvem responde uma vez por segundo, a saída MANTÉM a última decisão
-   recebida até a próxima chegar. Não há temporização nenhuma no firmware: a
-   saída é a memória. Por isso quem acende os LEDs é a própria receberComando()
-   — o loop não precisa cuidar disso.
-*/
-/*
-PARA USAR NO WOKWI:
-- Ajustar as credenciais WiFi e o IP do MQTT_SERVER (ou usar as linhas comentadas do Wokwi abaixo)
-- Ajustar #define MPU_TYPE:
-  - #define MPU_TYPE MPU6050
-- Remover/comentar a linha `mpu.calibrateAccelGyro(&calib);` — sem isso o ESP32
-  ABORTA com "Guru Meditation Error: IntegerDivideByZero" (o Wokwi não tem a
-  FIFO do MPU)
-- As classes de INCLINAÇÃO saem no simulador: o MPU6050 do Wokwi tem controle
-  de aceleração em X, Y e Z. Ajuste até o Serial mostrar mean_az perto de 0,91
-  e mean_ax perto de ±0,42, que é o que 25 graus produzem.
-- A ANOMALIA não sai. Ela é vibração, e com o controle parado as 100 amostras
-  da janela ficam idênticas: std_* e p2p_mag dão zero.
-- Ainda assim serve para testar o loop MQTT -> API -> MQTT.
-*/
+/* inferencia-na-nuvem — o ESP32 publica a janela e acende a saída da classe que a nuvem devolve */
 
 #include <Arduino.h>
 #include "FastIMU.h"
@@ -71,9 +32,6 @@ PubSubClient mqttClient(wifiClient);
 /* ---- Pinos ---- */
 #define SDA_PIN      22
 #define SCL_PIN      23
-/* Uma saída por classe: a que estiver ligada é a resposta da nuvem.
-   Repare que 21 e 18 eram os BOTÕES do app de coleta — os pinos com que um humano
-   rotulava agora mostram o rótulo que o modelo escolheu. */
 #define LED_AZUL      4   // operando
 #define LED_AMARELO  21   // inclinado_frente
 #define LED_VERMELHO 18   // inclinado_tras
@@ -81,12 +39,12 @@ PubSubClient mqttClient(wifiClient);
 #define LED_ONBOARD   2   // LED onboard: aceso = conectado ao broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
-#define MPU_TYPE MPU6500
+#define MPU_TYPE MPU6500 // no Wokwi: MPU6050
 MPU_TYPE mpu;
 
 calData calib = { 0 };
 
-/* ---- Amostragem: 100 Hz, janela de 1 s (mesmo padrão da coleta) ---- */
+/* ---- Amostragem: 100 Hz, janela de 1 s ---- */
 const int FS_HZ          = 100;
 const int AMOSTRA_MS     = 1000 / FS_HZ;      // 10 ms
 const int TAMANHO_JANELA = FS_HZ;             // 100 amostras = 1 s
@@ -108,9 +66,7 @@ void publicarJanela(float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p);
 
-/* =========================== Features ===========================
-   As 8 que o modelo recebe: mean_* (orientação), std_* e std_mag (vibração)
-   e p2p_mag (pior caso da janela). */
+/* =========================== Features =========================== */
 float calcMean(float arr[], int n) {
   float soma = 0;
   for (int i = 0; i < n; i++) soma += arr[i];
@@ -147,28 +103,18 @@ void setup() {
     Serial.println("Erro: MPU não encontrado");
     while (1);
   }
-  mpu.setAccelRange(8);
-  // Anti-aliasing p/ amostragem a 100 Hz (Nyquist 50 Hz): o filtro interno do
-  // acelerômetro precisa cortar abaixo de 50 Hz. São duas chamadas porque
-  // nenhuma delas sozinha cobre os dois chips:
-  mpu.setAccelLPF(41);   // MPU6500: escreve ACCEL_CONFIG2 -> 41 Hz.
-                         // MPU6050: o FastIMU não implementa, devolve -1 sem fazer nada.
-  mpu.setGyroLPF(42);    // MPU6050: o DLPF é COMPARTILHADO, então é ESTA linha que
-                         // filtra o acelerômetro (44 Hz). MPU6500: só o giroscópio.
 
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
-  // ---- ATENÇÃO: no Wokwi, COMENTE a linha abaixo ----
-  // O simulador não implementa a FIFO do MPU, e o FastIMU divide pela contagem
-  // de pacotes lidos dela. Com zero pacotes o ESP32 ABORTA, logo depois da
-  // mensagem acima, com "Guru Meditation Error: IntegerDivideByZero".
-  // No ESP32 físico ela é necessária: é o que zera o viés do sensor.
+  // Calibração (no Wokwi, comente esta linha)
   mpu.calibrateAccelGyro(&calib);
   mpu.init(calib, 0x68);
+  // Fundo de escala ±8 g
+  mpu.setAccelRange(8);
 
   Serial.println("MPU iniciado");
 
-  // As quatro saídas de classe, mais o LED da placa.
+  // Saídas
   pinMode(LED_AZUL,     OUTPUT);
   pinMode(LED_AMARELO,  OUTPUT);
   pinMode(LED_VERMELHO, OUTPUT);
@@ -178,20 +124,17 @@ void setup() {
   apagarTodasAsSaidas();
   digitalWrite(LED_ONBOARD, LOW);
 
-  // Teste de ligação: acende uma saída por vez, para você conferir se cada
-  // componente está no pino certo ANTES de depender do modelo. Se o LED
-  // amarelo não acender aqui, o problema é o fio — não a rede neural.
-  // Os delay() aqui não atrapalham: o setup roda uma vez, antes do loop.
+  // Teste das saídas
   Serial.println("Testando as saidas...");
   digitalWrite(LED_AZUL,     HIGH); delay(400); digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
   digitalWrite(LED_VERMELHO, HIGH); delay(400); digitalWrite(LED_VERMELHO, LOW);
-  tone(BUZZER, 500, 250); noTone(BUZZER);   // buzzer passivo: precisa de frequencia
+  tone(BUZZER, 500, 250); noTone(BUZZER);   // buzzer passivo
 
   conectarWiFi();
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
-  mqttClient.setCallback(receberComando);   // é aqui que a resposta da nuvem entra
+  mqttClient.setCallback(receberComando);   // resposta da nuvem
   mqttClient.setKeepAlive(60);
   mqttClient.setSocketTimeout(30);
   mqttClient.setBufferSize(512);
@@ -216,14 +159,9 @@ void loop() {
 
   digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
 
-  // --- Coleta IMU a 100 Hz, direto, sem esperar comando ---
+  // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
-    // Avança em passos fixos de AMOSTRA_MS (e não "= millis()"): assim o atraso
-    // de um ciclo não empurra o próximo e a taxa não escorrega abaixo de 100 Hz.
     tempoAnterior += AMOSTRA_MS;
-    // Se ainda estamos mais de uma amostra atrasados (reconexão MQTT, publish
-    // lento), não adianta amostrar em rajada para recuperar: as amostras sairiam
-    // sem espaçamento real. Recomeça do agora.
     if (millis() - tempoAnterior >= AMOSTRA_MS) tempoAnterior = millis();
 
     AccelData accel;
@@ -254,8 +192,7 @@ void loop() {
   }
 }
 
-/* ---- Apaga as quatro saídas de classe ----
-   Chamada antes de acender a saída nova, para nunca ficarem duas ligadas. */
+/* ---- Apaga as quatro saídas ---- */
 void apagarTodasAsSaidas() {
   digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_AMARELO,  LOW);
@@ -266,7 +203,6 @@ void apagarTodasAsSaidas() {
 /* ---- WiFi ---- */
 void conectarWiFi() {
   Serial.printf("Conectando ao WiFi %s", WIFI_SSID);
-  // TxPower reduzido: evita brownout/reboot ao ligar o rádio nesta placa.
   WiFi.mode(WIFI_STA);
   WiFi.setTxPower(WIFI_POWER_2dBm);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -295,28 +231,21 @@ void conectarMQTT() {
   }
 }
 
-/* ---- A resposta da nuvem chega aqui ----
-   É a única função que mexe nas saídas. Chega o NOME da classe, comparamos
-   com os quatro nomes possíveis e acendemos a saída daquele que casar.
-
-   Não há nada de temporal aqui: acendeu, FICA aceso até chegar a próxima
-   mensagem — e ela chega a cada segundo. A saída é a memória do dispositivo. */
+/* ---- Resposta da nuvem ---- */
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
-  // O payload MQTT não termina em '\0', por isso o String recebe o tamanho junto.
   String classe(conteudo, tamanho);
   classe.trim();
 
-  // Mostra o que chegou ANTES de julgar: se o payload vier errado (um JSON
-  // inteiro, por exemplo), é aqui que se vê o que o n8n publicou de fato.
+  // Mostra o que chegou
   Serial.println("--- MQTT recebido ---");
   Serial.printf("  topico:  %s\r\n", topico);
   Serial.printf("  tamanho: %u bytes\r\n", tamanho);
   Serial.printf("  payload: \"%s\"\r\n", classe.c_str());
 
-  // Passo 1: apaga tudo. Assim nunca ficam duas saídas ligadas ao mesmo tempo.
+  // Apaga tudo
   apagarTodasAsSaidas();
 
-  // Passo 2: acende SÓ a saída da classe que chegou.
+  // Acende a saída da classe
   if (classe == "operando") {
     digitalWrite(LED_AZUL, HIGH);
     Serial.println("  MODELO:  operando         -> LED azul aceso");
@@ -330,13 +259,11 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
     Serial.println("  MODELO:  inclinado_tras   -> LED vermelho aceso");
 
   } else if (classe == "anomalia") {
-    tone(BUZZER, 500, 250);   // bipe de 250 ms; a cada mensagem, um bipe
+    tone(BUZZER, 500, 250);   // bipe de 250 ms
     Serial.println("  MODELO:  anomalia         -> BUZZER ligado");
 
   } else {
-    // Nenhum nome casou. As saídas ficam todas apagadas, e isso é proposital:
-    // apagado avisa que algo está errado, melhor do que manter a última classe
-    // e parecer que o sistema continua funcionando.
+    // Classe desconhecida: tudo apagado
     Serial.println("  MODELO:  classe DESCONHECIDA - tudo apagado");
     Serial.println("           esperado, sem aspas e sem JSON:");
     Serial.println("           operando | inclinado_frente | inclinado_tras | anomalia");
@@ -345,11 +272,7 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
   Serial.println("---------------------");
 }
 
-/* ---- Publica a janela: só o que o modelo precisa ----
-   Não vai timestamp. Na coleta ele existia porque as janelas iam para um
-   BANCO, onde o tempo é o eixo e a ordem importa. Aqui a janela vale agora:
-   é medida, classificada e respondida em menos de um segundo, e depois não
-   serve para mais nada. Sem timestamp no payload, o NTP também sai. */
+/* ---- Publica a janela ---- */
 void publicarJanela(float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p) {

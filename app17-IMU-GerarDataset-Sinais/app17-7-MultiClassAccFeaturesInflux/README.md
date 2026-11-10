@@ -37,7 +37,7 @@ Tópico `FIAPIoT/motor/multiclasse` — 1 JSON por janela:
   "label": "inclinado_frente",
   "rodada": 1,
   "janela": 7,
-  "ts_epoch_ms": 1749760205123,
+  "ts_ms": 85123,
   "mean_ax": 0.328, "mean_ay": -0.008, "mean_az": 0.929,
   "std_ax": 0.036,  "std_ay": 0.030,  "std_az": 0.042,
   "std_mag": 0.046,
@@ -46,7 +46,7 @@ Tópico `FIAPIoT/motor/multiclasse` — 1 JSON por janela:
 ```
 
 `rótulos`: `operando` / `inclinado_frente` / `inclinado_tras` / `anomalia`. `rodada` = volta
-completa pela sequência de classes. `ts_epoch_ms` = epoch em ms (UTC), via NTP + `millis()`.
+completa pela sequência de classes. `ts_ms` = tempo do ESP32 em ms desde o boot (`millis()`).
 
 Os valores estão em **`g`**: o FastIMU devolve aceleração em `g` e o firmware publica o número
 cru. Nivelado, `mean_az` fica perto de `1.0`; inclinado 25°, parte da gravidade migra para
@@ -57,3 +57,13 @@ cru. Nivelado, `mean_az` fica perto de `1.0`; inclinado 25°, parte da gravidade
 [`colab/treinamento_multiclasse.ipynb`](colab/treinamento_multiclasse.ipynb) lê estas janelas do
 InfluxDB (measurement `vibracao_multiclasse`) e gera o `modelo_motor_multiclasse.pkl`, que a
 **app seguinte de inferência usando IMU** carrega para responder no MQTT.
+
+## Outras versões deste app
+
+Mesmas features, tópico e measurement — os dados entram neste mesmo treino:
+
+- `app17-8-MultiClassAccFeaturesInfluxDevkitv1MOTOR`: o rig de demonstração do professor, com
+  um mini motor com hélice ligado pelo próprio ESP32 por ponte H enquanto a coleta roda.
+- `app17-10-MultiClassAccFeaturesInfluxESP32C6`: para a placa ESP32-C6-DevKitC-1.
+- `app17-11-MultiClassAccFeaturesInfluxESP32C3SERVO`: outro rig de demonstração, num ESP32-C3
+  Super Mini Plus com um microservo que vai e volta enquanto a coleta roda.

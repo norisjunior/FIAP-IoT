@@ -1,7 +1,7 @@
 # app17-2 - Leitura simples do MPU
 
 App base para montar o MPU no ESP32 e ler os tres eixos do acelerometro usando
-a biblioteca FlixPeriph.
+a biblioteca FastIMU.
 
 ## Wiring
 
@@ -9,12 +9,17 @@ a biblioteca FlixPeriph.
 | --- | --- |
 | VCC | 3V3 |
 | GND | GND |
-| SDA | GPIO26 |
-| SCL | GPIO27 |
+| SDA | GPIO22 |
+| SCL | GPIO23 |
 
 ## Aula
 
-- O codigo configura apenas a sensibilidade do acelerometro.
-- A saida serial mostra `ax,ay,az`.
-- A FlixPeriph retorna aceleracao em `m/s2`. Com o sensor parado, um eixo deve
-  ficar proximo de `9.81 m/s2`, por causa da gravidade.
+- A FastIMU retorna aceleracao em `g`. Com o sensor parado, um eixo deve ficar
+  proximo de `1.0 g`, por causa da gravidade.
+- A saida serial usa o formato `>acc_x: 0.01`, que o `plot_accel.py` (app17-0)
+  desenha em tempo real.
+- Leitura a 100 Hz (`AMOSTRA_MS = 10`), a mesma taxa de todos os app17, e fundo
+  de escala de 16 g (`setAccelRange(16)`). Troque para 2 g e chacoalhe: o grafico
+  "achata" no maximo, porque o sensor saturou.
+- `MPU_TYPE`: o padrao e MPU6050. Se o app17-1 mostrar `WHO_AM_I = 0x70`, troque
+  para MPU6500.

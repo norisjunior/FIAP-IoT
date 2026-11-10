@@ -10,7 +10,7 @@
 // SDA -> GPIO22
 // SCL -> GPIO23
 
-#define MPU_TYPE MPU6500 // troque para MPU6050 se estiver usando o sensor original
+#define MPU_TYPE MPU6050 // padrao do kit. Se o app17-1 mostrar WHO_AM_I = 0x70, troque para MPU6500
 MPU_TYPE mpu;
 
 calData calib = { 0 }; // zerada = sem calibrar (ok para fins didaticos)
@@ -35,6 +35,8 @@ void setup() {
   mpu.setAccelRange(16);
 
   Serial.println("MPU iniciado");
+  Serial.println("Aguardando 5 segundos para iniciar a coleta de medições...");
+  delay(5000);
   Serial.println("ax,ay,az");
 }
 
@@ -45,7 +47,8 @@ void setup() {
 // | Deteccao de passo   | < 10 Hz    | 20 Hz       | 50 ms      |
 // | Gesture recognition | < 25 Hz    | 50 Hz       | 20 ms      |
 // | Vibracao / impacto  | < 500 Hz   | 1 kHz       | 1 ms       |
-const int AMOSTRA_MS = 20;
+// Usamos 100 Hz em todos os app17: sobra folga para movimentos feitos com a mao.
+const int AMOSTRA_MS = 10; // 10 ms = 100 Hz
 
 uint64_t tempoAnterior = 0;
 

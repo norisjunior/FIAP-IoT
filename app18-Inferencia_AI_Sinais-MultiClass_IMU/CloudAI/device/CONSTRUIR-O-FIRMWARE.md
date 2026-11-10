@@ -18,18 +18,17 @@ produzidos por um firmware específico, com uma configuração específica de
 sensor. **Se a inferência produzir os números de outro jeito, o modelo recebe
 features fora da distribuição em que foi treinado — e erra sem avisar.**
 
-Sete coisas precisam ser idênticas às do app de coleta. Elas aparecem marcadas
+Seis coisas precisam ser idênticas às do app de coleta. Elas aparecem marcadas
 com **⚖ paridade** ao longo do guia:
 
 | # | O quê | Valor |
 |---|---|---|
 | 1 | Chip do IMU | o **mesmo** usado na coleta (`MPU6500` ou `MPU6050`) |
-| 2 | Fundo de escala | `setAccelRange(8)` |
-| 3 | Filtro anti-aliasing | `setAccelLPF(41)` + `setGyroLPF(42)` |
-| 4 | Calibração | `calibrateAccelGyro()`, na posição de uso, motor parado |
-| 5 | Amostragem | 100 Hz, janela de 100 amostras |
-| 6 | As 4 funções de feature | copiadas literalmente |
-| 7 | Nomes e unidade | os 8 nomes exatos, valores em `g` |
+| 2 | Calibração | `calibrateAccelGyro()`, na posição de uso, motor parado |
+| 3 | Fundo de escala | `setAccelRange(8)`, **depois** do segundo `init()` |
+| 4 | Amostragem | 100 Hz, janela de 100 amostras |
+| 5 | As 4 funções de feature | copiadas literalmente |
+| 6 | Nomes e unidade | os 8 nomes exatos, valores em `g` |
 
 O `platformio.ini` já vem pronto e é igual ao do app de coleta — mesma versão de
 plataforma e as mesmas três bibliotecas:
@@ -73,24 +72,7 @@ void setup() {
     while (1);
   }
 
-  /* ⚖ paridade 2 — fundo de escala ±8 g.
-     Em ±2 g a mesma vibração satura; em ±16 g ela vira ruído de
-     quantização. Os dois casos mudam std_* e p2p_mag. */
-  mpu.setAccelRange(8);
-
-  /* ⚖ paridade 3 — anti-aliasing. Amostramos a 100 Hz, então Nyquist é
-     50 Hz: o filtro interno precisa cortar abaixo disso, senão a vibração
-     acima de 50 Hz "dobra" para dentro da banda e infla std_mag.
-     São duas chamadas porque nenhuma sozinha cobre os dois chips:
-       MPU6500 -> setAccelLPF(41) escreve ACCEL_CONFIG2 (41 Hz).
-                  setGyroLPF só afeta o giroscópio.
-       MPU6050 -> setAccelLPF não é implementado no FastIMU (devolve -1);
-                  o DLPF é COMPARTILHADO, então é setGyroLPF(42) que
-                  filtra o acelerômetro (44 Hz). */
-  mpu.setAccelLPF(41);
-  mpu.setGyroLPF(42);
-
-  /* ⚖ paridade 4 — calibra na posição de uso, com o motor PARADO.
+  /* ⚖ paridade 2 — calibra na posição de uso, com o motor PARADO.
      Os offsets entram em todas as leituras: calibrar inclinado desloca
      mean_ax/ay/az de todas as classes de uma vez.
      No Wokwi, COMENTE esta linha: o simulador não tem a FIFO do MPU e o
@@ -98,7 +80,12 @@ void setup() {
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
   mpu.calibrateAccelGyro(&calib);
-  mpu.init(calib, 0x68);
+  mpu.init(calib, 0x68);   // reinicia o sensor já calibrado (e volta tudo ao padrão: ±16 g)
+
+  /* ⚖ paridade 3 — fundo de escala ±8 g, o mesmo da coleta: folga de
+     sobra para a gravidade somada à vibração do motor, sem saturar.
+     Tem que vir DEPOIS do init(): o init() reseta o sensor e desfaz. */
+  mpu.setAccelRange(8);
 
   Serial.println("MPU iniciado");
 }
@@ -123,7 +110,7 @@ biblioteca está devolvendo m/s² e não `g` — o treino usou `g`.
 Objetivo: encher três buffers de 100 amostras e avisar quando fecharem.
 
 ```cpp
-/* ⚖ paridade 5 — 100 Hz, janela de 1 s.
+/* ⚖ paridade 4 — 100 Hz, janela de 1 s.
    Mudar o Fs muda o conteúdo de frequência que cabe na janela; mudar o
    tamanho muda a estatística. As duas coisas deslocam TODAS as features. */
 const int FS_HZ          = 100;
@@ -197,7 +184,7 @@ vão de `0` a `99`.
 
 ## Etapa 3 — As 8 features
 
-**⚖ paridade 6.** Copie estas quatro funções **literalmente** do app de coleta.
+**⚖ paridade 5.** Copie estas quatro funções **literalmente** do app de coleta.
 Não reescreva, não "melhore".
 
 ```cpp
@@ -289,13 +276,6 @@ WiFiClient wifiClient;
 #define MQTT_CLIENT_ID "IoTDevInferenciaMultiClasse001"
 PubSubClient mqttClient(wifiClient);
 ```
-
-> **Sem NTP.** O app de coleta sincronizava o relógio por NTP para carimbar cada
-> janela com `ts_epoch_ms`. Ele precisava: as janelas iam para um BANCO, onde
-> o tempo é o eixo e a ordem importa. Aqui a janela vale **agora** — é medida,
-> classificada e respondida em menos de um segundo, e depois não serve para
-> mais nada. Sem timestamp no payload, o NTP inteiro sai: `<time.h>`, os dois
-> servidores, `sincronizarRelogio()` e `agoraEpochMs()`.
 
 Declare os dois protótipos junto com os outros, antes do `setup()`:
 
@@ -402,7 +382,7 @@ falha de rede e positivo para recusa do protocolo.
 
 ## Etapa 5 — Publicar a janela
 
-**⚖ paridade 7.** Os oito nomes são o contrato com o `.pkl`. Eles aparecem
+**⚖ paridade 6.** Os oito nomes são o contrato com o `.pkl`. Eles aparecem
 em quatro lugares — aqui, no `FEATURES` do notebook, no `feature_names_in_`
 do modelo e no `FEATURES` da API. Um erro de digitação em qualquer um deles
 quebra o conjunto.
@@ -446,7 +426,7 @@ Troque o `Serial.printf` da etapa 3 por:
 > | `label` | o gabarito humano, do botão 18 | é justamente o que estamos perguntando |
 > | `rodada` | agrupava as sessões para o split | não há treino aqui |
 > | `janela` | contava até as 30 da coleta | a coleta não termina |
-> | `ts_epoch_ms` | o tempo é o eixo do banco | a janela vale agora, e some em seguida |
+> | `ts_ms` | o tempo do ESP32, guardado no banco | a janela vale agora, e some em seguida |
 >
 > Sobra `device` mais as 8 features: 9 campos contra 13.
 >
@@ -685,9 +665,8 @@ Antes de acreditar numa predição, confira contra o app de coleta, que gerou o
 dataset:
 
 - [ ] `#define MPU_TYPE` — o mesmo chip da coleta
-- [ ] `setAccelRange(8)`
-- [ ] `setAccelLPF(41)` **e** `setGyroLPF(42)`, nesta ordem
 - [ ] `calibrateAccelGyro()` presente, feita na posição de uso e motor parado
+- [ ] `setAccelRange(8)` **depois** do segundo `mpu.init()`
 - [ ] `FS_HZ = 100`, `TAMANHO_JANELA = 100`
 - [ ] `tempoAnterior += AMOSTRA_MS` (passo fixo)
 - [ ] `calcStd` dividindo por `n`

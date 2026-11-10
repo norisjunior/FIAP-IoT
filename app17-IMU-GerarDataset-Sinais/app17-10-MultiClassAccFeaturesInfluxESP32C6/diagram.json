@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-breadboard-half",
+      "id": "bb1",
+      "top": -3,
+      "left": 118,
+      "attrs": { "color": "#eeefed" }
+    },
+    { "type": "board-esp32-c6-devkitc-1", "id": "esp", "top": -67.2, "left": -4.76, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 82.8,
+      "left": 148.2,
+      "attrs": { "color": "blue", "flip": "1" }
+    },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": 80.62, "left": 213.52, "attrs": {} },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 157,
+      "left": 143.15,
+      "rotate": 270,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 54.2,
+      "left": -144,
+      "attrs": { "color": "green", "label": "COLETA (12)" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": -51.4,
+      "left": -144,
+      "attrs": { "color": "red", "label": "CLASSE (13)" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:GND.2", "bb1:tn.1", "black", [] ],
+    [ "esp:3V3", "bb1:tp.1", "red", [] ],
+    [ "bb1:16t.d", "bb1:tp.13", "red", [ "v0" ] ],
+    [ "bb1:15t.d", "bb1:tn.12", "black", [ "v0" ] ],
+    [ "bb1:13t.d", "esp:5", "blue", [] ],
+    [ "bb1:14t.d", "esp:4", "cyan", [] ],
+    [ "esp:7", "bb1:3b.h", "yellow", [] ],
+    [ "btn1:2.r", "esp:GND.1", "black", [] ],
+    [ "btn1:1.r", "esp:12", "limegreen", [] ],
+    [ "btn2:1.r", "esp:13", "magenta", [] ],
+    [ "btn2:2.r", "esp:GND.1", "black", [] ],
+    [ "bb1:bn.1", "esp:GND.1", "black", [] ],
+    [ "imu1:INT", "bb1:9t.e", "", [ "$bb" ] ],
+    [ "imu1:AD0", "bb1:10t.e", "", [ "$bb" ] ],
+    [ "imu1:XCL", "bb1:11t.e", "", [ "$bb" ] ],
+    [ "imu1:XDA", "bb1:12t.e", "", [ "$bb" ] ],
+    [ "imu1:SDA", "bb1:13t.e", "", [ "$bb" ] ],
+    [ "imu1:SCL", "bb1:14t.e", "", [ "$bb" ] ],
+    [ "imu1:GND", "bb1:15t.e", "", [ "$bb" ] ],
+    [ "imu1:VCC", "bb1:16t.e", "", [ "$bb" ] ],
+    [ "r1:1", "bb1:bn.3", "", [ "$bb" ] ],
+    [ "r1:2", "bb1:4b.h", "", [ "$bb" ] ],
+    [ "led1:A", "bb1:3b.g", "", [ "$bb" ] ],
+    [ "led1:C", "bb1:4b.g", "", [ "$bb" ] ]
+  ],
+  "dependencies": {}
+}

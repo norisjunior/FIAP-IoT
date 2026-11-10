@@ -1,61 +1,54 @@
-# app17-10-RawSerialCSV — Forma 2: coleta RAW via Serial
+# app17-5 — Coleta RAW pela Serial, com Python
 
-Firmware do ESP32 que imprime **só `ax,ay,az` a 100 Hz na Serial**, continuamente.
-Não calcula features e não usa MQTT/WiFi — é a evolução direta do `app17-8`/`app17-9`,
-mantendo pinagem, lib (FlixPeriph) e estilo.
+> **Material de referência.** Não faz parte do roteiro das aulas: lá, a coleta é feita
+> pelo próprio ESP32 (app17-7). Este app mostra a outra forma: guardar o sinal bruto e
+> deixar o Python pôr o horário e a label.
 
-> **Forma 2 (raw):** o ESP32 manda o sinal bruto; o `coletor_raw.py` põe o **timestamp** e a
-> **label** e grava o CSV. Guardamos o raw — no Colab dá para **ver o sinal inteiro**, recortar
-> o trecho exato do fenômeno e **re-janelar** (o que a Forma 1, só com features, não permite).
+O ESP32 imprime **só `ax,ay,az` a 100 Hz na Serial**, continuamente, em **g**. O
+[`coletor_raw.py`](coletor_raw.py) lê essas linhas, acrescenta **timestamp** e **label** e
+grava um CSV.
 
-## Montagem (mínima, sem motor / sem botões / sem LED)
+Guardar o raw permite, no Colab, **ver o sinal inteiro**, recortar o trecho exato do
+fenômeno e testar outras janelas. As features prontas do app17-7 não permitem isso.
 
-Só **ESP32 + MPU6050 sobre a mesa**. A condição é escolhida no script Python, não no hardware:
+## Montagem
 
-- **NORMAL** = MPU6050 **parado** sobre a mesa (motor parado).
-- **ANOMALIA** = **chacoalhar o ESP32/MPU**. No Wokwi, **sacudir o MPU6050** no painel.
+Só **ESP32 + MPU sobre a mesa**: sem botões, sem LED. A condição é escolhida no Python.
 
-| Função | GPIO |
+| MPU | ESP32 |
 |---|---|
-| MPU SDA | 19 |
-| MPU SCL | 18 |
-
-## O que ele faz (item da Sprint)
-
-- **Sprint 3 – item 1:** coleta de aceleração X/Y/Z a 100 Hz, exibida no Monitor Serial no
-  formato `ax,ay,az` (ex.: `0.12,-0.04,9.81`).
-
-A captura com timestamp (item 2), a base por condição (item 3) e a visualização (item 4)
-ficam no `analytics/coletor_raw/` e nos notebooks `2.3`/`2.4`/`2.5`.
+| VCC | 3V3 |
+| GND | GND |
+| SDA | GPIO22 |
+| SCL | GPIO23 |
 
 ## Como rodar
 
-### Opção A — Wokwi (simulador no VS Code)
+1. Grave o firmware (ou abra o simulador do Wokwi e deixe a aba **visível**).
+2. **Feche o Serial Monitor**: só um programa abre a porta por vez.
+3. Instale e rode o coletor, uma vez por rodada:
 
-1. Compile e **abra o simulador** (deixe a aba do Wokwi **visível**, senão a simulação pausa).
-2. O [`wokwi.toml`](wokwi.toml) já expõe a Serial via **RFC2217** em `rfc2217ServerPort = 4000`.
-3. Rode o coletor apontando para `rfc2217://localhost:4000` (ver `analytics/coletor_raw/`).
-4. Para gerar **anomalia**, **sacuda o MPU6050** no painel do Wokwi durante a coleta.
+```bash
+python -m pip install -r requirements.txt
 
-### Opção B — ESP32 físico
+python coletor_raw.py COM6 normal 60       # MPU parado
+python coletor_raw.py COM6 anomalia 60     # chacoalhando o MPU
+```
 
-1. Compile e grave no ESP32.
-2. **Feche o Serial Monitor** (só um programa abre a porta COM por vez).
-3. Rode o coletor apontando para a sua porta (ex.: `COM6`).
-4. Para gerar **anomalia**, **chacoalhe** o ESP32/MPU durante a coleta.
+No Wokwi, a porta é `rfc2217://localhost:4000`: o [`wokwi.toml`](wokwi.toml) já expõe a
+Serial.
 
-### Protocolo de coleta (Aula 14, slide 22)
+Cada execução gera um arquivo `raw_<label>_<data_hora>.csv` com
+`timestamp,ax,ay,az,label`.
 
-1. Escolha a condição ao iniciar o `coletor_raw.py` (`normal` ou `anomalo`).
-2. Mantenha a condição **estável** o tempo todo; **descarte os primeiros segundos** (transição).
-3. Colete **~1 min por classe** (~6000 amostras a 100 Hz).
-4. Faça **rodadas separadas** por classe — isso facilita o split treino/teste depois.
+## Protocolo
 
-## Limitações (Forma 2)
+- **Uma execução = uma rodada = uma condição estável.** Monte a condição antes de rodar.
+- O coletor descarta os primeiros 5 s (você ainda está posicionando o sensor).
+- ~1 min por rodada dá ~6000 leituras.
+- Faça mais de uma rodada por condição: o treino e o teste se dividem por rodada.
 
-- **Timestamp é de recepção no PC** (hora em que o Python leu a linha), não o instante exato da
-  medição no ESP32. Há latência Serial/USB. (Aula 14, slide 23.)
-- **Anomalia simulada:** chacoalhar o MPU (ou sacudir no Wokwi) **não substitui** um ensaio de
-  vibração industrial — serve para aprender o pipeline.
-- **Sem botão:** a separação entre normal e anomalia é feita por **rodada** (uma execução do
-  coletor por classe), não por marcação dentro de um mesmo arquivo.
+## Limitação
+
+O **timestamp é o do computador**, na hora em que a linha chegou, e não o instante exato da
+medição no ESP32: há atraso da Serial/USB.

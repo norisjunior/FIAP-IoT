@@ -1,5 +1,10 @@
 # app17-6-BinaryAccFeaturesInflux
 
+> **Material de referência.** Não faz parte do roteiro das aulas, que vai direto ao
+> app17-7. Para um dataset binário, o caminho mais simples é usar o próprio app17-7 e
+> coletar só duas posições (por exemplo, `operando` e `anomalia`). Este app usa outro
+> conjunto de features (`rms_*`) e não tem rodada.
+
 Firmware ESP32 que calcula features de aceleração no próprio dispositivo, em janela fixa de
 100 amostras (1 s @ 100 Hz), e publica 1 mensagem MQTT (JSON) por janela. Duas classes:
 
@@ -31,7 +36,7 @@ Tópico `FIAPIoT/motor/features` — 1 JSON por janela:
 {
   "device": "IoTDevJanelaFixa001",
   "label": "ligado_anomalia",
-  "ts_epoch_ms": 1749760205123,
+  "ts_ms": 85123,
   "mean_ax": 0.021, "mean_ay": -0.015, "mean_az": 0.998,
   "std_ax": 1.402,  "std_ay": 1.187,  "std_az": 0.945,
   "rms_ax": 1.402,  "rms_ay": 1.187,  "rms_az": 1.374,
@@ -39,7 +44,7 @@ Tópico `FIAPIoT/motor/features` — 1 JSON por janela:
 }
 ```
 
-`ts_epoch_ms` = epoch em ms (UTC), via NTP + `millis()`. Rótulos: `ligado_normal` / `ligado_anomalia`.
+`ts_ms` = tempo do ESP32 em ms desde o boot (`millis()`). Rótulos: `ligado_normal` / `ligado_anomalia`.
 
 Os valores estão em **`g`**: o FastIMU devolve aceleração em `g` e o firmware publica o número
 cru. Parado e nivelado, `mean_az` fica perto de `1.0`.

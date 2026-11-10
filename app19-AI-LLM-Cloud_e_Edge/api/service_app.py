@@ -44,7 +44,7 @@ print("=" * 60 + "\n")
 
 class JanelaMotor(BaseModel):
     # Os campos que a API le do JSON publicado pelo ESP32. O device, a rodada,
-    # a janela, o ts_epoch_ms e o label tambem chegam no JSON e sao
+    # a janela, o ts_ms e o label tambem chegam no JSON e sao
     # simplesmente ignorados: o label e o gabarito do botao, ele NAO entra no
     # modelo.
     mean_ax: float

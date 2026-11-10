@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-c3-devkitm-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": { "serialInterface": "USB_SERIAL_JTAG" }
+    },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": -30, "left": 190, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 20,
+      "left": -170,
+      "attrs": { "color": "green", "label": "COLETA (3)" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": 130,
+      "left": 180,
+      "attrs": { "color": "red", "label": "CLASSE (4)" }
+    },
+    { "type": "wokwi-servo", "id": "servo1", "top": 190, "left": -240, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:3V3.1", "imu1:VCC", "red", [] ],
+    [ "esp:GND.10", "imu1:GND", "black", [] ],
+    [ "esp:RX", "imu1:SDA", "blue", [] ],
+    [ "esp:TX", "imu1:SCL", "cyan", [] ],
+    [ "btn1:1.r", "esp:3", "limegreen", [] ],
+    [ "btn1:2.r", "esp:GND.2", "black", [] ],
+    [ "btn2:1.l", "esp:4", "magenta", [] ],
+    [ "btn2:2.l", "esp:GND.7", "black", [] ],
+    [ "servo1:PWM", "esp:0", "orange", [] ],
+    [ "servo1:V+", "esp:5V.1", "red", [] ],
+    [ "servo1:GND", "esp:GND.4", "black", [] ]
+  ],
+  "dependencies": {}
+}
