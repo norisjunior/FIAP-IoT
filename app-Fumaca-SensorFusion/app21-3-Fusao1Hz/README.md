@@ -1,7 +1,7 @@
-# app21-2-Fusao1Hz
+# app21-3-Fusao1Hz
 
 Os 3 sensores da caixa de fumaça numa linha só, 1 linha por segundo. Uma linha é um
-exemplo do dataset. No app21-3, a mesma linha vira o JSON publicado no MQTT.
+exemplo do dataset. No app21-4, a mesma linha vira o JSON publicado no MQTT.
 
 **Pronto quando:** o Serial imprime o cabeçalho e depois 1 linha por segundo.
 
@@ -29,4 +29,4 @@ dataset do Kaggle, de propósito.
 - **Pressão fica de fora:** no dataset do Kaggle, a pressão sozinha acertava 94% por
   vazamento (ver `LICOES-APRENDIDAS.md`).
 - **Linha de base do SGP30:** não é salva nem restaurada. TVOC e eCO2 de um dia não se
-  comparam com os de outro; isso entra como data drift no app21-3.
+  comparam com os de outro; isso entra como data drift no app21-4.

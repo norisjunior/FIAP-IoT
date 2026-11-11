@@ -1,8 +1,8 @@
 // app21-1-LeituraIsolada
 // Caixa de fumaca: cada sensor sozinho, no plotter (Teleplot), 1 leitura por segundo.
-// Pronto quando: o alcool mexe so no SGP30; o talco mexe so no SPS30.
+// Pronto quando: o alcool mexe so no SGP30; o vapor mexe no SPS30 e na umidade.
 //
-// Ligacao: a mesma do app21-0 (os 3 sensores no I2C, SDA no GPIO4 e SCL no GPIO3).
+// Ligacao: a mesma do app21-0 (os 3 sensores no I2C, SDA no GPIO20 e SCL no GPIO21).
 // LED RGB da placa: verde = os 3 sensores iniciaram; vermelho = falta algum (rode o app21-0).
 
 #include <Wire.h>
@@ -10,8 +10,8 @@
 #include <SensirionI2cSps30.h>
 #include <Adafruit_BME280.h>
 
-#define SDA_PIN  4
-#define SCL_PIN  3
+#define SDA_PIN  20
+#define SCL_PIN  21
 #define PINO_LED 8    // LED RGB interno (WS2812)
 #define BRILHO   40   // 0 a 255
 

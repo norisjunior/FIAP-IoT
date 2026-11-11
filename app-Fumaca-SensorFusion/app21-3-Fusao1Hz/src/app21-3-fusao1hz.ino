@@ -1,9 +1,9 @@
-// app21-2-Fusao1Hz
+// app21-3-Fusao1Hz
 // Caixa de fumaca: os 3 sensores numa linha so, 1 linha por segundo.
-// Uma linha = um exemplo do dataset (no app21-3 a mesma linha vira o JSON do MQTT).
+// Uma linha = um exemplo do dataset (no app21-4 a mesma linha vira o JSON do MQTT).
 // Pronto quando: o Serial imprime o cabecalho e depois 1 linha por segundo.
 //
-// Ligacao: a mesma do app21-0 (os 3 sensores no I2C, SDA no GPIO4 e SCL no GPIO3).
+// Ligacao: a mesma do app21-0 (os 3 sensores no I2C, SDA no GPIO20 e SCL no GPIO21).
 // LED RGB da placa: amarelo = aquecendo; verde = medindo; vermelho = falta sensor.
 
 #include <Wire.h>
@@ -11,8 +11,8 @@
 #include <SensirionI2cSps30.h>
 #include <Adafruit_BME280.h>
 
-#define SDA_PIN  4
-#define SCL_PIN  3
+#define SDA_PIN  20
+#define SCL_PIN  21
 #define PINO_LED 8    // LED RGB interno (WS2812)
 #define BRILHO   40   // 0 a 255
 

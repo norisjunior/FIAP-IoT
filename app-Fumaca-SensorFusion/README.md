@@ -13,32 +13,34 @@ Grave na ordem. Cada um só faz sentido depois que o anterior funcionou.
 | Programa | Onde | Pronto quando |
 |---|---|---|
 | app21-0, verificador | esta pasta (`src/app.ino`) | mostra 0x58, 0x69 e 0x76; LED verde |
+| app21-0b, só o SPS30 (opcional) | `app21-0b-SPS30Sozinho/` | em outra placa: tipo 00080000, sem alarme; o vapor sobe `pm` e `nc` |
 | app21-1 | `app21-1-LeituraIsolada/` | cada sensor no plotter; o álcool mexe só no SGP30 |
-| app21-2 | `app21-2-Fusao1Hz/` | cabeçalho + 1 linha por segundo |
+| app21-2 | `app21-2-TesteFenomenos/` | com o BOOT marcando o estímulo: o vapor mexe no SPS30 e na umidade, o álcool só no SGP30, a fumaça da vela nos dois, a chama na temperatura |
+| app21-3 | `app21-3-Fusao1Hz/` | cabeçalho + 1 linha por segundo |
 
 Quando tudo funcionar na bancada, a pasta vira `app21-Fumaca-GerarDataset-Escalares`, e o
 verificador vai para `app21-0-VerificaSensores/`.
 
 ## Ligação
 
-Os 3 sensores dividem o mesmo barramento I2C: os fios SDA de todos se encontram no GPIO4,
-e os SCL, no GPIO3.
+Os 3 sensores dividem o mesmo barramento I2C: os fios SDA de todos se encontram no GPIO20,
+e os SCL, no GPIO21.
 
 | Sensor | Pino do sensor | Vai para (ESP32-C3) |
 |---|---|---|
 | SGP30 | VIN | **3.3** (nunca 5V: os resistores de pull-up da placa puxariam o I2C para 5 V) |
 | | GND | G |
-| | SDA | GPIO 4 |
-| | SCL | GPIO 3 |
+| | SDA | GPIO 20 |
+| | SCL | GPIO 21 |
 | BME280 (versão 3,3 V) | VCC | **3.3** (esta placa não tem regulador: 5 V queima) |
 | | GND | G |
-| | SDA | GPIO 4 |
-| | SCL | GPIO 3 |
+| | SDA | GPIO 20 |
+| | SCL | GPIO 21 |
 | | CSB | 3.3 (escolhe o modo I2C) |
 | | SDO | G (endereço 0x76) |
 | SPS30 | 1 VDD | **5V** |
-| | 2 SDA | GPIO 4 |
-| | 3 SCL | GPIO 3 |
+| | 2 SDA | GPIO 20 |
+| | 3 SCL | GPIO 21 |
 | | 4 SEL | G (escolhe o modo I2C; solto, ele fala UART e some do I2C) |
 | | 5 GND | G |
 
@@ -48,13 +50,35 @@ e os SCL, no GPIO3.
   (1 a 5, figura "pin assignment" do datasheet).
 - **O cabo do SPS30** pede I2C curto. Se houver erro de leitura, encurte o cabo.
 
-### Por que GPIO 4 e 3
+### Por que GPIO 20 e 21
 
 - **GPIO 8:** é o LED RGB da placa.
 - **GPIO 9:** é o botão BOOT.
 - **GPIO 2:** é pino de boot.
-- **4 e 3:** ficam na mesma fileira de 5V, G e 3.3, voltada para os sensores. Tudo o que
-  a caixa precisa sai de um lado só da placa.
+- **20 e 21:** são o RX e o TX da UART0, livres porque o Serial sai pela USB
+  (`ARDUINO_USB_CDC_ON_BOOT=1`). No boot, o chip manda o próprio log pelo 21 e o SCL pisca
+  por alguns milissegundos. Nenhum sensor reage, porque o SDA fica alto nesse tempo.
+- **Diagramas da placa:** alguns trocam TX e RX. No ESP32-C3, o 20 é RX e o 21 é TX.
+
+## Monitor serial desde o boot
+
+O que a placa imprime no boot sai antes de o monitor abrir e se perde. Para ver desde a
+primeira linha, reinicie a placa pelo próprio monitor, sem tirar a USB:
+
+1. Abra o monitor: `pio device monitor`, sem `--dtr 0 --rts 0`.
+2. Aperte **Ctrl+T** e depois **Ctrl+D**.
+3. Aperte **Ctrl+T** e **Ctrl+D** de novo. A placa reinicia, e o monitor mostra tudo desde a
+   primeira linha do chip (`ESP-ROM:esp32c3...`).
+
+- **Por que funciona:** Ctrl+T Ctrl+D liga e desliga o sinal DTR da serial. Na USB do
+  ESP32-C3, essa troca de sinais reinicia o chip sem desconectar a USB.
+- **Sem `--dtr 0 --rts 0`:** com os dois sinais forçados em 0 ao abrir, o atalho não
+  reinicia a placa.
+- **Teleplot:** não tem esse atalho. Veja o boot no monitor, feche-o e abra o Teleplot.
+- **Não use o botão RST para isso:** ele desconecta a USB, e o monitor perde as primeiras
+  linhas enquanto reconecta.
+- **`while (!Serial)` não resolve nesta placa:** no Windows, o Serial do C3 se diz conectado
+  mesmo sem monitor aberto, e a espera passa direto.
 
 ## Saída esperada
 

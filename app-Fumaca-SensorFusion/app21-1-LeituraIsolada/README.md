@@ -3,7 +3,7 @@
 Cada sensor da caixa de fumaça sozinho, no plotter, 1 leitura por segundo. É o "ver o dado
 cru" da caixa, como o app17-2 é para o MPU.
 
-**Pronto quando:** o álcool mexe só no SGP30, e o talco mexe só no SPS30.
+**Pronto quando:** o álcool mexe só no SGP30, e o vapor mexe no SPS30 e na umidade.
 
 ## Antes
 
@@ -26,4 +26,9 @@ cru" da caixa, como o app17-2 é para o MPU.
 - **Aquecimento do SGP30:** nos primeiros ~15 s ele mostra `tvoc` = 0 e `eco2` = 400. É
   normal.
 - **Sem compensação de umidade:** o SGP30 lê sozinho aqui. A correção pela umidade do
-  BME280 entra no app21-2.
+  BME280 entra no app21-3.
+
+## Próximo
+
+O app21-2 (`app21-2-TesteFenomenos/`) repete este plotter com o botão BOOT marcando o
+estímulo (ar, vapor, chama, fumaça, álcool), para o teste com fenômenos físicos.

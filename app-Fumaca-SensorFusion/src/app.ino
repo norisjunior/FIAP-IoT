@@ -3,16 +3,16 @@
 //
 // Placa: ESP32-C3 Super Mini (Plus, com antena externa)
 // Os 3 sensores dividem o mesmo barramento I2C (os mesmos 2 fios):
-//   SGP30  VIN -> 3V3   GND -> G   SDA -> GPIO4   SCL -> GPIO3
-//   BME280 VCC -> 3V3   GND -> G   SDA -> GPIO4   SCL -> GPIO3   CSB -> 3V3   SDO -> G
-//   SPS30  VDD -> 5V    GND -> G   SDA -> GPIO4   SCL -> GPIO3   SEL -> G
+//   SGP30  VIN -> 3V3   GND -> G   SDA -> GPIO20  SCL -> GPIO21
+//   BME280 VCC -> 3V3   GND -> G   SDA -> GPIO20  SCL -> GPIO21  CSB -> 3V3   SDO -> G
+//   SPS30  VDD -> 5V    GND -> G   SDA -> GPIO20  SCL -> GPIO21  SEL -> G
 //
 // LED RGB da placa (GPIO 8): verde = os 3 responderam; vermelho = falta algum.
 
 #include <Wire.h>
 
-#define SDA_PIN  4
-#define SCL_PIN  3
+#define SDA_PIN  20
+#define SCL_PIN  21
 #define PINO_LED 8    // LED RGB interno (WS2812)
 #define BRILHO   40   // 0 a 255
 
@@ -59,7 +59,7 @@ void loop() {
     }
   }
   if (total == 0) {
-    Serial.print(" nenhum (confira 3V3, G, SDA no GPIO4 e SCL no GPIO3)");
+    Serial.print(" nenhum (confira 3V3, G, SDA no GPIO20 e SCL no GPIO21)");
   }
   Serial.println();
 
