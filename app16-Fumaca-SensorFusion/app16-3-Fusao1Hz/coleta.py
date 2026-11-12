@@ -1,7 +1,8 @@
-# coleta.py: grava a coleta da caixa de fumaca e mostra o painel ao vivo no navegador
+# coleta.py (app16-3): grava o dataset da caixa de fumaca e mostra o painel ao vivo no navegador
 # Uso: python coleta.py                          (acha a placa sozinho)
 #      python coleta.py COM27                    (porta escolhida)
-#      python coleta.py --replay ARQUIVO.csv [N] (repete uma coleta gravada, N vezes mais rapido)
+#      python coleta.py --replay ARQUIVO.log [N] (repete uma coleta gravada, N vezes mais rapido)
+# Grava: coleta-AAAAMMDD-HHMM.csv (o dataset), .log (tudo o que a placa mandou) e .png
 # Ctrl+T e depois Ctrl+D no terminal: liga/desliga o DTR (duas vezes reinicia a placa)
 # Parar: botao Parar no painel, ou Ctrl+C no terminal
 
@@ -21,17 +22,29 @@ from serial.tools import list_ports
 PASTA = Path(__file__).resolve().parent
 VARIAVEIS = ["tvoc", "eco2", "raw_h2", "raw_ethanol", "pm2_5", "pm10", "nc0_5", "temp", "umid"]
 
-amostras = []   # cada uma: [t, tvoc, eco2, ..., umid, estimulo]
+# O dataset: as colunas do Kaggle, na mesma ordem, mais a rodada, o pm10 e o rotulo
+COLUNAS = ["amostra", "rodada", "temp", "umid", "tvoc", "eco2", "raw_h2", "raw_ethanol", "pressao",
+           "pm1_0", "pm2_5", "nc0_5", "nc1_0", "nc2_5", "pm10", "estimulo"]
+
+amostras = []   # cada uma: [t, tvoc, eco2, ..., umid, estimulo] (o painel)
 mensagens = []  # linhas que nao sao leitura: boot, ESTIMULO, erros
 trava = threading.Lock()
 parar = threading.Event()
 inicio = time.monotonic()
 atual = {}
+texto = {}      # os mesmos valores, como a placa mandou (o dataset)
 ser = None
+dataset = None
+boot = False    # ao vivo, o que chega antes do boot e sobra de antes do reinicio
 
 
 def processa(linha, t):
     """Uma linha da placa: leitura (>nome: valor) ou mensagem."""
+    global boot
+    if linha.startswith("ESP-ROM"):  # primeira linha do boot
+        boot = True
+    if not boot:
+        return
     if linha.startswith(">") and ":" in linha:
         nome, valor = linha[1:].split(":", 1)
         nome = nome.strip()
@@ -39,10 +52,15 @@ def processa(linha, t):
             v = float(valor)
         except ValueError:
             return
+        texto[nome] = valor.strip()
         if nome == "estimulo":  # a ultima linha de cada amostra
             with trava:
                 amostras.append([round(t, 1)] + [atual.get(n) for n in VARIAVEIS] + [int(v)])
+            if dataset:  # so ao vivo: o replay nao grava dataset
+                dataset.write(",".join(texto.get(c, "") for c in COLUNAS) + "\n")
+                dataset.flush()
             atual.clear()
+            texto.clear()
         else:
             atual[nome] = v
     else:
@@ -215,16 +233,20 @@ if len(sys.argv) > 1 and sys.argv[1] == "--replay":
     arquivo = Path(sys.argv[2])
     velocidade = float(sys.argv[3]) if len(sys.argv) > 3 else 1
     ORIGEM = f"{arquivo.name} (gravada, {velocidade:g}x)"
+    boot = True
     threading.Thread(target=le_arquivo, args=(arquivo, velocidade), daemon=True).start()
     saida = None
 else:
     porta = sys.argv[1] if len(sys.argv) > 1 else acha_porta()
-    saida = PASTA / datetime.now().strftime("coleta-%Y%m%d-%H%M.csv")
-    ORIGEM = f"{saida.name} · {porta}"
+    saida = PASTA / datetime.now().strftime("coleta-%Y%m%d-%H%M.log")
+    ORIGEM = f"{saida.stem} · {porta}"
     ser = serial.Serial(porta, 115200, timeout=1)
     time.sleep(0.5)
+    print("Reiniciando a placa: a coleta comeca no boot.")
     reinicia()  # o arquivo comeca no boot
     arq = open(saida, "w", encoding="utf-8")
+    dataset = open(saida.with_suffix(".csv"), "w", encoding="utf-8")
+    dataset.write(",".join(COLUNAS) + "\n")
     leitor = threading.Thread(target=le_serial, args=(arq,), daemon=True)
     leitor.start()
     threading.Thread(target=teclado_terminal, daemon=True).start()
@@ -243,6 +265,7 @@ if saida:
     leitor.join(timeout=2)
     ser.close()
     arq.close()
+    dataset.close()
     png = saida.with_suffix(".png")
     salva_png(png)
-    print(f"Salvo: {saida.name} e {png.name}")
+    print(f"Salvo: {saida.stem}.csv (o dataset), {saida.name} (tudo o que a placa mandou) e {png.name}")

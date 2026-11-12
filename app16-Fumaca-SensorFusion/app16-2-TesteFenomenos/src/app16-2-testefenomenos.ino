@@ -1,11 +1,11 @@
-// app21-2-TesteFenomenos
+// app16-2-TesteFenomenos
 // Caixa de fumaca: os 3 sensores no painel (coleta.py) e o botao BOOT marcando o estimulo.
 // Pronto quando: o vapor mexe no SPS30 e na umidade, o alcool so no SGP30, a fumaca nos dois e
 // a chama na temperatura.
 //
-// Ligacao: a mesma do app21-0 (os 3 sensores no I2C, SDA no GPIO20 e SCL no GPIO21).
+// Ligacao: a mesma do app16-0 (os 3 sensores no I2C, SDA no GPIO20 e SCL no GPIO21).
 // Botao BOOT: passa para o proximo estimulo (ar, vapor, ar, chama, ar, fumaca, ar, alcool).
-// LED RGB da placa: a cor do estimulo; vermelho piscando = falta sensor (rode o app21-0).
+// LED RGB da placa: a cor do estimulo; vermelho piscando = falta sensor (rode o app16-0).
 
 #include <Wire.h>
 #include <Adafruit_SGP30.h>
@@ -71,7 +71,7 @@ void setup() {
   // Falta sensor: o teste precisa dos 3 (vermelho piscando; vermelho fixo e fumaca)
   if (!sgpOk || !spsOk || !bmeOk) {
     while (1) {
-      Serial.printf("Erro: SGP30 %s | SPS30 %s | BME280 %s. Rode o app21-0.\n",
+      Serial.printf("Erro: SGP30 %s | SPS30 %s | BME280 %s. Rode o app16-0.\n",
                     sgpOk ? "ok" : "FALHOU", spsOk ? "ok" : "FALHOU", bmeOk ? "ok" : "FALHOU");
       for (int i = 0; i < 3; i++) {
         neopixelWrite(PINO_LED, BRILHO, 0, 0);

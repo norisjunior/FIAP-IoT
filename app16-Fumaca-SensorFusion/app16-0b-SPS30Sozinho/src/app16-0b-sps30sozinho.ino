@@ -1,4 +1,4 @@
-// app21-0b-SPS30Sozinho
+// app16-0b-SPS30Sozinho
 // So o SPS30, numa placa separada: identificacao, alarmes e as 10 leituras no plotter (Teleplot).
 // Pronto quando: aparece o tipo 00080000, nenhum ALARME, e o vapor faz pm e nc subirem.
 //

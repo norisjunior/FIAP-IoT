@@ -1,4 +1,4 @@
-# app21-2-TesteFenomenos
+# app16-2-TesteFenomenos
 
 Os 3 sensores da caixa de fumaça num painel ao vivo, com o botão BOOT marcando o estímulo
 que está perto da caixa. Cada aperto passa para o próximo estímulo, e o nome dele aparece
@@ -30,7 +30,7 @@ queima limpo, quase sem partícula, e que o detector comum não vê.
 
 ## Antes
 
-- O app21-0 mostrou os 3 sensores ok, e o app21-1 mostrou cada sensor no plotter.
+- O app16-0 mostrou os 3 sensores ok, e o app16-1 mostrou cada sensor no plotter.
 - **Python para o `coleta.py`**, uma vez, no terminal desta pasta:
 
   ```powershell
@@ -54,7 +54,7 @@ Cada estímulo é **uma ação só**, a **um palmo da caixa**. Depois dela, a co
 | (ligou) | `=== ESTIMULO: ar ===` | verde | esperar 1 min: o SGP30 aquece e o ventilador do SPS30 estabiliza |
 | 1º | `vapor` | roxo | trazer a chaleira recém-fervida e destampada por 5 s, de lado e um pouco abaixo da placa |
 | 2º | `ar` | verde | esperar o gráfico voltar |
-| 3º | `chama` | azul | acender o isqueiro por 5 s, de lado e um pouco abaixo da altura da placa |
+| 3º | `chama` | azul | acender o isqueiro por 5 s, de lado e um pouco abaixo da altura da placa; a `temp` deve subir 2 a 3 °C, não mais |
 | 4º | `ar` | verde | esperar o gráfico voltar |
 | 5º | `fumaca` | vermelho | acender a vela longe da caixa, apagar com um sopro e trazer o pires fumegando |
 | 6º | `ar` | verde | levar a vela para fora, abrir a porta, abanar e esperar o `nc0_5` voltar perto do começo |
@@ -69,8 +69,10 @@ Quatro regras:
    ensaio rápido. Se a fumaça tiver muito mais partícula que o vapor, um limiar só na
    partícula resolve, e o modelo deixa de ser necessário.
 2. **Álcool por último.** O SGP30 demora minutos para voltar depois dele.
-3. **O próximo estímulo só entra quando o gráfico voltou ao nível do ar.** Abanar com um
-   caderno ajuda.
+3. **O próximo estímulo só entra quando o gráfico voltou ao nível do ar,** a `temp`
+   também. Depois da chama, a placa demora a esfriar, e a fumaça que entra com a placa
+   ainda morna é reconhecida pela temperatura, não pela partícula. Abanar com um caderno
+   ajuda.
 4. **Porta e ar-condicionado parados**, menos para arejar depois da fumaça. A sala trocando
    de ar muda a temperatura e o gás, e o modelo aprende o momento da coleta, não o estímulo.
 
@@ -140,7 +142,7 @@ estímulo:
 | Estímulo | Curva | Espere no `ar` |
 |---|---|---|
 | vapor | `umid` e `nc0_5` (sobem) | 2 min: o `nc0_5` volta em segundos, mas o `pm2_5` e o `tvoc` levam uns 2 min |
-| chama | `temp` (sobe) | 2 a 3 min: a placa guarda calor, e a `temp` volta devagar |
+| chama | `temp` (sobe) | até a `temp` voltar a meio grau do valor de antes: 1 a 2 min se ela subiu 2 °C, mais de 15 min se subiu 8 °C |
 | fumaça | `nc0_5` (sobe); confira também o `tvoc` | 3 a 5 min, com a porta aberta e abanando |
 | álcool | `raw_ethanol` (cai) | 5 min ou mais; é o último, então este `ar` fecha a coleta |
 
@@ -154,7 +156,8 @@ estímulo:
 - **De onde vêm os tempos:** das coletas de 10 e 11/11/2026. Depois do álcool, o
   `raw_ethanol` levou uns 5 min para chegar perto do normal. Depois da fumaça forte (vela
   repetida a cada 15 s), 4 min de `ar` não bastaram: o `nc0_5` ainda estava dez vezes acima
-  do começo.
+  do começo. Na chama do app16-3 (11/11/2026, 22:07), a `temp` subiu 7,9 °C e levou 16 min
+  para voltar; com 2,1 °C (a das 18:48), levou pouco mais de 1 min.
 
 ## A coleta do professor
 
@@ -200,11 +203,11 @@ No painel do `coleta.py`, o `estimulo` vira a cor de fundo de todos os gráficos
 ar, roxo = vapor, azul = chama, vermelho = fumaça, amarelo = álcool): dá para ver cada
 curva mudando logo depois da troca de cor.
 
-## O que mudou em relação ao app21-1
+## O que mudou em relação ao app16-1
 
 - **Botão BOOT e a `SEQUENCIA` de estímulos:** linhas marcadas com `// ESTIMULO`.
 - **LED:** mostra a cor do estímulo, com as mesmas cores das classes do coletor da trilha
   IMU (verde, amarelo, roxo, vermelho), mais o azul da chama.
 - **Falta sensor:** o programa para e repete o aviso a cada 3 s, com o LED vermelho
-  piscando, porque o teste precisa dos 3 sensores e vermelho fixo é fumaça. No app21-1, os
+  piscando, porque o teste precisa dos 3 sensores e vermelho fixo é fumaça. No app16-1, os
   sensores que iniciaram continuam aparecendo.

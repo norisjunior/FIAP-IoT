@@ -1,10 +1,11 @@
-# app-Fumaca-SensorFusion (provisório)
+# app16-Fumaca-SensorFusion
 
-Caixa de fumaça do ID 13: **SGP30** (gás) + **SPS30** (partículas) + **BME280**
-(temperatura, umidade e pressão) num **ESP32-C3 Super Mini** (Plus, antena externa).
+Caixa de fumaça: **SGP30** (gás) + **SPS30** (partículas) + **BME280** (temperatura,
+umidade e pressão) num **ESP32-C3 Super Mini** (Plus, antena externa).
 
-Pasta provisória. Quando o firmware estiver validado na bancada, este programa vira o
-`app21-0-VerificaSensores` (ver `GUIA-CODIGO-SENSOR-FUSION.md`).
+É material do professor: a demonstração ao vivo dos IDs 13 em diante e o dataset escalar
+que a turma recebe pronto. O paralelo é com o dataset de fumaça do Kaggle
+(`kaggle_smoke_detection_iot.csv`), que tem as mesmas colunas.
 
 ## Os programas desta pasta
 
@@ -12,14 +13,11 @@ Grave na ordem. Cada um só faz sentido depois que o anterior funcionou.
 
 | Programa | Onde | Pronto quando |
 |---|---|---|
-| app21-0, verificador | esta pasta (`src/app.ino`) | mostra 0x58, 0x69 e 0x76; LED verde |
-| app21-0b, só o SPS30 (opcional) | `app21-0b-SPS30Sozinho/` | em outra placa: tipo 00080000, sem alarme; o vapor sobe `pm` e `nc` |
-| app21-1 | `app21-1-LeituraIsolada/` | cada sensor no plotter; o álcool mexe só no SGP30 |
-| app21-2 | `app21-2-TesteFenomenos/` | com o BOOT marcando o estímulo: o vapor mexe no SPS30 e na umidade, o álcool só no SGP30, a fumaça da vela nos dois, a chama na temperatura |
-| app21-3 | `app21-3-Fusao1Hz/` | cabeçalho + 1 linha por segundo |
-
-Quando tudo funcionar na bancada, a pasta vira `app21-Fumaca-GerarDataset-Escalares`, e o
-verificador vai para `app21-0-VerificaSensores/`.
+| app16-0, verificador | esta pasta (`src/app.ino`) | mostra 0x58, 0x69 e 0x76; LED verde |
+| app16-0b, só o SPS30 (opcional) | `app16-0b-SPS30Sozinho/` | em outra placa: tipo 00080000, sem alarme; o vapor sobe `pm` e `nc` |
+| app16-1 | `app16-1-LeituraIsolada/` | cada sensor no plotter; o álcool mexe só no SGP30 |
+| app16-2 | `app16-2-TesteFenomenos/` | com o BOOT marcando o estímulo: o vapor mexe no SPS30 e na umidade, o álcool só no SGP30, a fumaça da vela nos dois, a chama na temperatura |
+| app16-3 | `app16-3-Fusao1Hz/` | o coletor do dataset: o painel mostra as curvas, e o `.csv` ganha uma linha por segundo, com as colunas do Kaggle |
 
 ## Ligação
 

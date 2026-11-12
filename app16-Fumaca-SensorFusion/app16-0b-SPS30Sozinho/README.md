@@ -1,4 +1,4 @@
-# app21-0b-SPS30Sozinho
+# app16-0b-SPS30Sozinho
 
 Só o SPS30, numa segunda ESP32-C3 Super Mini, sem o SGP30 e o BME280. Serve para confirmar
 que o sensor e as leituras estão certos com nada mais no barramento.

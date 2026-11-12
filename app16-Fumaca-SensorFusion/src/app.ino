@@ -1,4 +1,4 @@
-// app-Fumaca-SensorFusion (provisorio: vira o app21-0-VerificaSensores)
+// app16-0: verificador da caixa de fumaca
 // Caixa de fumaca: confere se os 3 sensores respondem no I2C.
 //
 // Placa: ESP32-C3 Super Mini (Plus, com antena externa)

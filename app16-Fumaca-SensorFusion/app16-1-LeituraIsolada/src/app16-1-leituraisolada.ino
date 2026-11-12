@@ -1,9 +1,9 @@
-// app21-1-LeituraIsolada
+// app16-1-LeituraIsolada
 // Caixa de fumaca: cada sensor sozinho, no plotter (Teleplot), 1 leitura por segundo.
 // Pronto quando: o alcool mexe so no SGP30; o vapor mexe no SPS30 e na umidade.
 //
-// Ligacao: a mesma do app21-0 (os 3 sensores no I2C, SDA no GPIO20 e SCL no GPIO21).
-// LED RGB da placa: verde = os 3 sensores iniciaram; vermelho = falta algum (rode o app21-0).
+// Ligacao: a mesma do app16-0 (os 3 sensores no I2C, SDA no GPIO20 e SCL no GPIO21).
+// LED RGB da placa: verde = os 3 sensores iniciaram; vermelho = falta algum (rode o app16-0).
 
 #include <Wire.h>
 #include <Adafruit_SGP30.h>
@@ -48,7 +48,7 @@ void setup() {
     neopixelWrite(PINO_LED, 0, BRILHO, 0); // verde
   } else {
     neopixelWrite(PINO_LED, BRILHO, 0, 0); // vermelho
-    Serial.println("Falta sensor: rode o app21-0 para ver qual. Os outros continuam.");
+    Serial.println("Falta sensor: rode o app16-0 para ver qual. Os outros continuam.");
   }
 }
 
