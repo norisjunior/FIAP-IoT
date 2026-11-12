@@ -17,7 +17,7 @@
 | comentário só com título (app17-3 a app17-11, app18, app19) | o código é o que o aluno lê na tela; a explicação é da fala do professor |
 | sem NTP; `ts_epoch_ms` virou `ts_ms = millis()` | não sincronizar relógio pela internet; o tempo do ESP32 basta, e quem quiser alinha no notebook |
 | app19: calibração ativa, rede `(B)` e `MPU6500` | desfaz o commit `bd25eba`, que tinha deixado o Wokwi como padrão |
-| app17-8 (motor DC), app17-10 (C6), app17-11 (C3 + servo) | rigs de demonstração e variantes de placa, todos alimentando o mesmo treino |
+| app17-8 (motor DC), app17-10 (C6), app17-11 (C3 + servo) | placas prontas para o aluno que não conseguir montar, fora do conteúdo da aula (o objetivo é o protocolo de coleta); todas alimentam o mesmo treino |
 | LED RGB com uma cor por estado | padrão definido pelo professor para as placas com RGB |
 | XIAO nRF52840 Sense fica fora do app17 | vai para o app21 (`app-Fumaca-SensorFusion`), em outro chat |
 
@@ -29,6 +29,11 @@
    ainda fala de `ts_epoch_ms` e NTP (linhas ~135, 335, 610–635) e lista o filtro
    `setAccelLPF(41) + setGyroLPF(42)` na tabela de paridade (~653). O guia do app18/CloudAI no
    eval já foi atualizado: o quadro "Sem NTP" saiu e a tabela do payload usa `ts_ms`.
+   Nos decks do OneDrive (conferido em 2026-11-10): o deck 16 tem `ts_epoch_ms`/NTP (S15,
+   S24), a linha do filtro e "sete coisas" (S25) e "mesmo filtro" (S40). Fica registrado em
+   `LICOES-APRENDIDAS.md` e no `ROTEIRO-AULA-A-AULA.md` (IDs 15 e 17), para corrigir quando
+   esses decks forem refeitos. No deck do ID 14, só as notas do slide 10 (as perguntas
+   estavam "nos comentários do app17-4", que agora são só títulos).
 3. **Numeração.** Sem app17-9 desde a exclusão; decidir se app17-10 e app17-11 descem um número.
 4. **`MQTT_CLIENT_ID` igual em todas as versões.** Dois rigs ligados ao mesmo tempo se derrubam
    no broker; trocar o ID de um deles nesse caso.

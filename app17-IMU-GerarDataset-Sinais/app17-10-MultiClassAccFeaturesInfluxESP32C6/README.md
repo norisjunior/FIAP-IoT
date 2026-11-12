@@ -1,5 +1,7 @@
 # app17-10-MultiClassAccFeaturesInfluxESP32C6
 
+**Placa pronta, fora do conteúdo da aula.** Serve ao aluno que não conseguir montar a própria.
+
 Coletor multiclasse para a placa **ESP32-C6-DevKitC-1**. É o mesmo firmware da versão ESP32
 DevKit: mesmas features, mesmo tópico, mesmo payload e mesmo measurement. Mudam só a placa, os
 pinos e o LED onboard, que no C6 é o LED RGB.

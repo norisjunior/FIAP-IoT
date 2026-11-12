@@ -60,10 +60,12 @@ InfluxDB (measurement `vibracao_multiclasse`) e gera o `modelo_motor_multiclasse
 
 ## Outras versões deste app
 
-Mesmas features, tópico e measurement — os dados entram neste mesmo treino:
+Mesmas features, tópico e measurement — os dados entram neste mesmo treino. São placas
+prontas do professor, fora do conteúdo da aula: servem ao aluno que não conseguir montar a
+própria.
 
-- `app17-8-MultiClassAccFeaturesInfluxDevkitv1MOTOR`: o rig de demonstração do professor, com
-  um mini motor com hélice ligado pelo próprio ESP32 por ponte H enquanto a coleta roda.
+- `app17-8-MultiClassAccFeaturesInfluxDevkitv1MOTOR`: rig com um mini motor com hélice, ligado
+  pelo próprio ESP32 por ponte H enquanto a coleta roda.
 - `app17-10-MultiClassAccFeaturesInfluxESP32C6`: para a placa ESP32-C6-DevKitC-1.
-- `app17-11-MultiClassAccFeaturesInfluxESP32C3SERVO`: outro rig de demonstração, num ESP32-C3
-  Super Mini Plus com um microservo que vai e volta enquanto a coleta roda.
+- `app17-11-MultiClassAccFeaturesInfluxESP32C3SERVO`: num ESP32-C3 Super Mini Plus com um
+  microservo que vai e volta enquanto a coleta roda.

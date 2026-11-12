@@ -1,7 +1,7 @@
 # app17-11-MultiClassAccFeaturesInfluxESP32C3SERVO — 4 classes do motor (ESP32-C3 Super Mini, microservo)
 
-**Demonstração em aula.** É o mesmo coletor multiclasse que os alunos usam, numa montagem
-compacta do professor: um ESP32-C3 Super Mini Plus com um microservo que vai e volta enquanto a
+**Placa pronta, fora do conteúdo da aula.** Serve ao aluno que não conseguir montar a própria.
+É o mesmo coletor multiclasse que os alunos usam, numa montagem compacta do professor: um ESP32-C3 Super Mini Plus com um microservo que vai e volta enquanto a
 coleta roda. Os alunos não têm o servo; coletam com a versão sem motor deste app.
 
 Firmware ESP32 que calcula 8 features de aceleração no próprio dispositivo, em janela fixa de

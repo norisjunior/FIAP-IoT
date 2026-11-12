@@ -16,9 +16,12 @@ Estado, decisões e pendências: [PLANO.md](PLANO.md) — leia antes de mexer, a
 | `app17-5-AccRawSerial` | sinal bruto pela Serial + `coletor_raw.py` | referência, fora do roteiro |
 | `app17-6-BinaryAccFeaturesInflux` | binário normal/anomalia, features `rms_*`, MQTT → InfluxDB | referência, fora do roteiro |
 | `app17-7-MultiClassAccFeaturesInflux` | **o coletor da aula**: 4 classes, MQTT → InfluxDB, Colab de treino | roteiro |
-| `app17-8-MultiClassAccFeaturesInfluxDevkitv1MOTOR` | o app17-7 no rig do professor: mini motor com hélice, ponte H | demonstração |
-| `app17-10-MultiClassAccFeaturesInfluxESP32C6` | o app17-7 na ESP32-C6-DevKitC-1 (pioarduino) | variante de placa |
-| `app17-11-MultiClassAccFeaturesInfluxESP32C3SERVO` | o app17-7 no ESP32-C3 Super Mini Plus com microservo | demonstração |
+| `app17-8-MultiClassAccFeaturesInfluxDevkitv1MOTOR` | o app17-7 no rig do professor: mini motor com hélice, ponte H | placa pronta, fora da aula |
+| `app17-10-MultiClassAccFeaturesInfluxESP32C6` | o app17-7 na ESP32-C6-DevKitC-1 (pioarduino) | placa pronta, fora da aula |
+| `app17-11-MultiClassAccFeaturesInfluxESP32C3SERVO` | o app17-7 no ESP32-C3 Super Mini Plus com microservo | placa pronta, fora da aula |
+
+"Placa pronta" = montada pelo professor para o aluno que não conseguir montar a própria. Não
+entra nos slides: o objetivo da aula é o protocolo de coleta do dataset, não a placa.
 
 Não existe app17-9: o binário para ESP32-C6 foi excluído pelo professor em 2026-11-10.
 

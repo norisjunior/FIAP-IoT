@@ -37,7 +37,7 @@ PubSubClient mqttClient(wifiClient);
 #define LED_RGB       8   // LED RGB da placa
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
-#define MPU_TYPE MPU6050 // ou MPU6500 (WHO_AM_I = 0x70)
+#define MPU_TYPE MPU6500 // ou MPU6500 (WHO_AM_I = 0x70)
 MPU_TYPE mpu;
 
 calData calib = { 0 };

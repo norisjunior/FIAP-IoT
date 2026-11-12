@@ -37,3 +37,7 @@ Cada feature responde a uma pergunta sobre a janela. Valores em `g`.
 - As mesmas contas feitas a mao, com 5 leituras reais de cada situacao (coleta do
   app17-3): [`colab/contas_da_janela.ipynb`](colab/contas_da_janela.ipynb). A saida
   original do Serial de cada coleta esta em [`coleta_professor/`](coleta_professor/).
+- A `coleta_professor/` e de 06/11/2026, antes da correcao do fundo de escala: o
+  `setAccelRange(8)` vinha antes do segundo `init()` e a coleta rodou em +-16 g. Em `g` os
+  valores sao praticamente os mesmos; o maior pico (4,7 g, no chacoalho) cabe em +-8 g. Nao precisa
+  recoletar.

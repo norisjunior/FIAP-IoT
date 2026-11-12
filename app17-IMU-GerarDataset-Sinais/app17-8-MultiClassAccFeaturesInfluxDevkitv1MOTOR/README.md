@@ -1,8 +1,9 @@
 # app17-8-MultiClassAccFeaturesInfluxDevkitv1MOTOR — 4 classes do motor (ESP32 DevKit v1, motor real)
 
-**Demonstração em aula.** É o mesmo coletor multiclasse que os alunos usam, montado no rig do
-professor: um mini motor de verdade, com hélice, girando enquanto a coleta roda. Os alunos não
-têm o motor; coletam com a versão sem motor deste app.
+**Placa pronta, fora do conteúdo da aula.** Serve ao aluno que não conseguir montar a própria.
+É o mesmo coletor multiclasse que os alunos usam, montado no rig do professor: um mini motor de
+verdade, com hélice, girando enquanto a coleta roda. Os alunos não têm o motor; coletam com a
+versão sem motor deste app.
 
 Firmware ESP32 que calcula 8 features de aceleração no próprio dispositivo, em janela fixa de
 **100 amostras (1 s @ 100 Hz)**, e publica 1 mensagem MQTT (JSON) por janela — além de imprimir
