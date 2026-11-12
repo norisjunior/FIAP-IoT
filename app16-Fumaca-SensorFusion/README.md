@@ -5,7 +5,8 @@ umidade e pressão) num **ESP32-C3 Super Mini** (Plus, antena externa).
 
 É material do professor: a demonstração ao vivo dos IDs 13 em diante e o dataset escalar
 que a turma recebe pronto. O paralelo é com o dataset de fumaça do Kaggle
-(`kaggle_smoke_detection_iot.csv`), que tem as mesmas colunas.
+(`app16-4-Fusao1Hz-MQTT/colab/dataset_detector_fumaca_kaggle.csv`), que tem as mesmas colunas.
+Os dois CSV e os notebooks que vão para a turma estão em `app16-4-Fusao1Hz-MQTT/colab/`.
 
 ## Os programas desta pasta
 
@@ -18,6 +19,7 @@ Grave na ordem. Cada um só faz sentido depois que o anterior funcionou.
 | app16-1 | `app16-1-LeituraIsolada/` | cada sensor no plotter; o álcool mexe só no SGP30 |
 | app16-2 | `app16-2-TesteFenomenos/` | com o BOOT marcando o estímulo: o vapor mexe no SPS30 e na umidade, o álcool só no SGP30, a fumaça da vela nos dois, a chama na temperatura |
 | app16-3 | `app16-3-Fusao1Hz/` | o coletor do dataset: o painel mostra as curvas, e o `.csv` ganha uma linha por segundo, com as colunas do Kaggle |
+| app16-4 | `app16-4-Fusao1Hz-MQTT/` | o app16-3 com MQTT: o Grafana recebe um ponto por segundo (Node-RED → InfluxDB); o Colab treina fire/not fire e prevê a última leitura |
 
 ## Ligação
 

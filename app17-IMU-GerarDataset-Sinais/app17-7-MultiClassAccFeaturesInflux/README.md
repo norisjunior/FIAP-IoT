@@ -33,7 +33,7 @@ Tópico `FIAPIoT/motor/multiclasse` — 1 JSON por janela:
 
 ```json
 {
-  "device": "IoTDevMultiClasse001",
+  "device": "DEFINA_UM_NOME",
   "label": "inclinado_frente",
   "rodada": 1,
   "janela": 7,
