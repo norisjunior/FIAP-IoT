@@ -22,22 +22,21 @@ produzidos por um firmware específico, com uma configuração específica de
 sensor. **Se a inferência produzir os números de outro jeito, o modelo recebe
 features fora da distribuição em que foi treinado — e erra sem avisar.**
 
-Nove coisas precisam ser idênticas às do app de coleta, que gerou o dataset. Elas
+Oito coisas precisam ser idênticas às do app de coleta, que gerou o dataset. Elas
 aparecem marcadas com **⚖ paridade** ao longo do guia:
 
 | # | O quê | Valor |
 |---|---|---|
 | 1 | Chip do IMU | o **mesmo** usado na coleta (`MPU6500` ou `MPU6050`) |
-| 2 | Fundo de escala | `setAccelRange(8)` |
-| 3 | Filtro anti-aliasing | `setAccelLPF(41)` + `setGyroLPF(42)` |
-| 4 | Calibração | `calibrateAccelGyro()`, na posição de uso, motor parado |
-| 5 | Amostragem | 100 Hz, janela de 100 amostras |
-| 6 | As 4 funções de feature | copiadas literalmente |
-| 7 | Nomes e unidade | os 8 nomes exatos, valores em `g` |
-| 8 | **A ordem das 8 features** | a ordem das colunas no Colab vira a ordem de `x[]` |
-| 9 | **A ordem das 4 classes** | `classes_` (alfabética) vira o vetor `NOMES_CLASSES[]` |
+| 2 | Calibração | `calibrateAccelGyro()`, na posição de uso, motor parado |
+| 3 | Fundo de escala | `setAccelRange(8)`, **depois** do segundo `init()` |
+| 4 | Amostragem | 100 Hz, janela de 100 amostras |
+| 5 | As 4 funções de feature | copiadas literalmente |
+| 6 | Nomes e unidade | os 8 nomes exatos, valores em `g` |
+| 7 | **A ordem das 8 features** | a ordem das colunas no Colab vira a ordem de `x[]` |
+| 8 | **A ordem das 4 classes** | `classes_` (alfabética) vira o vetor `NOMES_CLASSES[]` |
 
-Os itens 8 e 9 são novos: eles não existiam na versão com API, onde o JSON
+Os itens 7 e 8 são novos: eles não existiam na versão com API, onde o JSON
 levava cada feature pelo **nome** e a classe voltava como **texto**. Aqui não há
 JSON e não há texto: entra um vetor de 8 posições e sai um número de 0 a 3.
 Posição errada e número errado não causam erro de compilação — causam predição
@@ -65,7 +64,7 @@ JSON. O modelo não aparece aqui: ele é um header em `src/`, não uma bibliotec
 
 Objetivo: imprimir `accelX/Y/Z` no Monitor Serial.
 
-**⚖ paridade 1, 2, 3 e 4** estão todas nesta etapa. São quatro linhas fáceis de
+**⚖ paridade 1, 2 e 3** estão todas nesta etapa. São três linhas fáceis de
 copiar errado e impossíveis de descobrir depois: o erro não aparece como falha,
 aparece como um modelo que "não funciona direito".
 
@@ -94,21 +93,15 @@ void setup() {
     while (1);
   }
 
-  mpu.setAccelRange(8);   // ⚖ paridade 2
-
-  // ⚖ paridade 3: anti-aliasing para amostrar a 100 Hz (Nyquist 50 Hz).
-  // São duas chamadas porque nenhuma sozinha cobre os dois chips:
-  mpu.setAccelLPF(41);   // MPU6500: escreve ACCEL_CONFIG2 -> 41 Hz.
-                         // MPU6050: o FastIMU não implementa, devolve -1 sem fazer nada.
-  mpu.setGyroLPF(42);    // MPU6050: o DLPF é COMPARTILHADO, então é ESTA linha que
-                         // filtra o acelerômetro (44 Hz). MPU6500: só o giroscópio.
-
   Serial.println("Deixe o motor na posicao inicial/de uso e nao o movimente durante a calibracao...");
   delay(2000);
-  // ⚖ paridade 4. No Wokwi, COMENTE a linha abaixo: o simulador não tem a FIFO
+  // ⚖ paridade 2. No Wokwi, COMENTE a linha abaixo: o simulador não tem a FIFO
   // do MPU e o ESP32 aborta com "Guru Meditation Error: IntegerDivideByZero".
   mpu.calibrateAccelGyro(&calib);
-  mpu.init(calib, 0x68);
+  mpu.init(calib, 0x68);   // reinicia o sensor já calibrado (e volta tudo ao padrão: ±16 g)
+
+  // ⚖ paridade 3: ±8 g. Tem que vir DEPOIS do init(), senão ele desfaz.
+  mpu.setAccelRange(8);
 
   Serial.println("MPU iniciado");
 }
@@ -131,7 +124,7 @@ saírem trocadas, volte aqui: é montagem do sensor, não é o modelo.
 
 ## Etapa 2 — Amostrar a 100 Hz e fechar a janela
 
-Objetivo: uma mensagem por segundo dizendo que a janela fechou. **⚖ paridade 5.**
+Objetivo: uma mensagem por segundo dizendo que a janela fechou. **⚖ paridade 4.**
 
 O `delay(200)` do loop anterior sai: quem marca o tempo agora é o `millis()`.
 
@@ -182,7 +175,7 @@ vibração saem menores do que as do treino.
 
 ## Etapa 3 — As 8 features
 
-Objetivo: imprimir os oito números por janela. **⚖ paridade 6 e 7.**
+Objetivo: imprimir os oito números por janela. **⚖ paridade 5 e 6.**
 
 Copie as quatro funções **literalmente**. Não é excesso de zelo: `calcStd`
 dividindo por `n - 1` em vez de `n` muda todos os `std_*` e desloca os limiares
@@ -232,7 +225,7 @@ E, dentro do `if (indice >= TAMANHO_JANELA)`, no lugar do `Serial.println`:
       float stdMag = calcStd(mag_buf, TAMANHO_JANELA, mMag);
       float p2p    = calcPtP(mag_buf, TAMANHO_JANELA);
 
-      // ⚖ paridade 8: a ORDEM é a ordem das colunas no Colab.
+      // ⚖ paridade 7: a ORDEM é a ordem das colunas no Colab.
       // x[0] é mean_ax porque mean_ax era a primeira coluna lá.
       float features[8] = { mx, my, mz, sx, sy, sz, stdMag, p2p };
 
@@ -295,7 +288,7 @@ manter a mesma sequência do outro app embarcado da disciplina.
 
 Eloquent::ML::Port::RandomForest modeloRF;
 
-/* ⚖ paridade 9: os nomes na ordem de classes_, que é ALFABÉTICA.
+/* ⚖ paridade 8: os nomes na ordem de classes_, que é ALFABÉTICA.
    O predict() devolve 0, 1, 2 ou 3; quem dá nome a esse número é este vetor.
    A ordem não é a que a gente usaria: o scikit-learn ordena as classes pelo
    nome, então anomalia fica no índice 0 e operando no 3. A seção 9 do Colab
@@ -644,9 +637,8 @@ Antes de acreditar numa predição, confira contra o app de coleta, que gerou o
 dataset:
 
 - [ ] `#define MPU_TYPE` — o mesmo chip da coleta
-- [ ] `setAccelRange(8)`
-- [ ] `setAccelLPF(41)` **e** `setGyroLPF(42)`, nesta ordem
 - [ ] `calibrateAccelGyro()` presente, feita na posição de uso e motor parado
+- [ ] `setAccelRange(8)` **depois** do segundo `mpu.init()`
 - [ ] `FS_HZ = 100`, `TAMANHO_JANELA = 100`
 - [ ] `tempoAnterior += AMOSTRA_MS` (passo fixo)
 - [ ] `calcStd` dividindo por `n`

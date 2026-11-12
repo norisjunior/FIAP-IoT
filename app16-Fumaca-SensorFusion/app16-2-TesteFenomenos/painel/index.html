@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caixa de fumaça</title>
+<link rel="stylesheet" href="uPlot.min.css">
+<style>
+  :root {
+    --fundo: #f4f5f7; --cartao: #ffffff; --borda: #e6e8ec; --texto: #0f172a; --suave: #64748b;
+    --ar: #22c55e; --alcool: #eab308; --vapor: #a855f7; --fumaca: #ef4444; --chama: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    display: flex; flex-direction: column; background: var(--fundo); color: var(--texto);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 20px;
+    background: var(--cartao); border-bottom: 1px solid var(--borda);
+  }
+  h1 { font-size: 16px; font-weight: 650; }
+  #origem { font-size: 12px; color: var(--suave); }
+  .estimulo {
+    display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 10px; border-radius: 999px;
+    background: color-mix(in srgb, var(--cor) 14%, white);
+    border: 1px solid color-mix(in srgb, var(--cor) 45%, white);
+    transition: background .3s, border-color .3s;
+  }
+  .led { width: 14px; height: 14px; border-radius: 50%; background: var(--cor); box-shadow: 0 0 12px var(--cor); }
+  .estimulo b { font-size: 15px; letter-spacing: .05em; text-transform: uppercase; }
+  .estimulo span, #relogio { color: var(--suave); font-variant-numeric: tabular-nums; }
+  .espaco { flex: 1; }
+  .segmento { display: inline-flex; padding: 2px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px; }
+  .segmento button {
+    padding: 5px 10px; border: 0; border-radius: 6px; background: transparent;
+    font: inherit; font-size: 13px; color: var(--suave); cursor: pointer;
+  }
+  .segmento button.ativo { background: var(--cartao); color: var(--texto); box-shadow: 0 1px 2px rgb(0 0 0 / .1); }
+  .botao {
+    padding: 6px 12px; border: 1px solid var(--borda); border-radius: 8px; background: var(--cartao);
+    font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .botao:hover { background: var(--fundo); }
+  .botao.parar { color: #b91c1c; border-color: #fecaca; }
+  .botao:disabled { opacity: .4; cursor: default; }
+  .legenda { display: flex; gap: 18px; padding: 10px 20px 0; font-size: 12px; color: var(--suave); }
+  .legenda i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 3px; vertical-align: -2px; }
+  main {
+    flex: 1; min-height: 0; display: grid; gap: 12px; padding: 10px 20px;
+    grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr);
+  }
+  .cartao {
+    display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 12px 12px 4px;
+    background: var(--cartao); border: 1px solid var(--borda); border-radius: 12px;
+  }
+  .cabeca { display: flex; justify-content: space-between; gap: 8px; }
+  .nome { font-size: 13px; font-weight: 600; }
+  .desc, .quando { font-size: 11px; color: var(--suave); }
+  .valor { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+  .valor small { margin-left: 3px; font-size: 12px; font-weight: 500; color: var(--suave); }
+  .quando { height: 15px; text-align: right; }
+  .grafico { flex: 1; min-height: 0; }
+  footer { padding: 0 20px 12px; font-size: 12px; color: var(--suave); }
+  summary { cursor: pointer; }
+  summary.aviso { color: #b91c1c; font-weight: 600; }
+  pre {
+    max-height: 160px; overflow: auto; margin-top: 6px; padding: 8px; font-size: 11px;
+    background: var(--cartao); border: 1px solid var(--borda); border-radius: 8px;
+  }
+  @media (max-width: 1100px) {
+    html, body { height: auto; }
+    main { flex: none; grid-template-columns: repeat(2, 1fr); grid-template-rows: none; grid-auto-rows: 260px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Caixa de fumaça</h1><div id="origem">conectando…</div></div>
+  <div class="estimulo" id="estimulo" style="--cor: var(--ar)">
+    <div class="led"></div><b id="est-nome">ar</b><span id="est-tempo">0:00</span>
+  </div>
+  <div id="relogio">0:00 · 0 amostras</div>
+  <div class="espaco"></div>
+  <div class="segmento" id="janela">
+    <button data-s="60">1 min</button><button data-s="300">5 min</button><button data-s="0" class="ativo">tudo</button>
+  </div>
+  <button class="botao" id="reiniciar" hidden>Reiniciar placa</button>
+  <button class="botao parar" id="parar">Parar</button>
+</header>
+<div class="legenda">
+  <span><i style="background: color-mix(in srgb, var(--ar) 35%, white)"></i>ar</span>
+  <span><i style="background: color-mix(in srgb, var(--vapor) 35%, white)"></i>vapor</span>
+  <span><i style="background: color-mix(in srgb, var(--chama) 35%, white)"></i>chama</span>
+  <span><i style="background: color-mix(in srgb, var(--fumaca) 35%, white)"></i>fumaça</span>
+  <span><i style="background: color-mix(in srgb, var(--alcool) 35%, white)"></i>álcool</span>
+</div>
+<main id="grade"></main>
+<footer><details><summary id="ultima">Mensagens da placa</summary><pre id="log"></pre></details></footer>
+
+<script src="uPlot.iife.min.js"></script>
+<script>
+const VARS = ["tvoc", "eco2", "raw_h2", "raw_ethanol", "pm2_5", "pm10", "nc0_5", "temp", "umid"];
+const PAINEIS = [
+  { v: "tvoc", desc: "gás total", un: "ppb", sensor: "SGP30", dec: 0 },
+  { v: "eco2", desc: "CO₂ estimado", un: "ppm", sensor: "SGP30", dec: 0 },
+  { v: "raw_h2", desc: "cru H₂ · cai com gás", un: "", sensor: "SGP30", dec: 0 },
+  { v: "raw_ethanol", desc: "cru etanol · cai com gás", un: "", sensor: "SGP30", dec: 0 },
+  { v: "pm2_5", extra: "pm10", desc: "massa de partículas · pm10 tracejado", un: "µg/m³", sensor: "SPS30", dec: 1 },
+  { v: "nc0_5", desc: "contagem de partículas", un: "/cm³", sensor: "SPS30", dec: 1 },
+  { v: "temp", desc: "temperatura", un: "°C", sensor: "BME280", dec: 1 },
+  { v: "umid", desc: "umidade", un: "%", sensor: "BME280", dec: 1 },
+];
+// Estimulo: as cores do LED RGB da placa
+const EST = {
+  0: { nome: "ar", cor: "#22c55e" }, 1: { nome: "álcool", cor: "#eab308" },
+  2: { nome: "vapor", cor: "#a855f7" }, 3: { nome: "fumaça", cor: "#ef4444" },
+  4: { nome: "chama", cor: "#3b82f6" },
+};
+
+const xs = [], est = [], col = Object.fromEntries(VARS.map(v => [v, []]));
+const graficos = [];
+let msgs = 0, janela = 0;
+const $ = id => document.getElementById(id);
+
+const tempo = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+const fmt = (v, dec) => v == null ? "–" : v.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+
+// Faixas de fundo na cor do estimulo
+function faixas(u) {
+  const n = xs.length;
+  if (!n) return;
+  const ctx = u.ctx, b = u.bbox;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(b.left, b.top, b.width, b.height); ctx.clip();
+  ctx.globalAlpha = 0.16;
+  let i0 = 0;
+  for (let i = 1; i <= n; i++) {
+    if (i === n || est[i] !== est[i0]) {
+      const xa = u.valToPos(xs[i0], "x", true), xb = u.valToPos(xs[Math.min(i, n - 1)], "x", true);
+      ctx.fillStyle = (EST[est[i0]] || { cor: "#94a3b8" }).cor;
+      ctx.fillRect(xa, b.top, Math.max(xb - xa, 1), b.height);
+      i0 = i;
+    }
+  }
+  ctx.restore();
+}
+
+function faixaX(u, mn, mx) {
+  if (mn == null) return [0, 10];
+  if (janela && mx - mn > janela) mn = mx - janela;
+  return [mn, Math.max(mx, mn + 10)];
+}
+
+function cria(p) {
+  const cartao = document.createElement("section");
+  cartao.className = "cartao";
+  cartao.innerHTML = `
+    <div class="cabeca">
+      <div><div class="nome">${p.v}${p.extra ? " · " + p.extra : ""}</div><div class="desc">${p.desc} · ${p.sensor}</div></div>
+      <div><div class="valor"><span>–</span><small>${p.un}</small></div><div class="quando"></div></div>
+    </div>
+    <div class="grafico"></div>`;
+  $("grade").appendChild(cartao);
+  const alvo = cartao.querySelector(".grafico");
+  const valor = cartao.querySelector(".valor span"), quando = cartao.querySelector(".quando");
+  const dados = p.extra ? [xs, col[p.v], col[p.extra]] : [xs, col[p.v]];
+
+  const series = [{}, { stroke: "#0f172a", width: 1.75, points: { show: false } }];
+  if (p.extra) series.push({ stroke: "#94a3b8", width: 1.5, dash: [5, 4], points: { show: false } });
+  const eixo = { stroke: "#64748b", grid: { stroke: "#eef0f3", width: 1 }, ticks: { show: false }, font: "11px system-ui", gap: 4 };
+
+  const g = { dados, mostra: i => {
+    const s = col[p.v], k = i == null ? s.length - 1 : i;
+    valor.textContent = fmt(s[k], p.dec);
+    quando.textContent = i == null ? "" : "em " + tempo(xs[i]);
+  } };
+  g.u = new uPlot({
+    width: alvo.clientWidth || 300, height: alvo.clientHeight || 150,
+    padding: [6, 18, 0, 0],
+    legend: { show: false },
+    cursor: { sync: { key: "coleta" }, drag: { x: false, y: false }, points: { size: 7, fill: "#0f172a" } },
+    scales: {
+      x: { time: false, range: faixaX },
+      y: { range: (u, mn, mx) => mn == null ? [0, 1] : uPlot.rangeNum(mn, mx, 0.1, true) },
+    },
+    axes: [
+      { ...eixo, size: 26, incrs: [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600], values: (u, v) => v.map(tempo) },
+      { ...eixo, size: 52, values: (u, v) => v.map(x => x.toLocaleString("pt-BR")) },
+    ],
+    series,
+    hooks: { drawClear: [faixas], setCursor: [u => g.mostra(u.cursor.idx)] },
+  }, dados, alvo);
+  new ResizeObserver(() => g.u.setSize({ width: alvo.clientWidth, height: alvo.clientHeight })).observe(alvo);
+  graficos.push(g);
+}
+
+function atualiza() {
+  for (const g of graficos) {
+    g.u.setData(g.dados);
+    if (g.u.cursor.idx == null) g.mostra(null);
+  }
+  const n = xs.length;
+  if (!n) return;
+  const e = est[n - 1], info = EST[e] || { nome: "?", cor: "#94a3b8" };
+  let j = n - 1;
+  while (j > 0 && est[j - 1] === e) j--;
+  $("estimulo").style.setProperty("--cor", info.cor);
+  $("est-nome").textContent = info.nome;
+  $("est-tempo").textContent = "há " + tempo(xs[n - 1] - xs[j]);
+  $("relogio").textContent = `${tempo(xs[n - 1])} · ${n} amostras`;
+}
+
+// Uma falha de rede nao para o painel: ele tenta de novo a cada 0,5 s
+let origem = "", falhou = false, encerrada = false;
+const mostraOrigem = () => $("origem").textContent = origem +
+  (encerrada ? " · coleta encerrada" : falhou ? " · sem resposta do coleta.py, tentando de novo" : "");
+
+async function busca() {
+  try {
+    const d = await (await fetch(`/dados?desde=${xs.length}&msgs=${msgs}`)).json();
+    origem = d.origem;
+    falhou = false;
+    $("reiniciar").hidden = !d.aovivo;
+    for (const a of d.amostras) {
+      xs.push(a[0]);
+      VARS.forEach((v, k) => col[v].push(a[1 + k]));
+      est.push(a[a.length - 1]);
+    }
+    if (d.mensagens.length) {
+      msgs += d.mensagens.length;
+      $("log").textContent += d.mensagens.join("\n") + "\n";
+      const ult = d.mensagens[d.mensagens.length - 1];
+      $("ultima").textContent = ult;
+      $("ultima").className = /erro|falhou/i.test(ult) ? "aviso" : "";
+    }
+    if (d.amostras.length) atualiza();
+  } catch (erro) {
+    console.error(erro);
+    falhou = true;
+  }
+  mostraOrigem();
+  if (!encerrada) setTimeout(busca, 500);
+}
+
+$("janela").addEventListener("click", ev => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  janela = +b.dataset.s;
+  for (const x of $("janela").children) x.classList.toggle("ativo", x === b);
+  atualiza();
+});
+$("reiniciar").onclick = () => confirm("Reiniciar a placa? A coleta continua no mesmo arquivo.") && fetch("/reiniciar", { method: "POST" });
+$("parar").onclick = () => {
+  if (!confirm("Parar a coleta?")) return;
+  encerrada = true;
+  $("parar").disabled = $("reiniciar").disabled = true;
+  mostraOrigem();
+  fetch("/parar", { method: "POST" });
+};
+
+PAINEIS.forEach(cria);
+busca();
+</script>
+</body>
+</html>

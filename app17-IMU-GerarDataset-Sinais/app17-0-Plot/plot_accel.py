@@ -19,7 +19,7 @@ win.resize(800, 600)
 
 # --- X ---
 plot_x = win.addPlot(title="X")
-plot_x.setYRange(-12, 12)
+plot_x.setYRange(-4, 4)  # em g. Chacoalhando forte passa disso: aumente se precisar
 curva_x = plot_x.plot(pen=pg.mkPen('orange', width=2))
 
 label_x = pg.LabelItem(justify='left')
@@ -28,7 +28,7 @@ win.nextRow()
 
 # --- Y ---
 plot_y = win.addPlot(title="Y")
-plot_y.setYRange(-12, 12)
+plot_y.setYRange(-4, 4)  # em g. Chacoalhando forte passa disso: aumente se precisar
 curva_y = plot_y.plot(pen=pg.mkPen('orange', width=2))
 
 label_y = pg.LabelItem(justify='left')
@@ -37,13 +37,21 @@ win.nextRow()
 
 # --- Z ---
 plot_z = win.addPlot(title="Z")
-plot_z.setYRange(-12, 12)
+plot_z.setYRange(-4, 4)  # em g. Chacoalhando forte passa disso: aumente se precisar
 curva_z = plot_z.plot(pen=pg.mkPen('orange', width=2))
 
 label_z = pg.LabelItem(justify='left')
 win.addItem(label_z)
 
-ser = serial.Serial(PORTA, BAUD, timeout=1)
+# DTR e RTS desligados ANTES de abrir: em placas com CH9102/CH340, com eles
+# ligados (o padrao do pyserial) o ESP32 fica preso em reset e nada chega.
+ser = serial.Serial()
+ser.port = PORTA
+ser.baudrate = BAUD
+ser.timeout = 1
+ser.dtr = False
+ser.rts = False
+ser.open()
 
 buffer = {}
 
@@ -72,9 +80,9 @@ def atualizar():
 
     # subtítulos (valores atuais)
     if dados_x:
-        label_x.setText(f"X atual: {dados_x[-1]:.2f} m/s²")
-        label_y.setText(f"Y atual: {dados_y[-1]:.2f} m/s²")
-        label_z.setText(f"Z atual: {dados_z[-1]:.2f} m/s²")
+        label_x.setText(f"X atual: {dados_x[-1]:.2f} g")
+        label_y.setText(f"Y atual: {dados_y[-1]:.2f} g")
+        label_z.setText(f"Z atual: {dados_z[-1]:.2f} g")
 
 timer = pg.QtCore.QTimer()
 timer.timeout.connect(atualizar)

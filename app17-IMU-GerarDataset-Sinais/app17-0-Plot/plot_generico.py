@@ -3,7 +3,7 @@ from pyqtgraph.Qt import QtWidgets
 import serial
 from collections import deque
 
-PORTA = "COM7"
+PORTA = "COM22"
 BAUD = 115200
 JANELA = 200
 
@@ -16,7 +16,15 @@ plots = {}
 curvas = {}
 dados = {}
 
-ser = serial.Serial(PORTA, BAUD, timeout=1)
+# DTR e RTS desligados ANTES de abrir: em placas com CH9102/CH340, com eles
+# ligados (o padrao do pyserial) o ESP32 fica preso em reset e nada chega.
+ser = serial.Serial()
+ser.port = PORTA
+ser.baudrate = BAUD
+ser.timeout = 1
+ser.dtr = False
+ser.rts = False
+ser.open()
 
 cores = ["orange", "cyan", "magenta", "yellow", "lime", "red", "white"]
 cor_index = 0
@@ -28,7 +36,7 @@ def criar_plot(tag):
         win.nextRow()
 
     plot = win.addPlot()
-    plot.setYRange(-12, 12)
+    plot.setYRange(-4, 4)  # em g. Chacoalhando forte passa disso: aumente se precisar
     plot.showGrid(x=True, y=True)
 
     cor = cores[cor_index % len(cores)]
