@@ -1,2 +1,6 @@
 .pio
 .vscode
+
+# credenciais dos grupos e o fluxo gerado a partir delas
+FluxoNodeRED-MultiClass/turma.csv
+FluxoNodeRED-MultiClass/flows_turma.json

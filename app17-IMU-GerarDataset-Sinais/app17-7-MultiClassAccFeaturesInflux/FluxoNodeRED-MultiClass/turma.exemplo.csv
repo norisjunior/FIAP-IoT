@@ -1,0 +1,3 @@
+grupo,device,url,org,bucket,token
+01,grupo01,https://us-east-1-1.aws.cloud2.influxdata.com,ORG_ID_DO_GRUPO_01,IoTSensores,TOKEN_DO_GRUPO_01
+02,grupo02,https://us-east-1-1.aws.cloud2.influxdata.com,ORG_ID_DO_GRUPO_02,IoTSensores,TOKEN_DO_GRUPO_02
