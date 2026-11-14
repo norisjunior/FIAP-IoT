@@ -21,6 +21,9 @@ COLETAS = [
      "2026-11-11 18:48"),
     (os.path.join(APP16, "app16-3-Fusao1Hz", "coleta_professor", "coleta-20261111-2207.csv"),
      "2026-11-11 22:07"),
+    # outro dia: o notebook do aluno treina em 11/11 e testa aqui
+    (os.path.join(APP16, "app16-3-Fusao1Hz", "coleta_professor", "coleta-20261113-1034.csv"),
+     "2026-11-13 10:34"),
 ]
 LOG_1848 = os.path.join(APP16, "app16-2-TesteFenomenos", "coleta_professor", "coleta-20261111-1848.csv")
 

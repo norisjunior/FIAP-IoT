@@ -13,7 +13,7 @@ leitura.
 
 | | app16-3 | app16-4 |
 |---|---|---|
-| Saída | Serial em Teleplot (`coleta.py`) | Serial em CSV (`coleta.py`) e MQTT (`FIAPIoT/fumaca/caixa`, 1 JSON por segundo, ArduinoJson) |
+| Saída | Serial em CSV (`coleta.py`) | o mesmo Serial em CSV e MQTT (`FIAPIoT/fumaca/caixa`, 1 JSON por segundo, ArduinoJson) |
 | Rede | não tem | Wi-Fi e broker no começo do `.ino` |
 | Sem rede | — | tenta o Wi-Fi por 10 s e segue só pelo Serial; sem broker, tenta de novo a cada 5 s sem travar a leitura |
 
@@ -62,7 +62,8 @@ viram uma.
 
 **4. Colab (professor).** Abra o `treinamento_fumaca.ipynb`, ponha o token nos Secrets
 (`INFLUX_TOKEN`) e rode em ordem:
-- **1b, uma vez:** sobe as duas coletas de 11/11 (tags `2026-11-11 18:48` e `2026-11-11 22:07`);
+- **1b, uma vez:** sobe as coletas do professor, gravadas pelo cabo (tags `2026-11-11 18:48`,
+  `2026-11-11 22:07` e `2026-11-13 10:34`);
 - **prepara o dataset:** tira a rodada 1, os 30 s depois de cada aperto (120 s no ar) e as
   colunas que não viram feature; o alvo é `incendio` = `fire` / `not fire`;
 - **um dia treina, o outro testa** (`DIA_TREINO`, `DIA_TESTE`): árvore de 3 níveis, matriz de
@@ -75,11 +76,15 @@ viram uma.
 ## Dia de treino, dia de teste
 
 - **Treino: 11/11**, as duas coletas, que têm fumaça e chama.
-- **Teste: outro dia**, gravado pelo MQTT só com condições normais e álcool (vapor, se der).
-  Fumaça e chama não entram em sala, nem em caixa fechada. No teste só há `not fire`: a matriz
-  mede o **alarme falso**.
-- **Para chegar ao álcool**, o BOOT passa por chama e fumaça: passe em menos de 30 s. O preparo
-  descarta esses segundos, e nenhuma linha do dia de teste sai como `fire`.
+- **Teste: 13/11**, uma sessão completa pelo cabo (app16-3), também com fumaça e chama: a matriz
+  mede o **alarme falso** e o **fogo perdido**. Treino 11/11 → teste 13/11: acerto 0,55, alarme
+  falso 47%, fogo perdido 0%. A árvore de 11/11 diz `fire` com pouca partícula e calor acima de
+  32,05 °C (a chama forte de 11/11); em 13/11, a caixa ficou entre 31,4 e 33,0 °C, e o próprio
+  ar cruzava o limiar. É o data drift.
+- **O dia da aula**, pelo MQTT: só condições normais, vapor e álcool (fumaça e chama não entram
+  em sala). Para chegar ao álcool, o BOOT passa por chama e fumaça: passe em menos de 30 s. O
+  preparo descarta esses segundos, e nenhuma linha sai como `fire`. **Caixa quente** (acima de
+  32 °C): o modelo de 11/11 diz `fire` até no ar parado.
 
 ## Os datasets dos alunos
 
@@ -89,14 +94,15 @@ Ficam em `colab/`, com os notebooks. O aluno recebe os CSV e os `.ipynb` e sobe 
 
 | Coluna | O que é |
 |---|---|
-| `coleta` | `2026-11-11 18:48` ou `2026-11-11 22:07` (depois, o dia de teste) |
+| `coleta` | `2026-11-11 18:48`, `2026-11-11 22:07` ou `2026-11-13 10:34` |
 | `estimulo` | ar, álcool, vapor, fumaça, chama (o botão BOOT) |
 | `temp`, `umid` | calor (°C) e umidade (%), BME280 |
 | `raw_h2`, `raw_ethanol` | gás, valor cru do SGP30: **cai** quando o gás sobe |
 | `pm2_5`, `pm10`, `nc0_5` | partícula, SPS30 |
 | `incendio` | `fire` (fumaça ou chama) ou `not fire` (ar, vapor, álcool) |
 
-- **3.081 linhas**, 334 de `fire`: 1.383 da coleta das 18:48 e 1.698 da das 22:07.
+- **5.730 linhas**, 436 de `fire`: 1.383 da coleta das 18:48, 1.698 da das 22:07 e 2.649 da de
+  13/11.
 - **7 features**, as que os dois programas da caixa medem igual. A coleta das 18:48 é do teste
   dos fenômenos (app16-2): o `tvoc` e o `eco2` saíram sem a correção de umidade, e o `pm1_0`, o
   `nc1_0` e o `nc2_5` não foram gravados.
@@ -104,8 +110,9 @@ Ficam em `colab/`, com os notebooks. O aluno recebe os CSV e os `.ipynb` e sobe 
   `coleta_professor/` (o log das 18:48 já convertido em
   `../app16-2-TesteFenomenos/coleta_professor/coleta-20261111-1848-dataset.csv`; se faltar,
   converte de novo) e aplica o mesmo preparo do notebook do professor.
-- **Com o dia de teste no banco:** a seção 11 do notebook do professor exporta o mesmo arquivo
-  com o dia novo. O notebook do aluno treina em 11/11 e testa nele sozinho.
+- **Com dois dias no dataset,** o notebook do aluno treina no mais antigo (11/11) e testa no
+  mais novo (13/11) sozinho. A seção 11 do notebook do professor exporta o mesmo formato a
+  partir do banco.
 
 **`dataset_detector_fumaca_kaggle.csv`:** o CSV do
 [Smoke Detection Dataset](https://www.kaggle.com/datasets/deepcontractor/smoke-detection-dataset),
@@ -118,6 +125,10 @@ que no Kaggle se chama `smoke_detection_iot.csv`.
 - no notebook do aluno, treinando na coleta das 18:48 e testando na das 22:07: alarme falso de
   30% (todo no ar) e nenhum fogo perdido; o pico do vapor e o da fumaça (a partícula quase
   empata) saem certos.
+
+**Testado em 13/11/2026:** o `caixa_de_fumaca.ipynb` rodou com o CSV de 5.730 linhas: treina em
+11/11 (a mesma árvore de antes), testa em 13/11, alarme falso de 47% e nenhum fogo perdido.
+Disse `fire`: condições normais 47%, vapor 9%, álcool 75%, fumaça e chama 100%.
 
 ## Decisões
 

@@ -1,0 +1,153 @@
+{
+  "name": "Caixa de fumaca: predict fire / not fire",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/fumaca/caixa",
+        "options": {
+          "jsonParseBody": true
+        }
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d4f85751-0ccb-45d1-a94c-abbf3bd3f5a5",
+      "name": "Leitura da caixa",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "dc15d98a-b23b-4919-9379-39e53f3027e4",
+      "name": "Predict Fumaca",
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "097f43df-d578-4407-b2a7-5c2adb1f1b8e",
+              "leftValue": "={{ $json.class }}",
+              "rightValue": "fire",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        112
+      ],
+      "id": "b6e5c9f6-2ff6-4d09-92be-8f5aa562cd3a",
+      "name": "E fire?"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=🔥 FIRE na caixa de fumaça!\ntemp {{ $('Leitura da caixa').item.json.message.temp }} °C · umid {{ $('Leitura da caixa').item.json.message.umid }} % · partícula {{ $('Leitura da caixa').item.json.message.nc0_5 }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        112
+      ],
+      "id": "aba1feca-b5aa-499e-b5d4-070a1e2d9eb0",
+      "name": "FIRE: alerta no Telegram",
+      "webhookId": "c4a91f28-6b03-4d17-9e85-2f6a0b73d914",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Leitura da caixa": {
+      "main": [
+        [
+          {
+            "node": "Predict Fumaca",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Predict Fumaca": {
+      "main": [
+        [
+          {
+            "node": "E fire?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "E fire?": {
+      "main": [
+        [
+          {
+            "node": "FIRE: alerta no Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e80fc7cf-c7f6-4a2a-9cf1-6af8b87195bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
+  },
+  "id": "MotorIMUMultiClasseF",
+  "tags": []
+}
