@@ -3,8 +3,8 @@
 Sete etapas. A cada uma, o arquivo compila e faz mais uma coisa.
 
 O que este firmware faz: mede o acelerômetro, fecha uma janela de 1 s, calcula
-8 features, publica em `FIAPIoT/motor/multiclasse` e espera a classe voltar em
-`FIAPIoT/motor/multiclasse/cmd`. Não há um único `if` sobre vibração ou
+8 features, publica em `FIAPIoT/motor/multiclasse/<nome da placa>` e espera a classe
+voltar em `FIAPIoT/motor/multiclasse/<nome da placa>/cmd`. Não há um único `if` sobre vibração ou
 inclinação — quem decide é o `.pkl`.
 
 Comece com `src/inferencia-na-nuvem.cpp` vazio.
@@ -266,16 +266,22 @@ const char* WIFI_PASSWORD = "";
 // ---- (B) ESP32 físico ----
 const char* WIFI_SSID     = "SUA_REDE";
 const char* WIFI_PASSWORD = "SUA_SENHA";
-#define MQTT_SERVER "192.168.0.100"   // IP da máquina com a IoT-platform
+#define MQTT_SERVER "192.168.0.100"   // endereço do broker da aula
 
 WiFiClient wifiClient;
 
 #define MQTT_PORT      1883
-#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse"       // a janela vai por aqui
-#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/cmd"   // a classe volta por aqui
-#define MQTT_CLIENT_ID "IoTDevInferenciaMultiClasse001"
+#define MQTT_CLIENT_ID "DEFINA_UM_NOME"   // o nome da SUA placa (o mesmo do dataset)
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse/" MQTT_CLIENT_ID          // a janela vai por aqui
+#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/" MQTT_CLIENT_ID "/cmd"   // a classe volta por aqui
 PubSubClient mqttClient(wifiClient);
 ```
+
+Troque `DEFINA_UM_NOME` pelo nome da sua placa, sem espaço nem acento (por exemplo
+`grupo03`). O compilador cola os textos: com esse nome, a placa publica em
+`FIAPIoT/motor/multiclasse/grupo03` e escuta em `FIAPIoT/motor/multiclasse/grupo03/cmd`.
+Cada placa tem o seu par de tópicos; num broker compartilhado, é isso que faz ela
+obedecer só ao modelo do próprio grupo. Os exemplos deste guia usam `grupo03`.
 
 Declare os dois protótipos junto com os outros, antes do `setup()`:
 
@@ -369,7 +375,7 @@ não serve para nada — o broker até envia, mas o firmware nunca lê.
 Conectando ao WiFi SUA_REDE....
 IP: 192.168.0.123
 Conectando ao MQTT Broker 192.168.0.100... Conectado!
-Inscrito em: FIAPIoT/motor/multiclasse/cmd
+Inscrito em: FIAPIoT/motor/multiclasse/grupo03/cmd
 ```
 
 Se travar nos pontinhos do Wi-Fi, o SSID ou a senha estão errados — o ESP32
@@ -436,13 +442,13 @@ Troque o `Serial.printf` da etapa 3 por:
 **Confira sem nenhuma API no ar:**
 
 ```bash
-mosquitto_sub -h localhost -t "FIAPIoT/motor/multiclasse" -v
+mosquitto_sub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03" -v
 ```
 
 Uma mensagem por segundo, com os 9 campos:
 
 ```json
-{"device":"IoTDevInferenciaMultiClasse001","mean_ax":0.328,"mean_ay":-0.008,"mean_az":0.929,"std_ax":0.036,"std_ay":0.030,"std_az":0.042,"std_mag":0.046,"p2p_mag":0.215}
+{"device":"grupo03","mean_ax":0.049,"mean_ay":0.696,"mean_az":0.687,"std_ax":0.009,"std_ay":0.011,"std_az":0.011,"std_mag":0.011,"p2p_mag":0.088}
 ```
 
 ---
@@ -626,14 +632,14 @@ serve: com mais de uma assinatura ativa, é o que diz de onde a mensagem veio.
 **Confira sem o n8n:**
 
 ```bash
-mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse/cmd" -m "anomalia"
+mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03/cmd" -m "anomalia"
 ```
 
 O buzzer liga e o Serial imprime:
 
 ```text
 --- MQTT recebido ---
-  topico:  FIAPIoT/motor/multiclasse/cmd
+  topico:  FIAPIoT/motor/multiclasse/grupo03/cmd
   tamanho: 8 bytes
   payload: "anomalia"
   MODELO:  anomalia         -> BUZZER ligado
@@ -687,16 +693,16 @@ Na ordem, parando no primeiro que falhar:
 # 1. a API, sozinha
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"mean_ax":-0.413,"mean_ay":0.811,"mean_az":0.965,"std_ax":0.017,"std_ay":0.011,"std_az":0.005,"std_mag":0.01,"p2p_mag":0.04}'
+  -d '{"mean_ax":0.049,"mean_ay":0.696,"mean_az":0.687,"std_ax":0.009,"std_ay":0.011,"std_az":0.011,"std_mag":0.011,"p2p_mag":0.088}'
 
 # 2. o firmware publicando
-mosquitto_sub -h localhost -t "FIAPIoT/motor/multiclasse" -v
+mosquitto_sub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03" -v
 
 # 3. o n8n respondendo
-mosquitto_sub -h localhost -t "FIAPIoT/motor/multiclasse/cmd" -v
+mosquitto_sub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03/cmd" -v
 
 # 4. o firmware obedecendo
-mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse/cmd" -m "anomalia"
+mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03/cmd" -m "anomalia"
 ```
 
 O degrau 4 testa **o firmware inteiro sem n8n e sem API**: o buzzer tem que
@@ -708,7 +714,8 @@ provavelmente o `Send Input Data`.
 > Publicar diretamente em `.../cmd` testa apenas a saída do ESP32, sem acionar o Telegram.
 
 No Wokwi dá para reproduzir a **inclinação**: o MPU6050 tem controle de
-aceleração em X, Y e Z. Ajuste até o Serial mostrar `mean_az ≈ 0,91` e
-`mean_ax ≈ ±0,42`. O que **não** sai é a `anomalia`, que é vibração: com o
+aceleração em X, Y e Z. Para o `.pkl` de referência, ajuste até o Serial mostrar
+`mean_az ≈ 0,7` e `mean_ay ≈ +0,7` (frente) ou `−0,8` (trás): ele aprendeu a
+inclinação no eixo y. O que **não** sai é a `anomalia`, que é vibração: com o
 controle parado, as 100 amostras da janela ficam idênticas e `std_*` e
 `p2p_mag` dão zero. O ciclo MQTT → n8n → API → MQTT, esse funciona inteiro.

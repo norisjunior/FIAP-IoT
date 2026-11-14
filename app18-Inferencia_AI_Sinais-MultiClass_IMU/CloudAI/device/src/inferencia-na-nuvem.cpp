@@ -18,15 +18,15 @@
 // ---- (B) ESP32 físico ----
 const char* WIFI_SSID     = "NorisIoT";
 const char* WIFI_PASSWORD = "Secure10T";
-#define MQTT_SERVER "172.16.10.101"   // IP da máquina com a IoT-platform
+#define MQTT_SERVER "172.16.10.101"   // endereço do broker da aula
 
 WiFiClient wifiClient;
 
 /* ---- MQTT ---- */
 #define MQTT_PORT      1883
-#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse"       // a janela vai por aqui
-#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/cmd"   // a classe volta por aqui
-#define MQTT_CLIENT_ID "IoTDevInferenciaMultiClasse001"
+#define MQTT_CLIENT_ID "DEFINA_UM_NOME"   // o nome da SUA placa (o mesmo do dataset)
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse/" MQTT_CLIENT_ID          // a janela vai por aqui
+#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/" MQTT_CLIENT_ID "/cmd"   // a classe volta por aqui
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Pinos ---- */
