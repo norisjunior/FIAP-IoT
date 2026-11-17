@@ -44,7 +44,7 @@ O `.env` concentra imagens, portas publicadas, fuso horário, usuários, senhas,
 InfluxDB e chave do n8n. Revise os valores didáticos para a instalação da faculdade.
 
 Para o n8n na rede, ajuste `N8N_HOST` para o IP ou domínio do servidor e
-`N8N_EDITOR_BASE_URL` e `WEBHOOK_URL` para a URL completa com protocolo e porta pública.
+`N8N_EDITOR_BASE_URL` e `N8N_WEBHOOK_URL` para a URL completa com protocolo e porta pública.
 Ao mudar `N8N_PORT`, atualize essas URLs; a porta interna continua sendo 5678.
 Com HTTPS, ajuste o protocolo e `N8N_SECURE_COOKIE=true` conforme o proxy.
 
