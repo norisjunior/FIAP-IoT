@@ -49,7 +49,7 @@
   .legenda i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 3px; vertical-align: -2px; }
   main {
     flex: 1; min-height: 0; display: grid; gap: 12px; padding: 10px 20px;
-    grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr);
   }
   .cartao {
     display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 12px 12px 4px;
@@ -101,17 +101,25 @@
 
 <script src="uPlot.iife.min.js"></script>
 <script>
-const VARS = ["tvoc", "eco2", "raw_h2", "raw_ethanol", "pm2_5", "pm10", "nc0_5", "temp", "umid"];
+// A mesma lista e a mesma ordem do VARIAVEIS do coleta.py
+const VARS = ["tvoc", "eco2", "raw_h2", "raw_ethanol", "pm2_5", "pm10", "nc0_5", "temp", "umid",
+              "pressao", "pm1_0", "pm4_0", "nc1_0", "nc2_5", "nc4_0", "nc10", "tamanho"];
+// extras: outras curvas no mesmo grafico; faixa: as faixas do SPS30, da mais fina (escura) a maior (clara)
 const PAINEIS = [
   { v: "tvoc", desc: "gás total", un: "ppb", sensor: "SGP30", dec: 0 },
   { v: "eco2", desc: "CO₂ estimado", un: "ppm", sensor: "SGP30", dec: 0 },
   { v: "raw_h2", desc: "cru H₂ · cai com gás", un: "", sensor: "SGP30", dec: 0 },
   { v: "raw_ethanol", desc: "cru etanol · cai com gás", un: "", sensor: "SGP30", dec: 0 },
-  { v: "pm2_5", extra: "pm10", desc: "massa de partículas · pm10 tracejado", un: "µg/m³", sensor: "SPS30", dec: 1 },
+  { v: "pm2_5", extras: ["pm10"], desc: "massa de partículas · pm10 tracejado", un: "µg/m³", sensor: "SPS30", dec: 1 },
   { v: "nc0_5", desc: "contagem de partículas", un: "/cm³", sensor: "SPS30", dec: 1 },
   { v: "temp", desc: "temperatura", un: "°C", sensor: "BME280", dec: 1 },
   { v: "umid", desc: "umidade", un: "%", sensor: "BME280", dec: 1 },
+  { v: "pm1_0", extras: ["pm2_5", "pm4_0", "pm10"], faixa: true, desc: "massa por faixa · 1; 2,5; 4; 10 µm", un: "µg/m³", sensor: "SPS30", dec: 1 },
+  { v: "nc0_5", extras: ["nc1_0", "nc2_5", "nc4_0", "nc10"], faixa: true, desc: "contagem por faixa · 0,5 a 10 µm", un: "/cm³", sensor: "SPS30", dec: 1 },
+  { v: "tamanho", desc: "tamanho típico · fumaça abaixo de 1 µm", un: "µm", sensor: "SPS30", dec: 2 },
+  { v: "pressao", desc: "pressão · muda com o dia, não com a fumaça", un: "hPa", sensor: "BME280", dec: 1 },
 ];
+const CINZAS = ["#334155", "#64748b", "#94a3b8", "#cbd5e1"];
 // Estimulo: as cores do LED RGB da placa
 const EST = {
   0: { nome: "ar", cor: "#22c55e" }, 1: { nome: "álcool", cor: "#eab308" },
@@ -154,21 +162,25 @@ function faixaX(u, mn, mx) {
 }
 
 function cria(p) {
+  const extras = p.extras || [];
+  const nome = p.faixa ? `${p.v} a ${extras[extras.length - 1]}` : [p.v, ...extras].join(" · ");
   const cartao = document.createElement("section");
   cartao.className = "cartao";
   cartao.innerHTML = `
     <div class="cabeca">
-      <div><div class="nome">${p.v}${p.extra ? " · " + p.extra : ""}</div><div class="desc">${p.desc} · ${p.sensor}</div></div>
+      <div><div class="nome">${nome}</div><div class="desc">${p.desc} · ${p.sensor}</div></div>
       <div><div class="valor"><span>–</span><small>${p.un}</small></div><div class="quando"></div></div>
     </div>
     <div class="grafico"></div>`;
   $("grade").appendChild(cartao);
   const alvo = cartao.querySelector(".grafico");
   const valor = cartao.querySelector(".valor span"), quando = cartao.querySelector(".quando");
-  const dados = p.extra ? [xs, col[p.v], col[p.extra]] : [xs, col[p.v]];
+  const dados = [xs, col[p.v], ...extras.map(e => col[e])];
 
   const series = [{}, { stroke: "#0f172a", width: 1.75, points: { show: false } }];
-  if (p.extra) series.push({ stroke: "#94a3b8", width: 1.5, dash: [5, 4], points: { show: false } });
+  extras.forEach((e, k) => series.push(p.faixa
+    ? { stroke: CINZAS[k], width: 1.5, points: { show: false } }
+    : { stroke: "#94a3b8", width: 1.5, dash: [5, 4], points: { show: false } }));
   const eixo = { stroke: "#64748b", grid: { stroke: "#eef0f3", width: 1 }, ticks: { show: false }, font: "11px system-ui", gap: 4 };
 
   const g = { dados, mostra: i => {

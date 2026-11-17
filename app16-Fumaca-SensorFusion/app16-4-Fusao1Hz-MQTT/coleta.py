@@ -20,11 +20,16 @@ import serial
 from serial.tools import list_ports
 
 PASTA = Path(__file__).resolve().parent
-VARIAVEIS = ["tvoc", "eco2", "raw_h2", "raw_ethanol", "pm2_5", "pm10", "nc0_5", "temp", "umid"]
+# As variaveis do painel e do PNG (o CSV grava todas as colunas, estas e as outras)
+VARIAVEIS = ["tvoc", "eco2", "raw_h2", "raw_ethanol", "pm2_5", "pm10", "nc0_5", "temp", "umid",
+             "pressao", "pm1_0", "pm4_0", "nc1_0", "nc2_5", "nc4_0", "nc10", "tamanho"]
 
-# O dataset: as colunas do Kaggle, na mesma ordem, mais a rodada, o pm10 e o rotulo
+# O dataset: as colunas do Kaggle, na mesma ordem, mais a rodada, o resto do SPS30 e o rotulo
 COLUNAS = ["amostra", "rodada", "temp", "umid", "tvoc", "eco2", "raw_h2", "raw_ethanol", "pressao",
-           "pm1_0", "pm2_5", "nc0_5", "nc1_0", "nc2_5", "pm10", "estimulo"]
+           "pm1_0", "pm2_5", "nc0_5", "nc1_0", "nc2_5", "pm10",
+           "pm4_0", "nc4_0", "nc10", "tamanho", "estimulo"]
+# As coletas gravadas ate 17/11/2026 tem 16 colunas (sem pm4_0, nc4_0, nc10 e tamanho): o replay le as duas
+COLUNAS_16 = [c for c in COLUNAS if c not in ("pm4_0", "nc4_0", "nc10", "tamanho")]
 
 amostras = []   # cada uma: [t, tvoc, eco2, ..., umid, estimulo] (o painel)
 mensagens = []  # linhas que nao sao leitura: boot, ESTIMULO, erros
@@ -37,14 +42,15 @@ boot = False    # ao vivo, o que chega antes do boot e sobra de antes do reinici
 
 
 def leitura(linha):
-    """Uma linha do CSV da placa (os 16 numeros separados por virgula), ou None."""
+    """Uma linha do CSV da placa (20 numeros separados por virgula; 16 nas coletas antigas), ou None."""
     campos = linha.split(",")
-    if len(campos) != len(COLUNAS):
-        return None
-    try:
-        return {c: float(v) for c, v in zip(COLUNAS, campos)}
-    except ValueError:
-        return None
+    for colunas in (COLUNAS, COLUNAS_16):
+        if len(campos) == len(colunas):
+            try:
+                return {c: float(v) for c, v in zip(colunas, campos)}
+            except ValueError:
+                return None
+    return None
 
 
 def processa(linha, t):
@@ -57,7 +63,8 @@ def processa(linha, t):
     valores = leitura(linha)
     if valores:
         with trava:
-            amostras.append([round(t, 1)] + [valores[n] for n in VARIAVEIS] + [int(valores["estimulo"])])
+            # coleta antiga (16 colunas): o que ela nao tem vai como None (null no painel, buraco no grafico)
+            amostras.append([round(t, 1)] + [valores.get(n) for n in VARIAVEIS] + [int(valores["estimulo"])])
         if dataset:  # so ao vivo: o replay nao grava dataset
             dataset.write(linha.strip() + "\n")  # a linha como a placa mandou
             dataset.flush()
@@ -187,10 +194,17 @@ class Painel(SimpleHTTPRequestHandler):
 
 # Grafico final (PNG), com as mesmas cores do painel
 
-PAINEIS = [("tvoc", "gás total (ppb)"), ("eco2", "CO₂ estimado (ppm)"),
-           ("raw_h2", "cru H₂"), ("raw_ethanol", "cru etanol"),
-           ("pm2_5", "partículas, massa (µg/m³)"), ("nc0_5", "partículas, contagem (/cm³)"),
-           ("temp", "temperatura (°C)"), ("umid", "umidade (%)")]
+# (variavel, rotulo, outras curvas no mesmo grafico, faixa): nas faixas do SPS30, da mais fina
+# (escura) a maior (clara); fora delas, a outra curva sai tracejada
+PAINEIS = [("tvoc", "gás total (ppb)", [], False), ("eco2", "CO₂ estimado (ppm)", [], False),
+           ("raw_h2", "cru H₂", [], False), ("raw_ethanol", "cru etanol", [], False),
+           ("pm2_5", "partículas, massa (µg/m³)", ["pm10"], False),
+           ("nc0_5", "partículas, contagem (/cm³)", [], False),
+           ("temp", "temperatura (°C)", [], False), ("umid", "umidade (%)", [], False),
+           ("pm1_0", "massa por faixa (µg/m³)", ["pm2_5", "pm4_0", "pm10"], True),
+           ("nc0_5", "contagem por faixa (/cm³)", ["nc1_0", "nc2_5", "nc4_0", "nc10"], True),
+           ("tamanho", "tamanho típico (µm)", [], False), ("pressao", "pressão (hPa)", [], False)]
+CINZAS = ["#334155", "#64748b", "#94a3b8", "#cbd5e1"]
 CORES = {0: "#22c55e", 1: "#eab308", 2: "#a855f7", 3: "#ef4444", 4: "#3b82f6"}
 NOMES = {0: "ar", 1: "álcool", 2: "vapor", 3: "fumaça", 4: "chama"}
 
@@ -203,18 +217,25 @@ def salva_png(caminho):
 
     ts = [a[0] for a in amostras]
     est = [a[-1] for a in amostras]
-    col = {n: [a[1 + i] for a in amostras] for i, n in enumerate(VARIAVEIS)}
-    fig, axs = plt.subplots(2, 4, figsize=(16, 7), sharex=True, layout="constrained")
-    for ax, (nome, rotulo) in zip(axs.flat, PAINEIS):
+    col = {n: [float("nan") if a[1 + i] is None else a[1 + i] for a in amostras]
+           for i, n in enumerate(VARIAVEIS)}
+    fig, axs = plt.subplots(3, 4, figsize=(16, 10), sharex=True, layout="constrained")
+    for ax, (nome, rotulo, outras, faixa) in zip(axs.flat, PAINEIS):
         i0 = 0
         for i in range(1, len(ts) + 1):
             if i == len(ts) or est[i] != est[i0]:
                 ax.axvspan(ts[i0], ts[min(i, len(ts) - 1)], color=CORES[est[i0]], alpha=0.14, lw=0)
                 i0 = i
-        ax.plot(ts, col[nome], color="#0f172a", lw=1.4)
-        if nome == "pm2_5":
-            ax.plot(ts, col["pm10"], color="#94a3b8", lw=1.2, ls="--")
-        ax.set_title(f"{nome}  ·  {rotulo}", loc="left", fontsize=10, color="#0f172a")
+        ax.plot(ts, col[nome], color="#0f172a", lw=1.4, label=nome)
+        for k, outra in enumerate(outras):
+            if faixa:
+                ax.plot(ts, col[outra], color=CINZAS[k], lw=1.2, label=outra)
+            else:
+                ax.plot(ts, col[outra], color="#94a3b8", lw=1.2, ls="--")
+        if faixa:
+            ax.legend(fontsize=7, frameon=False, loc="upper left")
+        titulo = f"{nome} a {outras[-1]}" if faixa else nome
+        ax.set_title(f"{titulo}  ·  {rotulo}", loc="left", fontsize=10, color="#0f172a")
         ax.grid(color="#e5e7eb", lw=0.8)
         ax.tick_params(colors="#6b7280", labelsize=8, length=0)
         for lado in ("top", "right", "left", "bottom"):
