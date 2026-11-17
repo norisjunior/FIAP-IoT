@@ -1,4 +1,4 @@
-/* inferencia-na-nuvem (ESP32-C3 Super Mini, com microservo) — o ESP32 publica a janela e acende a saída da classe que a nuvem devolve */
+/* inferencia-na-nuvem (ESP32-C3 Super Mini, com motor de vibração) — o ESP32 publica a janela e acende a saída da classe que a nuvem devolve */
 
 #include <Arduino.h>
 #include "FastIMU.h"
@@ -8,7 +8,6 @@
 #include <WiFiClient.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <ESP32Servo.h>
 
 /* ---- Rede: use (A) Wokwi OU (B) ESP32 físico ---- */
 // ---- (A) Wokwi (padrão) ----
@@ -37,8 +36,9 @@ PubSubClient mqttClient(wifiClient);
 #define LED_VERDE     3   // inclinado_frente
 #define LED_LARANJA   4   // inclinado_tras
 #define LED_VERMELHO 10   // anomalia
+#define BUZZER        7   // anomalia (buzzer passivo)
 #define LED_RGB       8   // LED RGB da placa: a mesma cor do LED aceso
-#define SERVO_PIN     0
+#define MOTOR_PIN     0   // motor de vibração (pino IN do módulo)
 
 /* ---- Cores do LED RGB (R, G, B) ---- */
 #define RGB_AZUL      0,  0, 40   // operando
@@ -53,15 +53,6 @@ PubSubClient mqttClient(wifiClient);
 MPU_TYPE mpu;
 
 calData calib = { 0 };
-
-/* ---- Servo: vai-e-volta o tempo todo, como na coleta ---- */
-Servo servo;
-const int      SERVO_ANG_A   = 60;
-const int      SERVO_ANG_B   = 120;
-const uint32_t SERVO_MEIO_MS = 500;   // tempo em cada lado
-
-bool     servoNoA       = false;
-uint32_t servoUltimaMud = 0;
 
 /* ---- Amostragem: 100 Hz, janela de 1 s ---- */
 const int FS_HZ          = 100;
@@ -80,8 +71,8 @@ uint32_t tempoAnterior = 0;
 void conectarWiFi();
 void conectarMQTT();
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho);
+void apagarLeds();
 void apagarTodasAsSaidas();
-void moverServo();
 void publicarJanela(float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p);
@@ -124,7 +115,12 @@ void setup() {
   pinMode(LED_VERDE,    OUTPUT);
   pinMode(LED_LARANJA,  OUTPUT);
   pinMode(LED_VERMELHO, OUTPUT);
+  pinMode(BUZZER,       OUTPUT);
   apagarTodasAsSaidas();
+
+  // Motor desligado: a calibração precisa da placa parada
+  pinMode(MOTOR_PIN, OUTPUT);
+  digitalWrite(MOTOR_PIN, LOW);
 
   Wire.begin(SDA_PIN, SCL_PIN);
   if (mpu.init(calib, 0x68) != 0) {
@@ -150,14 +146,12 @@ void setup() {
   digitalWrite(LED_VERDE,    LOW);
   digitalWrite(LED_LARANJA,  HIGH); neopixelWrite(LED_RGB, RGB_LARANJA);  delay(400);
   digitalWrite(LED_LARANJA,  LOW);
+  tone(BUZZER, 500, 250);   // bipe junto com o vermelho
   digitalWrite(LED_VERMELHO, HIGH); neopixelWrite(LED_RGB, RGB_VERMELHO); delay(400);
   apagarTodasAsSaidas();
 
-  // Servo em movimento, como na coleta
-  servo.attach(SERVO_PIN);
-  servo.write(SERVO_ANG_A);
-  servoNoA = true;
-  servoUltimaMud = millis();
+  // Motor vibrando o tempo todo, como na coleta
+  digitalWrite(MOTOR_PIN, HIGH);
 
   conectarWiFi();
 
@@ -175,6 +169,7 @@ void setup() {
   Serial.printf("    GPIO %2d  LED verde    = inclinado_frente\r\n", LED_VERDE);
   Serial.printf("    GPIO %2d  LED laranja  = inclinado_tras\r\n",   LED_LARANJA);
   Serial.printf("    GPIO %2d  LED vermelho = anomalia\r\n",         LED_VERMELHO);
+  Serial.printf("    GPIO %2d  buzzer       = anomalia (bipe)\r\n",  BUZZER);
   Serial.println("  RGB branco = conectado, a nuvem ainda nao respondeu");
   Serial.println("  RGB apagado = sem broker\r\n");
 }
@@ -185,9 +180,6 @@ void loop() {
     conectarMQTT();
   }
   mqttClient.loop();
-
-  // --- Servo: vai-e-volta ---
-  moverServo();
 
   // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
@@ -222,21 +214,19 @@ void loop() {
   }
 }
 
-/* ---- Apaga os LEDs e o RGB ---- */
-void apagarTodasAsSaidas() {
+/* ---- Apaga os LEDs externos (o RGB fica como está) ---- */
+void apagarLeds() {
   digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_VERDE,    LOW);
   digitalWrite(LED_LARANJA,  LOW);
   digitalWrite(LED_VERMELHO, LOW);
-  neopixelWrite(LED_RGB, RGB_APAGADO);
+  digitalWrite(BUZZER,       LOW);
 }
 
-/* ---- Servo ---- */
-void moverServo() {
-  if (millis() - servoUltimaMud < SERVO_MEIO_MS) return;
-  servoUltimaMud = millis();
-  servoNoA = !servoNoA;
-  servo.write(servoNoA ? SERVO_ANG_A : SERVO_ANG_B);
+/* ---- Apaga os LEDs e o RGB ---- */
+void apagarTodasAsSaidas() {
+  apagarLeds();
+  neopixelWrite(LED_RGB, RGB_APAGADO);
 }
 
 /* ---- WiFi ---- */
@@ -283,8 +273,8 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
   Serial.printf("  tamanho: %u bytes\r\n", tamanho);
   Serial.printf("  payload: \"%s\"\r\n", classe.c_str());
 
-  // Apaga tudo
-  apagarTodasAsSaidas();
+  // Apaga os LEDs; o RGB recebe uma cor só (duas seguidas, ele fica na primeira)
+  apagarLeds();
 
   // Acende a saída da classe
   if (classe == "operando") {
@@ -305,7 +295,8 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
   } else if (classe == "anomalia") {
     digitalWrite(LED_VERMELHO, HIGH);
     neopixelWrite(LED_RGB, RGB_VERMELHO);
-    Serial.println("  MODELO:  anomalia         -> LED vermelho");
+    tone(BUZZER, 500, 250);   // bipe de 250 ms
+    Serial.println("  MODELO:  anomalia         -> LED vermelho + bipe");
 
   } else {
     // Classe desconhecida: LEDs apagados, RGB branco

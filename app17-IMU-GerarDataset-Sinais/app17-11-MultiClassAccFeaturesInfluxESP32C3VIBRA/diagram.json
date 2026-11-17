@@ -25,7 +25,14 @@
       "left": 180,
       "attrs": { "color": "red", "label": "CLASSE (4)" }
     },
-    { "type": "wokwi-servo", "id": "servo1", "top": 190, "left": -240, "attrs": {} }
+    {
+      "type": "wokwi-led",
+      "id": "motor1",
+      "top": 190,
+      "left": -190,
+      "attrs": { "color": "yellow", "label": "motor de vibração (0)" }
+    },
+    { "type": "wokwi-resistor", "id": "rm", "top": 270, "left": -200, "rotate": 90, "attrs": { "value": "220" } }
   ],
   "connections": [
     [ "esp:3V3.1", "imu1:VCC", "red", [] ],
@@ -36,9 +43,9 @@
     [ "btn1:2.r", "esp:GND.2", "black", [] ],
     [ "btn2:1.l", "esp:4", "magenta", [] ],
     [ "btn2:2.l", "esp:GND.7", "black", [] ],
-    [ "servo1:PWM", "esp:0", "orange", [] ],
-    [ "servo1:V+", "esp:5V.1", "red", [] ],
-    [ "servo1:GND", "esp:GND.4", "black", [] ]
+    [ "esp:0", "motor1:A", "yellow", [] ],
+    [ "motor1:C", "rm:1", "black", [] ],
+    [ "rm:2", "esp:GND.4", "black", [] ]
   ],
   "dependencies": {}
 }

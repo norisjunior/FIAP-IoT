@@ -114,5 +114,5 @@ própria.
 - `app17-8-MultiClassAccFeaturesInfluxDevkitv1MOTOR`: rig com um mini motor com hélice, ligado
   pelo próprio ESP32 por ponte H enquanto a coleta roda.
 - `app17-10-MultiClassAccFeaturesInfluxESP32C6`: para a placa ESP32-C6-DevKitC-1.
-- `app17-11-MultiClassAccFeaturesInfluxESP32C3SERVO`: num ESP32-C3 Super Mini Plus com um
-  microservo que vai e volta enquanto a coleta roda.
+- `app17-11-MultiClassAccFeaturesInfluxESP32C3VIBRA`: num ESP32-C3 Super Mini Plus com um
+  motor de vibração que vibra enquanto a coleta roda.

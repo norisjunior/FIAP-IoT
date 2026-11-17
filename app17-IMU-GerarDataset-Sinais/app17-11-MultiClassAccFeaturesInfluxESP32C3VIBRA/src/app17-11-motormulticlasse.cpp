@@ -1,4 +1,4 @@
-/* app17-11-motormulticlasse — features de aceleração por janela (1 s @ 100 Hz), 4 classes, publicadas via MQTT (JSON). ESP32-C3 Super Mini com microservo. */
+/* app17-11-motormulticlasse — features de aceleração por janela (1 s @ 100 Hz), 4 classes, publicadas via MQTT (JSON). ESP32-C3 Super Mini com motor de vibração. */
 
 #include <Arduino.h>
 #include "FastIMU.h"
@@ -8,7 +8,6 @@
 #include <WiFiClient.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <ESP32Servo.h>
 
 /* ---- Rede: use (A) Wokwi OU (B) ESP32 físico ---- */
 // ---- (A) Wokwi (padrão) ----
@@ -35,23 +34,13 @@ PubSubClient mqttClient(wifiClient);
 #define BTN_COLETA    3   // inicia/para a coleta
 #define BTN_CLASSE    4   // avança para a próxima classe (só com a coleta parada)
 #define LED_RGB       8   // LED RGB da placa
-#define SERVO_PIN     0
+#define MOTOR_PIN     0   // motor de vibração (pino IN do módulo)
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
 #define MPU_TYPE MPU6500 // no Wokwi: MPU6050
 MPU_TYPE mpu;
 
 calData calib = { 0 };
-
-/* ---- Servo: vai-e-volta durante a coleta ---- */
-Servo servo;
-const int      SERVO_REPOUSO = 90;
-const int      SERVO_ANG_A   = 60;
-const int      SERVO_ANG_B   = 120;
-const uint32_t SERVO_MEIO_MS = 500;   // tempo em cada lado
-
-bool     servoNoA       = false;
-uint32_t servoUltimaMud = 0;
 
 /* ---- Sequência de classes ---- */
 const char* SEQUENCIA[] = { "operando", "inclinado_frente", "inclinado_tras", "anomalia" };
@@ -98,8 +87,7 @@ void conectarMQTT();
 void avancarClasse();
 void imprimirClasseAtual();
 void atualizarLed();
-void acionarServo(bool ligado);
-void moverServo();
+void acionarMotor(bool ligado);
 void publicarJanela(const char* label, unsigned long ts_ms, int rodadaAtual, int janelaIdx,
                     float mx, float my, float mz,
                     float sx, float sy, float sz,
@@ -138,6 +126,10 @@ void setup() {
   Serial.begin(115200);
   delay(1000);   // USB nativa: tempo para o Monitor Serial conectar
 
+  // Motor desligado: a calibração precisa da placa parada
+  pinMode(MOTOR_PIN, OUTPUT);
+  acionarMotor(false);
+
   Wire.begin(SDA_PIN, SCL_PIN);
   if (mpu.init(calib, 0x68) != 0) {
     Serial.println("Erro: MPU não encontrado");
@@ -157,9 +149,6 @@ void setup() {
   pinMode(BTN_COLETA, INPUT_PULLUP);
   pinMode(BTN_CLASSE, INPUT_PULLUP);
   atualizarLed();
-
-  servo.attach(SERVO_PIN);
-  acionarServo(false);
 
   conectarWiFi();
 
@@ -194,12 +183,12 @@ void loop() {
         indice = 0;
         tempoAnterior = millis();
         atualizarLed();
-        acionarServo(true);
+        acionarMotor(true);
         Serial.printf("Coleta INICIADA (classe: %s)\r\n", SEQUENCIA[indiceClasse]);
       } else {
         atualizarLed();
-        acionarServo(false);
-        Serial.println("Coleta PARADA (servo em repouso)");
+        acionarMotor(false);
+        Serial.println("Coleta PARADA (motor desligado)");
       }
       ultimoDebounceColeta = millis();
     }
@@ -221,9 +210,6 @@ void loop() {
   ultimoBotaoClasse = leituraClasse;
 
   if (!coletando) return;
-
-  // --- Servo: vai-e-volta ---
-  moverServo();
 
   // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
@@ -268,8 +254,8 @@ void loop() {
       if (janelaAtual >= META_JANELAS) {
         coletando = false;
         atualizarLed();
-        acionarServo(false);
-        Serial.printf(">>> %d janelas coletadas para %s (rodada %02d). Servo em repouso: reposicione o gabarito e aperte o botao 4 para a proxima classe.\r\n",
+        acionarMotor(false);
+        Serial.printf(">>> %d janelas coletadas para %s (rodada %02d). Motor desligado: reposicione o gabarito e aperte o botao 4 para a proxima classe.\r\n",
                       META_JANELAS, label, rodada);
       }
     }
@@ -297,18 +283,9 @@ void atualizarLed() {
   neopixelWrite(LED_RGB, cor[0], cor[1], cor[2]);
 }
 
-/* ---- Servo ---- */
-void acionarServo(bool ligado) {
-  servoNoA = ligado;
-  servo.write(ligado ? SERVO_ANG_A : SERVO_REPOUSO);
-  servoUltimaMud = millis();
-}
-
-void moverServo() {
-  if (millis() - servoUltimaMud < SERVO_MEIO_MS) return;
-  servoUltimaMud = millis();
-  servoNoA = !servoNoA;
-  servo.write(servoNoA ? SERVO_ANG_A : SERVO_ANG_B);
+/* ---- Motor de vibração ---- */
+void acionarMotor(bool ligado) {
+  digitalWrite(MOTOR_PIN, ligado ? HIGH : LOW);
 }
 
 /* ---- WiFi ---- */

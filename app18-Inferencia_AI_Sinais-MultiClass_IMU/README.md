@@ -121,9 +121,9 @@ No Wokwi a **inclinação** sai, pelo controle de aceleração do MPU6050. A
 janela idênticas.
 
 **Outra placa:** [`CloudAI/device-esp32c3/`](CloudAI/device-esp32c3/README.md) é o
-mesmo firmware no ESP32-C3 Super Mini Plus com microservo, a montagem do dataset de
-referência (placa do professor). Um LED por classe (azul, verde, laranja, vermelho) e
-o LED RGB da placa repetindo a cor do LED aceso.
+mesmo firmware no ESP32-C3 Super Mini Plus com motor de vibração, a montagem da placa pronta
+de coleta (placa do professor). Um LED por classe (azul, verde, laranja, vermelho), o LED
+RGB da placa repetindo a cor do LED aceso e um bipe na anomalia.
 
 ## 5) A mesma janela, sem nuvem
 
@@ -142,7 +142,7 @@ partir do mesmo dataset da coleta.
 CloudAI/   o modelo na nuvem
   api/       service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
   device-devkitv1/   firmware (publica a janela, assina o tópico de comando)
-  device-esp32c3/    o mesmo, no ESP32-C3 Super Mini Plus com microservo
+  device-esp32c3/    o mesmo, no ESP32-C3 Super Mini Plus com motor de vibração
   n8n/       Fluxo-n8n-predict.json
 EdgeAI/    o modelo na borda
   colab/     treinamento da Random Forest
