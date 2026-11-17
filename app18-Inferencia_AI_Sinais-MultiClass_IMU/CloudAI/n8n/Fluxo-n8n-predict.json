@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "topics": "FIAPIoT/motor/multiclasse",
+        "topics": "FIAPIoT/motor/multiclasse/DEFINA_UM_NOME",
         "options": {
           "jsonParseBody": true
         }
@@ -15,7 +15,7 @@
         0
       ],
       "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f001",
-      "name": "FIAPIoT/motor/multiclasse",
+      "name": "Janela da placa",
       "credentials": {
         "mqtt": {
           "id": "Kto3xtuWvj20XFQv",
@@ -47,7 +47,7 @@
     },
     {
       "parameters": {
-        "topic": "FIAPIoT/motor/multiclasse/cmd",
+        "topic": "FIAPIoT/motor/multiclasse/DEFINA_UM_NOME/cmd",
         "sendInputData": false,
         "message": "={{ $json.class }}",
         "options": {}
@@ -59,7 +59,7 @@
         -112
       ],
       "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f005",
-      "name": "FIAPIoT/motor/multiclasse/cmd",
+      "name": "Classe para a placa",
       "credentials": {
         "mqtt": {
           "id": "Kto3xtuWvj20XFQv",
@@ -102,7 +102,7 @@
     },
     {
       "parameters": {
-        "chatId": "6239670426",
+        "chatId": "SEU_CHAT_ID",
         "text": "🚨 ANOMALIA no motor!\nO modelo identificou uma anomalia. Verifique o motor.",
         "additionalFields": {}
       },
@@ -124,7 +124,7 @@
     },
     {
       "parameters": {
-        "chatId": "6239670426",
+        "chatId": "SEU_CHAT_ID",
         "text": "=⚠️ A predição falhou.\nO motor continua medindo, mas ninguém está classificando.\n\nErro: {{ $json.error?.message || $json.error || 'sem detalhe' }}",
         "additionalFields": {}
       },
@@ -147,7 +147,7 @@
   ],
   "pinData": {},
   "connections": {
-    "FIAPIoT/motor/multiclasse": {
+    "Janela da placa": {
       "main": [
         [
           {
@@ -162,7 +162,7 @@
       "main": [
         [
           {
-            "node": "FIAPIoT/motor/multiclasse/cmd",
+            "node": "Classe para a placa",
             "type": "main",
             "index": 0
           },

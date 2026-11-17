@@ -17,7 +17,13 @@ MQTT Trigger → Predict Motor ┬(ok)──→ MQTT /cmd
 - Tenha as credenciais MQTT e Telegram da aula e o Chat ID do destinatário.
 
 Crie um workflow vazio. Para usar a versão pronta, importe
-[Fluxo-n8n-predict.json](Fluxo-n8n-predict.json) e selecione suas credenciais nos nós MQTT e Telegram. Ajuste o Chat ID para o seu chat.
+[Fluxo-n8n-predict.json](Fluxo-n8n-predict.json) e selecione suas credenciais nos nós MQTT e Telegram. Nos dois nós de MQTT, troque `DEFINA_UM_NOME` pelo nome da sua placa; nos dois nós do Telegram, troque `SEU_CHAT_ID` pelo seu Chat ID.
+
+**O nome da placa** é o `MQTT_CLIENT_ID` do firmware. Cada placa tem o seu par de
+tópicos: a janela chega em `FIAPIoT/motor/multiclasse/<nome>` e a classe volta em
+`FIAPIoT/motor/multiclasse/<nome>/cmd`. Os exemplos abaixo usam `grupo03`. Se o broker
+da aula não está no seu computador, a credencial MQTT do n8n aponta para o endereço
+dele, e nos comandos `mosquitto_pub` troque `localhost` por esse endereço.
 
 ## 1 — MQTT Trigger: receber a janela
 
@@ -25,9 +31,9 @@ Adicione **MQTT Trigger** e configure:
 
 | Campo | Valor |
 |---|---|
-| Nome do nó | `FIAPIoT/motor/multiclasse` |
+| Nome do nó | `Janela da placa` |
 | Credential | Sua credencial MQTT da IoT-platform |
-| Topics | `FIAPIoT/motor/multiclasse` |
+| Topics | `FIAPIoT/motor/multiclasse/<nome da placa>` |
 | Options | **JSON Parse Body** |
 
 O payload chega no campo `message`, e o **JSON Parse Body** já o entrega como
@@ -83,9 +89,9 @@ Conecte um nó **MQTT** diretamente ao `Predict Motor`:
 
 | Campo | Valor |
 |---|---|
-| Nome do nó | `FIAPIoT/motor/multiclasse/cmd` |
+| Nome do nó | `Classe para a placa` |
 | Credential | Sua credencial MQTT da IoT-platform |
-| Topic | `FIAPIoT/motor/multiclasse/cmd` |
+| Topic | `FIAPIoT/motor/multiclasse/<nome da placa>/cmd` |
 | Send Input Data | **Desligado** |
 | Message — modo Expression | `{{ $json.class }}` |
 
@@ -138,7 +144,7 @@ também não é prático.
 O caminho é publicar a janela direto no tópico, fingindo ser o ESP32:
 
 ```bash
-mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse" -m '{"device":"TesteManual","mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.450,"std_ay":0.300,"std_az":0.400,"std_mag":0.420,"p2p_mag":1.60}'
+mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03" -m '{"device":"TesteManual","mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.450,"std_ay":0.300,"std_az":0.400,"std_mag":0.420,"p2p_mag":1.60}'
 ```
 
 O fluxo não sabe a diferença: chega uma mensagem no tópico, ele classifica. A
@@ -148,7 +154,7 @@ ligado — o **buzzer dele toca**, porque a classe volta pelo tópico de comando
 Para comparar, a mesma janela com vibração normal, que dá `operando`:
 
 ```bash
-mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse" -m '{"device":"TesteManual","mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.030,"std_ay":0.028,"std_az":0.032,"std_mag":0.035,"p2p_mag":0.16}'
+mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03" -m '{"device":"TesteManual","mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.030,"std_ay":0.028,"std_az":0.032,"std_mag":0.035,"p2p_mag":0.16}'
 ```
 
 As duas mensagens têm a **mesma orientação** — os três `mean_*` são idênticos.
@@ -194,7 +200,7 @@ Dá para parar o `uvicorn`, e é o teste mais realista. Mas há um jeito de ver 
 ramo de erro com a API no ar: mandar uma janela com `NaN` numa das features.
 
 ```bash
-mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse" -m '{"device":"TesteManual","mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.030,"std_ay":0.028,"std_az":0.032,"std_mag":"NaN","p2p_mag":0.16}'
+mosquitto_pub -h localhost -t "FIAPIoT/motor/multiclasse/grupo03" -m '{"device":"TesteManual","mean_ax":-0.02,"mean_ay":0.00,"mean_az":1.00,"std_ax":0.030,"std_ay":0.028,"std_az":0.032,"std_mag":"NaN","p2p_mag":0.16}'
 ```
 
 O caminho da mensagem é o seguinte: o Pydantic **aceita** a string `"NaN"` num

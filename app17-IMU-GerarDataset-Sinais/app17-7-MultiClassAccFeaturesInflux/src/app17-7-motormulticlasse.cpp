@@ -25,7 +25,7 @@ WiFiClient wifiClient;
 /* ---- MQTT ---- */
 #define MQTT_PORT      1883
 #define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse"
-#define MQTT_CLIENT_ID "IoTDevMultiClasse001"
+#define MQTT_CLIENT_ID "DEFINA_UM_NOME"   // Troque por um nome so seu: e o device no banco
 PubSubClient mqttClient(wifiClient);
 
 /* ---- Pinos ---- */

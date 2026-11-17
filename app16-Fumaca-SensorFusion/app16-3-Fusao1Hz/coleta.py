@@ -1,7 +1,8 @@
 # coleta.py (app16-3): grava o dataset da caixa de fumaca e mostra o painel ao vivo no navegador
 # Uso: python coleta.py                          (acha a placa sozinho)
 #      python coleta.py COM27                    (porta escolhida)
-#      python coleta.py --replay ARQUIVO.log [N] (repete uma coleta gravada, N vezes mais rapido)
+#      python coleta.py --replay ARQUIVO.log [N] (repete uma coleta gravada, N vezes mais rapido;
+#                                                 o .csv tambem serve, sem as mensagens da placa)
 # Grava: coleta-AAAAMMDD-HHMM.csv (o dataset), .log (tudo o que a placa mandou) e .png
 # Ctrl+T e depois Ctrl+D no terminal: liga/desliga o DTR (duas vezes reinicia a placa)
 # Parar: botao Parar no painel, ou Ctrl+C no terminal
@@ -31,38 +32,38 @@ mensagens = []  # linhas que nao sao leitura: boot, ESTIMULO, erros
 trava = threading.Lock()
 parar = threading.Event()
 inicio = time.monotonic()
-atual = {}
-texto = {}      # os mesmos valores, como a placa mandou (o dataset)
 ser = None
 dataset = None
 boot = False    # ao vivo, o que chega antes do boot e sobra de antes do reinicio
 
 
+def leitura(linha):
+    """Uma linha do CSV da placa (os 16 numeros separados por virgula), ou None."""
+    campos = linha.split(",")
+    if len(campos) != len(COLUNAS):
+        return None
+    try:
+        return {c: float(v) for c, v in zip(COLUNAS, campos)}
+    except ValueError:
+        return None
+
+
 def processa(linha, t):
-    """Uma linha da placa: leitura (>nome: valor) ou mensagem."""
+    """Uma linha da placa: leitura (CSV) ou mensagem."""
     global boot
     if linha.startswith("ESP-ROM"):  # primeira linha do boot
         boot = True
     if not boot:
         return
-    if linha.startswith(">") and ":" in linha:
-        nome, valor = linha[1:].split(":", 1)
-        nome = nome.strip()
-        try:
-            v = float(valor)
-        except ValueError:
-            return
-        texto[nome] = valor.strip()
-        if nome == "estimulo":  # a ultima linha de cada amostra
-            with trava:
-                amostras.append([round(t, 1)] + [atual.get(n) for n in VARIAVEIS] + [int(v)])
-            if dataset:  # so ao vivo: o replay nao grava dataset
-                dataset.write(",".join(texto.get(c, "") for c in COLUNAS) + "\n")
-                dataset.flush()
-            atual.clear()
-            texto.clear()
-        else:
-            atual[nome] = v
+    valores = leitura(linha)
+    if valores:
+        with trava:
+            amostras.append([round(t, 1)] + [valores[n] for n in VARIAVEIS] + [int(valores["estimulo"])])
+        if dataset:  # so ao vivo: o replay nao grava dataset
+            dataset.write(linha.strip() + "\n")  # a linha como a placa mandou
+            dataset.flush()
+    elif linha.startswith("amostra,"):  # o cabecalho que a placa manda no boot: o .csv ja tem o seu
+        return
     else:
         with trava:
             mensagens.append(linha)
@@ -142,7 +143,7 @@ def le_arquivo(caminho, velocidade):
             return
         linha = linha.rstrip("\r\n")
         processa(linha, n)
-        if linha.startswith(">estimulo"):
+        if leitura(linha):
             n += 1
             time.sleep(1 / velocidade)
     print("[fim da coleta gravada]")

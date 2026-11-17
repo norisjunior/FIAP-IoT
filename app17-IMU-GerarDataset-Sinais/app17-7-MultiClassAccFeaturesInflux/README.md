@@ -22,10 +22,57 @@ do `app17-6` (binário: normal vs anomalia). Quatro classes, sempre com o motor 
 1. **Wokwi:** ative o bloco `(A)` no topo do `.cpp`, use `#define MPU_TYPE MPU6050` e comente
    `mpu.calibrateAccelGyro(&calib);`. As classes de inclinação não têm equivalente fiel no
    simulador — serve para testar botões, LED e publicação MQTT.
-2. **ESP32 físico:** ative o bloco `(B)` e ajuste WiFi + IP do broker MQTT.
+2. **ESP32 físico:** ative o bloco `(B)`, ajuste WiFi + IP do broker MQTT e **troque o
+   `DEFINA_UM_NOME` do `MQTT_CLIENT_ID` por um nome só seu**: é o `device` que separa as suas
+   janelas das dos colegas no broker e no banco. Dois ESP32 com o mesmo nome no mesmo broker se
+   derrubam.
 3. Calibrar com o motor na posição inicial/de uso, sem movê-lo.
 4. Coleta parada: botão 18 escolhe a classe. Botão 21 inicia a coleta, que para sozinha ao
    completar 30 janelas. Repita para as 4 classes; recomendado 3 rodadas completas.
+
+## O protocolo de coleta (o dataset)
+
+Uma **rodada** é uma volta pelas 4 classes; a **classe** é uma condição mantida estável
+durante as 30 janelas. O botão numera; quem posiciona o sensor é quem sabe o rótulo.
+
+| Classe | Como posicionar | O que se espera |
+|---|---|---|
+| `operando` | parado e nivelado | `mean_az` perto de 1 g; `std_*` perto de 0 |
+| `inclinado_frente` | inclinado uns 30° para a frente, apoiado | parte da gravidade migra para um eixo (`mean_ay` ou `mean_ax`, conforme a montagem) |
+| `inclinado_tras` | o mesmo, para trás | o mesmo eixo, com o sinal trocado |
+| `anomalia` | chacoalhar com a mão, sem parar, as 30 janelas | `std_*` e `p2p_mag` sobem |
+
+1. **Posicione primeiro, aperte depois.** A coleta começa no aperto do 21; a janela 1 já conta.
+2. Mantenha a condição até o Serial avisar `>>> 30 janelas coletadas`.
+3. Aperte o 18 (a coleta já parou), reposicione, aperte o 21. Depois de `anomalia`, o 18
+   volta para `operando` e a rodada sobe.
+4. **3 rodadas completas:** 4 classes × 3 rodadas × 30 janelas = 360 janelas, uns 6 min de
+   coleta mais o tempo de reposicionar. O treino separa por rodada: a última rodada inteira
+   fica de fora. Com uma rodada só não há o que separar.
+
+## Node-RED: o broker da sala e o seu banco
+
+O fluxo [`FluxoNodeRED-MultiClass/flow_multiclasse_influx.json`](FluxoNodeRED-MultiClass/flow_multiclasse_influx.json)
+assina `FIAPIoT/motor/multiclasse` e grava no measurement `vibracao_multiclasse`:
+
+| | O quê |
+|---|---|
+| tags | `label`, `rodada`, `device` |
+| fields | as 8 features, `janela`, `ts_ms` |
+| broker | **o da sala**, um só para a turma (o IP está no nó `Broker da sala`; confira). O client id fica vazio: o Node-RED sorteia um, e 30 Node-RED não se derrubam |
+| banco | o **seu** InfluxDB Cloud: edite URL, org e token no nó de saída; o bucket vem como `IoTSensores` |
+| `MEU_DEVICE` | no nó **Monta ponto InfluxDB**: escreva o `MQTT_CLIENT_ID` da sua placa, e o fluxo grava só as suas janelas (as dos colegas aparecem como `ignorado: ...` no status). Vazio, grava todas: é como o professor grava a turma inteira |
+
+O horário do ponto é o da chegada no Node-RED; `ts_ms` é só referência.
+
+**Na sala (decisão de 12/11):** os grupos conectam no Wi-Fi e no broker do professor, e o
+Node-RED do professor tem **um fluxo por grupo** (`MEU_DEVICE` = a placa do grupo; o InfluxDB
+do grupo). O grupo entrega o nome da placa e URL, org, bucket e token do seu InfluxDB. O
+[`gerar_fluxos_turma.py`](FluxoNodeRED-MultiClass/gerar_fluxos_turma.py) monta todas as abas
+de uma vez a partir de um `turma.csv` (modelo em `turma.exemplo.csv`) e, com `--enviar`, grava
+no Node-RED pela API admin, com os tokens (a importação pelo menu não traz credenciais). Quem
+tem a plataforma no próprio notebook importa o fluxo, escreve o `MEU_DEVICE` e aponta o broker
+para o IP da sala. O `turma.csv` tem tokens: não vai para o repositório (está no `.gitignore`).
 
 ## Payload
 
@@ -33,7 +80,7 @@ Tópico `FIAPIoT/motor/multiclasse` — 1 JSON por janela:
 
 ```json
 {
-  "device": "IoTDevMultiClasse001",
+  "device": "DEFINA_UM_NOME",
   "label": "inclinado_frente",
   "rodada": 1,
   "janela": 7,

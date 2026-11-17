@@ -16,7 +16,7 @@ IoT-platform.
 
 ## O que muda
 
-| | `CloudAI/device/` | `EdgeAI/device/` |
+| | `CloudAI/device-devkitv1/` | `EdgeAI/device/` |
 |---|---|---|
 | Modelo | rede neural (MLP), num `.pkl` | Random Forest, em `if`/`else` |
 | Onde roda | FastAPI, no computador | na flash do ESP32 |

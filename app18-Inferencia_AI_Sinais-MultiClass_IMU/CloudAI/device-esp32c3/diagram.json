@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "author": "Noris Junior",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-c3-devkitm-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": { "serialInterface": "USB_SERIAL_JTAG" }
+    },
+    { "type": "wokwi-mpu6050", "id": "imu1", "top": -30, "left": 190, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -80,
+      "left": -190,
+      "attrs": { "color": "blue", "label": "operando (1)" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": -80,
+      "left": -130,
+      "attrs": { "color": "green", "label": "frente (3)" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": -80,
+      "left": -70,
+      "attrs": { "color": "orange", "label": "tras (4)" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led4",
+      "top": -80,
+      "left": -10,
+      "attrs": { "color": "red", "label": "anomalia (10)" }
+    },
+    { "type": "wokwi-resistor", "id": "r1", "top": 0, "left": -200, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "top": 0, "left": -140, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r3", "top": 0, "left": -80, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r4", "top": 0, "left": -20, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-servo", "id": "servo1", "top": 190, "left": -240, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:3V3.1", "imu1:VCC", "red", [] ],
+    [ "esp:GND.10", "imu1:GND", "black", [] ],
+    [ "esp:RX", "imu1:SDA", "blue", [] ],
+    [ "esp:TX", "imu1:SCL", "cyan", [] ],
+    [ "esp:1", "led1:A", "blue", [] ],
+    [ "led1:C", "r1:1", "black", [] ],
+    [ "r1:2", "esp:GND.1", "black", [] ],
+    [ "esp:3", "led2:A", "green", [] ],
+    [ "led2:C", "r2:1", "black", [] ],
+    [ "r2:2", "esp:GND.2", "black", [] ],
+    [ "esp:4", "led3:A", "orange", [] ],
+    [ "led3:C", "r3:1", "black", [] ],
+    [ "r3:2", "esp:GND.3", "black", [] ],
+    [ "esp:10", "led4:A", "red", [] ],
+    [ "led4:C", "r4:1", "black", [] ],
+    [ "r4:2", "esp:GND.7", "black", [] ],
+    [ "servo1:PWM", "esp:0", "orange", [] ],
+    [ "servo1:V+", "esp:5V.1", "red", [] ],
+    [ "servo1:GND", "esp:GND.4", "black", [] ]
+  ],
+  "dependencies": {}
+}

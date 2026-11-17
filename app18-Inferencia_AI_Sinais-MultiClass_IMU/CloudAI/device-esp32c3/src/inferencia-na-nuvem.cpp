@@ -1,4 +1,4 @@
-/* inferencia-na-nuvem — o ESP32 publica a janela e acende a saída da classe que a nuvem devolve */
+/* inferencia-na-nuvem (ESP32-C3 Super Mini, com microservo) — o ESP32 publica a janela e acende a saída da classe que a nuvem devolve */
 
 #include <Arduino.h>
 #include "FastIMU.h"
@@ -8,6 +8,7 @@
 #include <WiFiClient.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <ESP32Servo.h>
 
 /* ---- Rede: use (A) Wokwi OU (B) ESP32 físico ---- */
 // ---- (A) Wokwi (padrão) ----
@@ -18,31 +19,49 @@
 // ---- (B) ESP32 físico ----
 const char* WIFI_SSID     = "NorisIoT";
 const char* WIFI_PASSWORD = "Secure10T";
-#define MQTT_SERVER "172.16.10.101"   // IP da máquina com a IoT-platform
+#define MQTT_SERVER "172.16.10.101"   // endereço do broker da aula
 
 WiFiClient wifiClient;
 
 /* ---- MQTT ---- */
 #define MQTT_PORT      1883
-#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse"       // a janela vai por aqui
-#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/cmd"   // a classe volta por aqui
-#define MQTT_CLIENT_ID "IoTDevInferenciaMultiClasse001"
+#define MQTT_CLIENT_ID "IoTDevMultiClasse001"   // o nome desta placa (o mesmo do dataset)
+#define MQTT_PUB_TOPIC "FIAPIoT/motor/multiclasse/" MQTT_CLIENT_ID          // a janela vai por aqui
+#define MQTT_SUB_TOPIC "FIAPIoT/motor/multiclasse/" MQTT_CLIENT_ID "/cmd"   // a classe volta por aqui
 PubSubClient mqttClient(wifiClient);
 
-/* ---- Pinos ---- */
-#define SDA_PIN      22
-#define SCL_PIN      23
-#define LED_AZUL      4   // operando
-#define LED_AMARELO  21   // inclinado_frente
-#define LED_VERMELHO 18   // inclinado_tras
-#define BUZZER       19   // anomalia
-#define LED_ONBOARD   2   // LED onboard: aceso = conectado ao broker
+/* ---- Pinos (ESP32-C3 Super Mini) ---- */
+#define SDA_PIN      20
+#define SCL_PIN      21
+#define LED_AZUL      1   // operando
+#define LED_VERDE     3   // inclinado_frente
+#define LED_LARANJA   4   // inclinado_tras
+#define LED_VERMELHO 10   // anomalia
+#define LED_RGB       8   // LED RGB da placa: a mesma cor do LED aceso
+#define SERVO_PIN     0
+
+/* ---- Cores do LED RGB (R, G, B) ---- */
+#define RGB_AZUL      0,  0, 40   // operando
+#define RGB_VERDE     0, 40,  0   // inclinado_frente
+#define RGB_LARANJA  40, 10,  0   // inclinado_tras
+#define RGB_VERMELHO 40,  0,  0   // anomalia
+#define RGB_BRANCO   40, 40, 40   // conectado, sem classe
+#define RGB_APAGADO   0,  0,  0   // sem broker
 
 /* ---- Sensor (MPU6050 ou MPU6500) ---- */
 #define MPU_TYPE MPU6500 // no Wokwi: MPU6050
 MPU_TYPE mpu;
 
 calData calib = { 0 };
+
+/* ---- Servo: vai-e-volta o tempo todo, como na coleta ---- */
+Servo servo;
+const int      SERVO_ANG_A   = 60;
+const int      SERVO_ANG_B   = 120;
+const uint32_t SERVO_MEIO_MS = 500;   // tempo em cada lado
+
+bool     servoNoA       = false;
+uint32_t servoUltimaMud = 0;
 
 /* ---- Amostragem: 100 Hz, janela de 1 s ---- */
 const int FS_HZ          = 100;
@@ -62,6 +81,7 @@ void conectarWiFi();
 void conectarMQTT();
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho);
 void apagarTodasAsSaidas();
+void moverServo();
 void publicarJanela(float mx, float my, float mz,
                     float sx, float sy, float sz,
                     float stdMag, float p2p);
@@ -97,6 +117,14 @@ float calcPtP(float arr[], int n) {
 /* ============================== SETUP ============================== */
 void setup() {
   Serial.begin(115200);
+  delay(1000);   // USB nativa: tempo para o Monitor Serial conectar
+
+  // Saídas
+  pinMode(LED_AZUL,     OUTPUT);
+  pinMode(LED_VERDE,    OUTPUT);
+  pinMode(LED_LARANJA,  OUTPUT);
+  pinMode(LED_VERMELHO, OUTPUT);
+  apagarTodasAsSaidas();
 
   Wire.begin(SDA_PIN, SCL_PIN);
   if (mpu.init(calib, 0x68) != 0) {
@@ -114,22 +142,22 @@ void setup() {
 
   Serial.println("MPU iniciado");
 
-  // Saídas
-  pinMode(LED_AZUL,     OUTPUT);
-  pinMode(LED_AMARELO,  OUTPUT);
-  pinMode(LED_VERMELHO, OUTPUT);
-  pinMode(BUZZER,       OUTPUT);
-  pinMode(LED_ONBOARD,  OUTPUT);
-
-  apagarTodasAsSaidas();
-  digitalWrite(LED_ONBOARD, LOW);
-
-  // Teste das saídas
+  // Teste das saídas: cada LED com a mesma cor no RGB
   Serial.println("Testando as saidas...");
-  digitalWrite(LED_AZUL,     HIGH); delay(400); digitalWrite(LED_AZUL,     LOW);
-  digitalWrite(LED_AMARELO,  HIGH); delay(400); digitalWrite(LED_AMARELO,  LOW);
-  digitalWrite(LED_VERMELHO, HIGH); delay(400); digitalWrite(LED_VERMELHO, LOW);
-  tone(BUZZER, 500, 250); noTone(BUZZER);   // buzzer passivo
+  digitalWrite(LED_AZUL,     HIGH); neopixelWrite(LED_RGB, RGB_AZUL);     delay(400);
+  digitalWrite(LED_AZUL,     LOW);
+  digitalWrite(LED_VERDE,    HIGH); neopixelWrite(LED_RGB, RGB_VERDE);    delay(400);
+  digitalWrite(LED_VERDE,    LOW);
+  digitalWrite(LED_LARANJA,  HIGH); neopixelWrite(LED_RGB, RGB_LARANJA);  delay(400);
+  digitalWrite(LED_LARANJA,  LOW);
+  digitalWrite(LED_VERMELHO, HIGH); neopixelWrite(LED_RGB, RGB_VERMELHO); delay(400);
+  apagarTodasAsSaidas();
+
+  // Servo em movimento, como na coleta
+  servo.attach(SERVO_PIN);
+  servo.write(SERVO_ANG_A);
+  servoNoA = true;
+  servoUltimaMud = millis();
 
   conectarWiFi();
 
@@ -142,12 +170,13 @@ void setup() {
   Serial.println("Sistema pronto. Uma janela por segundo, sem botão nenhum.");
   Serial.printf("  Publica em: %s\r\n", MQTT_PUB_TOPIC);
   Serial.printf("  Escuta em:  %s\r\n", MQTT_SUB_TOPIC);
-  Serial.println("  Saidas (uma por classe):");
+  Serial.println("  Saidas (uma por classe, o RGB na mesma cor):");
   Serial.printf("    GPIO %2d  LED azul     = operando\r\n",         LED_AZUL);
-  Serial.printf("    GPIO %2d  LED amarelo  = inclinado_frente\r\n", LED_AMARELO);
-  Serial.printf("    GPIO %2d  LED vermelho = inclinado_tras\r\n",   LED_VERMELHO);
-  Serial.printf("    GPIO %2d  BUZZER       = anomalia\r\n",         BUZZER);
-  Serial.println("  Tudo apagado = a nuvem ainda nao respondeu\r\n");
+  Serial.printf("    GPIO %2d  LED verde    = inclinado_frente\r\n", LED_VERDE);
+  Serial.printf("    GPIO %2d  LED laranja  = inclinado_tras\r\n",   LED_LARANJA);
+  Serial.printf("    GPIO %2d  LED vermelho = anomalia\r\n",         LED_VERMELHO);
+  Serial.println("  RGB branco = conectado, a nuvem ainda nao respondeu");
+  Serial.println("  RGB apagado = sem broker\r\n");
 }
 
 /* ============================== LOOP =============================== */
@@ -157,7 +186,8 @@ void loop() {
   }
   mqttClient.loop();
 
-  digitalWrite(LED_ONBOARD, mqttClient.connected() ? HIGH : LOW);
+  // --- Servo: vai-e-volta ---
+  moverServo();
 
   // --- Coleta IMU a 100 Hz ---
   if (millis() - tempoAnterior >= AMOSTRA_MS) {
@@ -192,12 +222,21 @@ void loop() {
   }
 }
 
-/* ---- Apaga as quatro saídas ---- */
+/* ---- Apaga os LEDs e o RGB ---- */
 void apagarTodasAsSaidas() {
   digitalWrite(LED_AZUL,     LOW);
-  digitalWrite(LED_AMARELO,  LOW);
+  digitalWrite(LED_VERDE,    LOW);
+  digitalWrite(LED_LARANJA,  LOW);
   digitalWrite(LED_VERMELHO, LOW);
-  digitalWrite(BUZZER,       LOW);
+  neopixelWrite(LED_RGB, RGB_APAGADO);
+}
+
+/* ---- Servo ---- */
+void moverServo() {
+  if (millis() - servoUltimaMud < SERVO_MEIO_MS) return;
+  servoUltimaMud = millis();
+  servoNoA = !servoNoA;
+  servo.write(servoNoA ? SERVO_ANG_A : SERVO_ANG_B);
 }
 
 /* ---- WiFi ---- */
@@ -218,12 +257,14 @@ void conectarWiFi() {
 
 /* ---- MQTT ---- */
 void conectarMQTT() {
+  apagarTodasAsSaidas();
   while (!mqttClient.connected()) {
     Serial.printf("Conectando ao MQTT Broker %s...", MQTT_SERVER);
     if (mqttClient.connect(MQTT_CLIENT_ID)) {
       Serial.println(" Conectado!");
       mqttClient.subscribe(MQTT_SUB_TOPIC);
       Serial.printf("Inscrito em: %s\r\n", MQTT_SUB_TOPIC);
+      neopixelWrite(LED_RGB, RGB_BRANCO);
     } else {
       Serial.printf(" Falha rc=%d. Tentando em 5s...\r\n", mqttClient.state());
       delay(5000);
@@ -248,23 +289,28 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
   // Acende a saída da classe
   if (classe == "operando") {
     digitalWrite(LED_AZUL, HIGH);
-    Serial.println("  MODELO:  operando         -> LED azul aceso");
+    neopixelWrite(LED_RGB, RGB_AZUL);
+    Serial.println("  MODELO:  operando         -> LED azul");
 
   } else if (classe == "inclinado_frente") {
-    digitalWrite(LED_AMARELO, HIGH);
-    Serial.println("  MODELO:  inclinado_frente -> LED amarelo aceso");
+    digitalWrite(LED_VERDE, HIGH);
+    neopixelWrite(LED_RGB, RGB_VERDE);
+    Serial.println("  MODELO:  inclinado_frente -> LED verde");
 
   } else if (classe == "inclinado_tras") {
-    digitalWrite(LED_VERMELHO, HIGH);
-    Serial.println("  MODELO:  inclinado_tras   -> LED vermelho aceso");
+    digitalWrite(LED_LARANJA, HIGH);
+    neopixelWrite(LED_RGB, RGB_LARANJA);
+    Serial.println("  MODELO:  inclinado_tras   -> LED laranja");
 
   } else if (classe == "anomalia") {
-    tone(BUZZER, 500, 250);   // bipe de 250 ms
-    Serial.println("  MODELO:  anomalia         -> BUZZER ligado");
+    digitalWrite(LED_VERMELHO, HIGH);
+    neopixelWrite(LED_RGB, RGB_VERMELHO);
+    Serial.println("  MODELO:  anomalia         -> LED vermelho");
 
   } else {
-    // Classe desconhecida: tudo apagado
-    Serial.println("  MODELO:  classe DESCONHECIDA - tudo apagado");
+    // Classe desconhecida: LEDs apagados, RGB branco
+    neopixelWrite(LED_RGB, RGB_BRANCO);
+    Serial.println("  MODELO:  classe DESCONHECIDA - LEDs apagados, RGB branco");
     Serial.println("           esperado, sem aspas e sem JSON:");
     Serial.println("           operando | inclinado_frente | inclinado_tras | anomalia");
   }

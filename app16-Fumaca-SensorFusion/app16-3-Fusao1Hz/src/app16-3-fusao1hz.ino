@@ -1,6 +1,7 @@
 // app16-3-Fusao1Hz
 // Caixa de fumaca: o coletor do dataset. Uma linha por segundo, com as colunas do Kaggle.
 // O botao BOOT marca o estimulo (o rotulo) e abre uma rodada nova.
+// A linha sai no Serial em CSV: o coleta.py grava como esta.
 // Pronto quando: o painel do coleta.py mostra as curvas e o coleta-*.csv ganha 1 linha por segundo.
 //
 // Ligacao: a mesma do app16-0 (os 3 sensores no I2C, SDA no GPIO20 e SCL no GPIO21).
@@ -57,6 +58,10 @@ uint32_t umidadeAbsoluta(float temp, float umid) {
   return (uint32_t)(1000.0f * gm3);
 }
 
+// As colunas do CSV no Serial (a ordem do Kaggle + rodada, pm10 e rotulo)
+const char* CSV_CABECALHO = "amostra,rodada,temp,umid,tvoc,eco2,raw_h2,raw_ethanol,pressao,"
+                            "pm1_0,pm2_5,nc0_5,nc1_0,nc2_5,pm10,estimulo";
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -91,6 +96,7 @@ void setup() {
   }
 
   Serial.println("Sensores ok. A rodada 1 e o aquecimento: espere a caixa estabilizar e aperte BOOT.");
+  Serial.println(CSV_CABECALHO);
   mostraEstimulo();
 }
 
@@ -143,16 +149,13 @@ void loop() {
                     leuSgp ? "ok" : "FALHOU", leuSps ? "ok" : "FALHOU", leuBme ? "ok" : "FALHOU");
       return;
     }
-    Serial.printf(">amostra: %d\n>rodada: %d\n", amostra, rodada);
-    Serial.printf(">temp: %.2f\n>umid: %.2f\n", temp, umid);
-    Serial.printf(">tvoc: %u\n>eco2: %u\n", sgp.TVOC, sgp.eCO2);
-    Serial.printf(">raw_h2: %u\n>raw_ethanol: %u\n", sgp.rawH2, sgp.rawEthanol);
-    Serial.printf(">pressao: %.2f\n", pressao);
-    Serial.printf(">pm1_0: %.2f\n>pm2_5: %.2f\n", pm1_0, pm2_5);
-    Serial.printf(">nc0_5: %.2f\n>nc1_0: %.2f\n>nc2_5: %.2f\n", nc0_5, nc1_0, nc2_5);
-    Serial.printf(">pm10: %.2f\n", pm10);
+    // Rotulo: 0 ar, 1 alcool, 2 vapor, 3 fumaca, 4 chama (a ultima coluna)
+    int estimulo = SEQUENCIA[passo];
 
-    // Rotulo: 0 ar, 1 alcool, 2 vapor, 3 fumaca, 4 chama (fecha a linha no coleta.py)
-    Serial.printf(">estimulo: %d\n", SEQUENCIA[passo]);
+    // A linha em CSV, no Serial, na ordem do CSV_CABECALHO (o coleta.py grava como esta)
+    Serial.printf("%d,%d,%.2f,%.2f,%u,%u,%u,%u,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n",
+                  amostra, rodada, temp, umid,
+                  sgp.TVOC, sgp.eCO2, sgp.rawH2, sgp.rawEthanol, pressao,
+                  pm1_0, pm2_5, nc0_5, nc1_0, nc2_5, pm10, estimulo);
   }
 }

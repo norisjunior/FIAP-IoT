@@ -14,6 +14,7 @@ por segundo.
 | Colunas | 9 | 15, as do Kaggle mais `rodada` e `pm10` |
 | Umidade | o SGP30 lê sozinho | o BME280 informa a umidade, e o SGP30 corrige o gás |
 | Rodada | não tem | +1 a cada aperto do BOOT |
+| Serial | uma variável por linha (`>nome: valor`) | CSV: o cabeçalho no boot e uma linha por segundo |
 | Arquivo | o que a placa mandou | o mesmo (`.log`) e o dataset pronto (`.csv`) |
 
 O botão BOOT, a sequência de estímulos, as cores do LED e o painel são os mesmos.
@@ -22,6 +23,16 @@ O botão BOOT, a sequência de estímulos, as cores do LED e o painel são os me
 o `tvoc` e o `eco2` saem diferentes para o mesmo ar.
 
 ## As colunas
+
+A placa manda o CSV pronto no Serial, e o `coleta.py` grava cada linha como chegou:
+
+```
+Sensores ok. A rodada 1 e o aquecimento: espere a caixa estabilizar e aperte BOOT.
+amostra,rodada,temp,umid,tvoc,eco2,raw_h2,raw_ethanol,pressao,pm1_0,pm2_5,nc0_5,nc1_0,nc2_5,pm10,estimulo
+=== ESTIMULO: ar (rodada 1) ===
+1,1,25.22,63.49,0,400,14148,18961,933.51,9.48,10.03,65.25,75.45,75.67,10.03,0
+2,1,25.24,63.49,0,400,14142,18957,933.53,10.39,14.02,63.18,78.95,82.58,17.81,0
+```
 
 O `.csv` tem as colunas do Kaggle, na mesma ordem. O Kaggle tem três colunas que não vêm de
 sensor: o horário (`UTC`), o contador (`CNT`) e o rótulo (`Fire Alarm`). Aqui elas são a
@@ -90,13 +101,14 @@ Ficam nesta pasta, fora do Git. A coleta que vale vai para `coleta_professor/`.
 
 | Arquivo | O que é |
 |---|---|
-| `coleta-AAAAMMDD-HHMM.csv` | o dataset: cabeçalho e uma linha por segundo |
-| `coleta-AAAAMMDD-HHMM.log` | tudo o que a placa mandou, desde o boot; é o que o replay lê |
+| `coleta-AAAAMMDD-HHMM.csv` | o dataset: cabeçalho e uma linha por segundo, como a placa mandou |
+| `coleta-AAAAMMDD-HHMM.log` | tudo o que a placa mandou, desde o boot: as linhas do CSV e as mensagens |
 | `coleta-AAAAMMDD-HHMM.png` | os gráficos da coleta inteira |
 
 - **Repetir uma coleta gravada**, sem a placa: `python coleta.py --replay coleta-AAAAMMDD-HHMM.log 20`
-  (20 vezes mais rápido). O replay não grava dataset. A do professor:
-  `python coleta.py --replay coleta_professor/coleta-20261111-2207.log 20`.
+  (20 vezes mais rápido). O replay não grava dataset. Ele lê o `.log` ou o `.csv`; com o
+  `.csv`, o painel fica sem as mensagens da placa. A do professor:
+  `python coleta.py --replay coleta_professor/coleta-20261111-2207.csv 20`.
 - **Para o dataset:** a rodada 1 (o aquecimento) fica de fora. O ar que vale é o das rodadas
   entre os estímulos.
 - **O rótulo é o aperto do BOOT, não a chegada do estímulo:** a curva começa a mudar 15 a
@@ -104,8 +116,8 @@ Ficam nesta pasta, fora do Git. A coleta que vale vai para `coleta_professor/`.
 
 ## A coleta do professor
 
-[`coleta_professor/`](coleta_professor/) tem a primeira sessão, de 11/11/2026, às 22:07: o
-`.csv` (o dataset), o `.log` e o `.png`. As rodadas pares são os estímulos; as ímpares, o
+[`coleta_professor/`](coleta_professor/) tem duas sessões, cada uma com o `.csv` (o dataset),
+o `.log` e o `.png`. A primeira é de 11/11/2026, às 22:07. As rodadas pares são os estímulos; as ímpares, o
 ar.
 
 | Rodada | Estímulo | Começa na amostra | O que mexeu |
@@ -128,6 +140,32 @@ Três desvios do protocolo, que ficam como estão:
 
 A primeira linha que chegou era sobra de antes do reinício da placa (amostra 116) e saiu do
 `.csv`; o `.log` guarda tudo. O `coleta.py` já descarta essa sobra.
+
+O `.log` dessa sessão é de quando a placa mandava uma variável por linha (`>nome: valor`).
+O `coleta.py` de hoje não lê esse formato: para repetir a sessão, use o `.csv`.
+
+### A segunda sessão: 13/11/2026, às 10:34
+
+Outro dia, a mesma sequência, já com o CSV no Serial (`coleta-20261113-1034.*`). 5.152
+linhas, nenhuma falha de leitura.
+
+| Rodada | Estímulo | Começa na amostra | O que mexeu |
+|---|---|---|---|
+| 1 | ar (aquecimento) | 1 | 32 min; a `temp` já começou em 31,3 °C |
+| 2 | vapor | 1.904 | `nc0_5` até 3.686, `umid` +3 pontos |
+| 4 | chama | 2.598 | `temp` de 31,8 para 32,6 °C |
+| 6 | fumaça | 3.656 | `nc0_5` até 5.426 |
+| 8 | álcool | 4.526 | `tvoc` até 22.176, `raw_h2` −10% |
+
+- **Partícula empatada:** o pico de `nc0_5` da fumaça ficou 1,5 vez o do vapor (em 11/11,
+  5,7). Na massa (`pm2_5`), o vapor passou a fumaça: 2.326 contra 1.303.
+- **Chama fraca:** +0,8 °C (o protocolo pede 2 a 3 °C).
+- **Caixa quente a sessão inteira:** 31,4 a 33,0 °C (em 11/11, ~29 °C fora da chama). A
+  árvore treinada em 11/11 diz `fire` com pouca partícula acima de 32,05 °C: no teste em
+  13/11, alarme falso em 47% dos segundos sem fogo (o ar e o álcool), nenhum fogo perdido. É
+  o data drift do outro dia.
+- **A linha de base mudou:** no ar, `nc0_5` perto de 30 (em 11/11, 70 a 100), `umid` perto de
+  44%, pressão média 930,5 hPa (em 11/11, 933,6).
 
 ## Depois: dois notebooks
 

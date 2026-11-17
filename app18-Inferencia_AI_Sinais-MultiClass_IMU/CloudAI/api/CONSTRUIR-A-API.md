@@ -209,14 +209,14 @@ Deixe esse terminal aberto; use `Ctrl+C` para encerrar.
 
 ```json
 {
-  "mean_ax": -0.413,
-  "mean_ay": 0.811,
-  "mean_az": 0.965,
-  "std_ax": 0.017,
+  "mean_ax": 0.049,
+  "mean_ay": 0.696,
+  "mean_az": 0.687,
+  "std_ax": 0.009,
   "std_ay": 0.011,
-  "std_az": 0.005,
-  "std_mag": 0.01,
-  "p2p_mag": 0.04
+  "std_az": 0.011,
+  "std_mag": 0.011,
+  "p2p_mag": 0.088
 }
 ```
 
@@ -224,7 +224,10 @@ Deixe esse terminal aberto; use `Ctrl+C` para encerrar.
 
 **Confira:** resposta `200`, com `class` contendo uma das quatro classes e
 `probabilities` contendo uma probabilidade por classe. A soma deve ficar
-próxima de `1`. A classe e os valores dependem do modelo carregado.
+próxima de `1`. Com o `.pkl` de referência, esta janela (inclinado uns 45° para a
+frente, a gravidade no eixo y) devolve `inclinado_frente` com 0,99. Com o `.pkl` do
+seu dataset, use uma janela do seu próprio banco: a classe depende de como o MPU
+está preso no seu kit.
 
 **Teste a validação:** remova `std_mag` e envie novamente. A resposta deve
 ser `422`, indicando o campo ausente. Depois restaure o JSON completo.
@@ -281,7 +284,7 @@ No fluxo fornecido, o nó **HTTP Request** usa:
 - Corpo: JSON com as oito features, conforme o teste anterior.
 
 O nó MQTT de saída publica `{{ $json.class }}` em
-`FIAPIoT/motor/multiclasse/cmd`, com **Send Input Data** desligado.
+`FIAPIoT/motor/multiclasse/<nome da placa>/cmd`, com **Send Input Data** desligado.
 O ESP32 recebe somente o nome da classe e aciona a saída correspondente.
 
 ## Se não funcionar
