@@ -83,7 +83,7 @@ propósito — o alerta parar poderia ser lido como problema resolvido.
 ## 4) O firmware
 
 ```bash
-cd device
+cd CloudAI/device-devkitv1
 pio run
 ```
 
@@ -120,6 +120,11 @@ No Wokwi a **inclinação** sai, pelo controle de aceleração do MPU6050. A
 `anomalia` não: ela é vibração, e o controle parado deixa as 100 amostras da
 janela idênticas.
 
+**Outra placa:** [`CloudAI/device-esp32c3/`](CloudAI/device-esp32c3/README.md) é o
+mesmo firmware no ESP32-C3 Super Mini Plus com microservo, a montagem do dataset de
+referência (placa do professor). Um LED por classe (azul, verde, laranja, vermelho) e
+o LED RGB da placa repetindo a cor do LED aceso.
+
 ## 5) A mesma janela, sem nuvem
 
 [`EdgeAI/`](EdgeAI/README.md) traz o outro extremo: a mesma janela, as mesmas 8
@@ -136,7 +141,8 @@ partir do mesmo dataset da coleta.
 ```text
 CloudAI/   o modelo na nuvem
   api/       service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
-  device/    firmware (publica a janela, assina o tópico de comando)
+  device-devkitv1/   firmware (publica a janela, assina o tópico de comando)
+  device-esp32c3/    o mesmo, no ESP32-C3 Super Mini Plus com microservo
   n8n/       Fluxo-n8n-predict.json
 EdgeAI/    o modelo na borda
   colab/     treinamento da Random Forest
