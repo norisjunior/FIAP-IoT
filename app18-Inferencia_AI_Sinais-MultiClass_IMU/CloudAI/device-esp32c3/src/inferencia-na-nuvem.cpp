@@ -71,6 +71,7 @@ uint32_t tempoAnterior = 0;
 void conectarWiFi();
 void conectarMQTT();
 void receberComando(char* topico, byte* conteudo, unsigned int tamanho);
+void apagarLeds();
 void apagarTodasAsSaidas();
 void publicarJanela(float mx, float my, float mz,
                     float sx, float sy, float sz,
@@ -213,13 +214,18 @@ void loop() {
   }
 }
 
-/* ---- Apaga os LEDs e o RGB ---- */
-void apagarTodasAsSaidas() {
+/* ---- Apaga os LEDs externos (o RGB fica como está) ---- */
+void apagarLeds() {
   digitalWrite(LED_AZUL,     LOW);
   digitalWrite(LED_VERDE,    LOW);
   digitalWrite(LED_LARANJA,  LOW);
   digitalWrite(LED_VERMELHO, LOW);
   digitalWrite(BUZZER,       LOW);
+}
+
+/* ---- Apaga os LEDs e o RGB ---- */
+void apagarTodasAsSaidas() {
+  apagarLeds();
   neopixelWrite(LED_RGB, RGB_APAGADO);
 }
 
@@ -267,8 +273,8 @@ void receberComando(char* topico, byte* conteudo, unsigned int tamanho) {
   Serial.printf("  tamanho: %u bytes\r\n", tamanho);
   Serial.printf("  payload: \"%s\"\r\n", classe.c_str());
 
-  // Apaga tudo
-  apagarTodasAsSaidas();
+  // Apaga os LEDs; o RGB recebe uma cor só (duas seguidas, ele fica na primeira)
+  apagarLeds();
 
   // Acende a saída da classe
   if (classe == "operando") {

@@ -56,6 +56,10 @@ Repete a cor do LED aceso:
 Ao ligar, depois da calibração, a placa testa as saídas: azul, verde, laranja e vermelho, cada
 LED junto com a mesma cor no RGB, e o vermelho com um bipe.
 
+O LED RGB (WS2812) só aceita uma cor nova depois de uma pausa na linha de dados. Se recebe duas
+cores coladas (apagar e logo acender), fica com a primeira e apaga. Por isso, a cada classe o
+firmware apaga só os LEDs externos (`apagarLeds()`) e manda **uma** cor ao RGB.
+
 ## Buzzer
 
 Cada janela classificada como `anomalia` toca um bipe de 250 ms a 500 Hz
