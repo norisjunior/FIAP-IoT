@@ -35,8 +35,8 @@ amostra,rodada,temp,umid,tvoc,eco2,raw_h2,raw_ethanol,pressao,pm1_0,pm2_5,nc0_5,
 Depois do cabeçalho, uma linha por segundo com os 20 valores, na ordem dele.
 
 **Coletas até 17/11/2026: 16 colunas.** O `pm4_0`, o `nc4_0`, o `nc10` e o `tamanho` entraram
-depois. As duas sessões de `coleta_professor/` são do formato antigo, e o `coleta.py` lê os
-dois formatos.
+depois. As sessões de 11/11 e 13/11 em `coleta_professor/` são do formato antigo, a de 17/11
+já tem as 20, e o `coleta.py` lê os dois formatos.
 
 O `.csv` tem as colunas do Kaggle, na mesma ordem. O Kaggle tem três colunas que não vêm de
 sensor: o horário (`UTC`), o contador (`CNT`) e o rótulo (`Fire Alarm`). Aqui elas são a
@@ -123,7 +123,7 @@ Ficam nesta pasta, fora do Git. A coleta que vale vai para `coleta_professor/`.
 
 ## A coleta do professor
 
-[`coleta_professor/`](coleta_professor/) tem duas sessões, cada uma com o `.csv` (o dataset),
+[`coleta_professor/`](coleta_professor/) tem três sessões, cada uma com o `.csv` (o dataset),
 o `.log` e o `.png`. A primeira é de 11/11/2026, às 22:07. As rodadas pares são os estímulos; as ímpares, o
 ar.
 
@@ -173,6 +173,34 @@ linhas, nenhuma falha de leitura.
   o data drift do outro dia.
 - **A linha de base mudou:** no ar, `nc0_5` perto de 30 (em 11/11, 70 a 100), `umid` perto de
   44%, pressão média 930,5 hPa (em 11/11, 933,6).
+
+### A terceira sessão: 17/11/2026, às 18:04
+
+A primeira com as 20 colunas (`coleta-20261117-1804.*`), refeita porque, nesse dia, a fumaça
+em sala úmida deu `not fire` no modelo de 11/11. 2.434 linhas, nenhuma falha de leitura.
+
+| Rodada | Estímulo | Começa na amostra | O que mexeu |
+|---|---|---|---|
+| 1 | ar (aquecimento) | 1 | 6 min; a `temp` começou em 32,9 °C |
+| 2 | vapor | 386 | `nc0_5` até 1.169, `umid` +3 pontos, `tamanho` até 1,43 µm |
+| 4 | chama | 757 | `temp` de 30,3 para 30,7 °C |
+| 6 | fumaça | 1.423 | `nc0_5` até 6.569, `tamanho` perto de 0,9 µm |
+| 8 | álcool | 2.124 | `tvoc` e `eco2` no teto do sensor (60.000), `raw_h2` −25% |
+
+- **Fumaça em sala úmida:** a `umid` ficou entre 49,7 e 50,1% durante a fumaça. Nas sessões
+  de 11/11 e 13/11, toda fumaça foi a 43–47%. O modelo de 11/11 (7 features) dá `fire` em 0%
+  dos segundos de fumaça desta sessão: ele separa fumaça de vapor pela `umid` ≤ 47,3%.
+- **O `tamanho` separa vapor e fumaça:** depois do preparo do dataset, vapor 1,10 a 1,43 µm
+  (mediana 1,21), fumaça 0,71 a 1,21 (0,88), ar, chama e álcool perto de 0,54. A gota do vapor
+  é maior que a partícula da fumaça.
+- **Ambiente sem climatização:** a `temp` acompanhou o dia, de 32,9 para 29,4 °C ao longo da
+  sessão, e a `umid` subiu de 44,8 para 52%. Não dá para esperar a caixa estabilizar quando é a
+  sala que muda.
+- **Chama fraca:** +0,4 °C e nenhuma partícula. De novo, nenhum sensor da caixa a vê.
+- **Partícula sem empate:** o pico de `nc0_5` da fumaça ficou 5,6 vezes o do vapor (na massa,
+  `pm2_5`, 1,9 vez).
+- **Pouco segundo por estímulo:** depois do preparo, 36 de fumaça, 45 de vapor, 43 de chama e
+  36 de álcool. Uma segunda volta na sequência (seguir apertando o BOOT) dobra isso.
 
 ## Depois: dois notebooks
 
