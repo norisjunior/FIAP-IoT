@@ -11,7 +11,7 @@ por segundo.
 
 | | app16-2 (teste dos fenômenos) | app16-3 (dataset) |
 |---|---|---|
-| Colunas | 9 | 15, as do Kaggle mais `rodada` e `pm10` |
+| Colunas | 9 | 20: as do Kaggle, a `rodada` e o resto do SPS30 (`pm10`, `pm4_0`, `nc4_0`, `nc10`, `tamanho`) |
 | Umidade | o SGP30 lê sozinho | o BME280 informa a umidade, e o SGP30 corrige o gás |
 | Rodada | não tem | +1 a cada aperto do BOOT |
 | Serial | uma variável por linha (`>nome: valor`) | CSV: o cabeçalho no boot e uma linha por segundo |
@@ -28,11 +28,15 @@ A placa manda o CSV pronto no Serial, e o `coleta.py` grava cada linha como cheg
 
 ```
 Sensores ok. A rodada 1 e o aquecimento: espere a caixa estabilizar e aperte BOOT.
-amostra,rodada,temp,umid,tvoc,eco2,raw_h2,raw_ethanol,pressao,pm1_0,pm2_5,nc0_5,nc1_0,nc2_5,pm10,estimulo
+amostra,rodada,temp,umid,tvoc,eco2,raw_h2,raw_ethanol,pressao,pm1_0,pm2_5,nc0_5,nc1_0,nc2_5,pm10,pm4_0,nc4_0,nc10,tamanho,estimulo
 === ESTIMULO: ar (rodada 1) ===
-1,1,25.22,63.49,0,400,14148,18961,933.51,9.48,10.03,65.25,75.45,75.67,10.03,0
-2,1,25.24,63.49,0,400,14142,18957,933.53,10.39,14.02,63.18,78.95,82.58,17.81,0
 ```
+
+Depois do cabeçalho, uma linha por segundo com os 20 valores, na ordem dele.
+
+**Coletas até 17/11/2026: 16 colunas.** O `pm4_0`, o `nc4_0`, o `nc10` e o `tamanho` entraram
+depois. As duas sessões de `coleta_professor/` são do formato antigo, e o `coleta.py` lê os
+dois formatos.
 
 O `.csv` tem as colunas do Kaggle, na mesma ordem. O Kaggle tem três colunas que não vêm de
 sensor: o horário (`UTC`), o contador (`CNT`) e o rótulo (`Fire Alarm`). Aqui elas são a
@@ -52,6 +56,9 @@ sensor: o horário (`UTC`), o contador (`CNT`) e o rótulo (`Fire Alarm`). Aqui 
 | `pm1_0`, `pm2_5` | PM1.0, PM2.5 | SPS30 | massa de partículas (µg/m³) |
 | `nc0_5`, `nc1_0`, `nc2_5` | NC0.5, NC1.0, NC2.5 | SPS30 | contagem de partículas (por cm³) |
 | `pm10` | — | SPS30 | massa das partículas maiores; o Kaggle não tem |
+| `pm4_0` | — | SPS30 | massa até 4 µm (µg/m³) |
+| `nc4_0`, `nc10` | — | SPS30 | contagem até 4 e até 10 µm (por cm³) |
+| `tamanho` | — | SPS30 | tamanho típico das partículas (µm); a fumaça fica abaixo de 1 µm, a gota do vapor é maior |
 | `estimulo` | Fire Alarm | botão BOOT | 0 ar, 1 álcool, 2 vapor, 3 fumaça, 4 chama; incêndio = fumaça ou chama |
 
 **Gravar não é usar.** A `amostra`, a `rodada` e a `pressao` ficam no arquivo, mas não viram
