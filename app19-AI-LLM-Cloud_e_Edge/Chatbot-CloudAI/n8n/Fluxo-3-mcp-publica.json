@@ -1,0 +1,96 @@
+{
+  "name": "app19 - Publica as ferramentas do motor (MCP)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "motor"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        100,
+        0
+      ],
+      "id": "a85af8c0-85c9-45a9-ab89-398b2d0681ab",
+      "name": "MCP Server Trigger",
+      "webhookId": "motor"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta se chama \"motor_agora\" e responde qual e o estado do motor AGORA, neste instante. Use para \"agora\", \"neste momento\", \"atualmente\". Ela devolve a medicao mais recente. Chame de novo a cada pergunta: o estado muda a cada segundo e um resultado anterior ja esta velho.",
+        "operation": "executeQuery",
+        "query": "SELECT classe, timestamp_medicao, periodo\nFROM motor_medicoes\nORDER BY created_at DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        260
+      ],
+      "id": "9f8a8e1e-74c7-4775-b705-8f31dd0c629e",
+      "name": "motor_agora",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta conta quantas vezes cada classe ocorreu em uma data e periodo do passado. Devolve uma linha por classe, com a coluna ocorrencias. Sempre envie Query_Parameters como uma string no formato: \"AAAA-MM-DD, periodo\", por exemplo: \"2026-09-21, madrugada\".\nO campo periodo deve ser uma destas palavras exatas: madrugada, manhã, tarde, noite.\n\n**NÃO USE ESTA FERRAMENTA PARA RESPONDER COMO O MOTOR ESTÁ AGORA.**",
+        "operation": "executeQuery",
+        "query": "SELECT classe,\n       periodo,\n       COUNT(*) AS ocorrencias\nFROM motor_medicoes\nWHERE DATE(timestamp_medicao::timestamp) = $1\n  AND periodo = $2\nGROUP BY classe, periodo\nORDER BY ocorrencias DESC;\n",
+        "options": {
+          "queryReplacement": "={{ $fromAI('Query_Parameters', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        260
+      ],
+      "id": "acdc3706-3ad3-4b0f-902c-fa217d0a14eb",
+      "name": "motor_historico",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "motor_agora": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "motor_historico": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
