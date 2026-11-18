@@ -35,10 +35,11 @@ Validacao ESP32 (decide sozinho) → MQTT → n8n → API → PostgreSQL
 
 ## Antes de começar
 
-Este app precisa da **plataforma LLM + IoT**, que sobe MQTT, n8n, PostgreSQL e
-Ollama de uma vez. Ela fica no diretório `LLM-IoT-platform` que você recebeu:
-entre nele pelo WSL e rode `sudo ./start-llm-iot-platform.sh`. A plataforma IoT
-comum, sem Ollama e sem PostgreSQL, não serve aqui.
+Este app roda na **mesma plataforma das aulas anteriores**, a `IoT-platform`.
+Ela já sobe o PostgreSQL, que até aqui só guardava os dados do próprio n8n, e
+as tabelas deste app ficam nele. O modelo de linguagem não roda no seu
+computador: é o **Gemini**, do Google, chamado pela internet com a chave do
+seu grupo.
 
 Serviços que este app usa:
 
@@ -46,8 +47,28 @@ Serviços que este app usa:
 |---|---|---|
 | MQTT Broker | `localhost:1883` | o ESP32 publica a janela |
 | n8n | `http://localhost:5678` | os fluxos das duas aplicações |
-| PostgreSQL | `localhost:5432` | as duas tabelas |
-| Ollama | `http://localhost:11434` | o modelo de linguagem do chat |
+| PostgreSQL | `n8n-postgres:5432`, dentro do Docker | as duas tabelas |
+| Gemini | na internet, com a chave do grupo | o modelo de linguagem do chat |
+
+### A chave do Gemini
+
+1. Entre em [aistudio.google.com](https://aistudio.google.com) com uma conta
+   Google e clique em **Get API key** → **Create API key**. Não pede cartão.
+2. No n8n, crie a credencial **Google Gemini(PaLM) Api**: cole a chave em
+   **API Key** e deixe o **Host** como está.
+
+A chave é uma senha: não vai para o GitHub nem para o grupo da turma.
+
+O plano gratuito tem dois limites que aparecem na prática:
+
+- **Pedidos por dia.** O agente gasta dois ou três pedidos a cada pergunta: um
+  para escolher a ferramenta, outro para escrever a resposta. Acabou o limite,
+  o chat devolve erro até o dia virar; use a chave de outro integrante do grupo.
+- **O Google pode usar o que você manda** para melhorar os produtos dele. Dados
+  do motor, tudo bem; dado pessoal, nunca.
+
+Os fluxos já vêm com o modelo `gemini-3.5-flash-lite`. Se ele não aparecer na
+lista do nó, escolha outro **Flash-Lite** ou **Flash** da lista.
 
 ## A API
 

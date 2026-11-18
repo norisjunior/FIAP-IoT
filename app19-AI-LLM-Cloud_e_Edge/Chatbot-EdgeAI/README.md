@@ -260,13 +260,14 @@ cada segundo.
 A taxa acima é uma consulta que você roda. Mas ela também pode ser uma
 **pergunta em português**, do mesmo jeito que a `Chatbot-CloudAI/` pergunta pelo
 estado do motor. Importe `n8n/Fluxo-3-chat-concordancia.json` e configure as
-credenciais de **Ollama** e **PostgreSQL**.
+credenciais do **Gemini** (veja [A chave do Gemini](../README.md#a-chave-do-gemini))
+e do **PostgreSQL**.
 
 | Nó | Papel |
 |---|---|
 | `When chat message received` | abre a janela de chat |
 | `FIoT Agent` | decide qual ferramenta usar e redige a resposta |
-| `Ollama Chat Model` | o modelo de linguagem (`llama3.2:1b`) |
+| `Google Gemini Chat Model` | o modelo de linguagem (`gemini-3.5-flash-lite`) |
 | `Simple Memory` | lembra as mensagens anteriores da conversa |
 | `concordancia_geral` | a taxa sobre todas as janelas gravadas |
 | `concordancia_periodo` | a taxa em `WHERE data = $1 AND periodo = $2` |
@@ -279,7 +280,7 @@ Ative o fluxo e abra a URL que o nó de chat mostra.
 Repare no SQL das três ferramentas: a agregação está toda lá dentro, e o agente
 recebe `taxa_pct` já pronto. Isso é deliberado.
 
-Se o `llama3.2:1b` recebesse as 300 linhas cruas e a pergunta *"qual a taxa de
+Se o modelo de linguagem recebesse as 300 linhas cruas e a pergunta *"qual a taxa de
 concordância?"*, ele devolveria um número plausível e errado — **modelo de
 linguagem não conta**. O `COUNT(*) FILTER` roda no banco, e o LLM fica só com o
 trabalho que é dele: escolher a ferramenta e escrever a frase.

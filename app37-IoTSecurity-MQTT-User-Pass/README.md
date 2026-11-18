@@ -12,8 +12,8 @@ Semáforo inteligente com MQTT protegido por credenciais.
 Execute no WSL2:
 
 ```bash
-cd FIAP-IoT/secure-LLM-IoT-platform
-sudo ./start-MQTTACL-llm-iot-platform.sh
+cd FIAP-IoT/MQTT-UserPass-IoT-platform
+sudo ./start-MQTTACL-iot-platform.sh
 ```
 
 Aguarde a mensagem `Plataforma IoT configurada e iniciada!`.

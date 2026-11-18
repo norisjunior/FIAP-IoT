@@ -27,7 +27,7 @@ roda**.
 | Etapa | Edge (só o ESP32) | Fog (notebook da sala) | Cloud |
 |---|---|---|---|
 | Fala → texto | **comandos fixos** treinados no Edge Impulse ("liga", "desliga"...), uns 5 a 10 | **faster-whisper** num container (mesma biblioteca do `C:\Projects\WhisperAudio`) | API de STT (Whisper, Google, Azure) |
-| Entender | a classe já é o comando | Node-RED ou n8n por palavra-chave; Ollama para pergunta livre | LLM na nuvem |
+| Entender | a classe já é o comando | Node-RED ou n8n por palavra-chave; pergunta livre vai para a Cloud | LLM na nuvem |
 | Agir | GPIO local, expressão dos olhos | MQTT pelo Mosquitto → app07/app08 (LED, buzzer, relé) | APIs externas (previsão do tempo, agenda) |
 | Responder | olhos felizes ou confusos | texto na tela redonda; voz com Piper (TTS local, tem pt-BR) | TTS na nuvem |
 | Sem internet | funciona | funciona | não funciona |
@@ -41,8 +41,7 @@ roda**.
 |---|---|---|
 | Wake word + olhos | `app36-Audio/app36-6-DeskBuddy-ESP32` | o lado Edge inteiro |
 | Mosquitto, Node-RED, n8n, InfluxDB, Grafana | `FIAP-IoT-eval/IoT-platform` (Compose; há variante para RPi) | a Fog: basta somar um container de STT |
-| ESP32 → MQTT → n8n → Ollama | `FIAP-IoT-eval/LLM-IoT-platform` | LLM local na Fog |
-| Chatbot Cloud × Edge | `FIAP-IoT-eval/app19-AI-LLM-Cloud_e_Edge` | a comparação LLM Cloud × local |
+| Chat com LLM pelo n8n (Gemini) | `FIAP-IoT-eval/app19-AI-LLM-Cloud_e_Edge` | o LLM na Cloud, já com chave e credencial |
 | faster-whisper | `C:\Projects\WhisperAudio` (`transcript.py`) | o STT, já testado em português |
 | Atuadores MQTT | `app07_mqtt_subscriber_atuador`, `app08_..._LED_e_BUZ` | quem obedece ao comando |
 | Segurança MQTT | `app37`, `app38`, `app39` | onde ficam as credenciais |
@@ -55,8 +54,8 @@ Três frases, cada uma resolvida numa camada:
    app08. Não precisa de internet.
 2. **"Como está o tempo?"**: a Fog reconhece a intenção e só ela vai à Cloud, numa API de
    previsão. A resposta aparece na tela redonda. Não precisa de LLM.
-3. **"Me explica o que é MQTT"**: vai para o LLM. Compara Ollama na Fog × LLM na Cloud, em
-   qualidade e em demora.
+3. **"Me explica o que é MQTT"**: vai para o LLM na Cloud (Gemini, pelo n8n). Compara com
+   as duas primeiras em demora.
 
 Regra do desenho: **resolver o mais perto possível e subir só o que precisa**.
 
@@ -103,7 +102,7 @@ religar um fio: dá para comparar ao vivo.
 2. Um container com faster-whisper entra no Compose do `IoT-platform`, ao lado do Mosquitto e
    do Node-RED.
 3. O Node-RED procura palavras-chave e publica MQTT para os atuadores. O que não reconhece
-   vai para o Ollama.
+   vai para o LLM na Cloud.
 4. O texto da resposta volta e aparece na tela redonda, entre os olhos.
 
 Depois:

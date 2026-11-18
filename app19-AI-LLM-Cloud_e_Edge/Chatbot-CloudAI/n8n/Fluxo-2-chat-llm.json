@@ -36,21 +36,21 @@
     },
     {
       "parameters": {
-        "model": "llama3.2:1b",
+        "modelName": "models/gemini-3.5-flash-lite",
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
-      "typeVersion": 1,
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
       "position": [
         -40,
         220
       ],
       "id": "05fcb748-b51e-4c85-9486-ba93f30c5051",
-      "name": "Ollama Chat Model",
+      "name": "Google Gemini Chat Model",
       "credentials": {
-        "ollamaApi": {
-          "id": "pkHJYvheWV0vK657",
-          "name": "Ollama account"
+        "googlePalmApi": {
+          "id": "gEm1n1Ap1Acc0unt",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
     },
@@ -127,7 +127,7 @@
         ]
       ]
     },
-    "Ollama Chat Model": {
+    "Google Gemini Chat Model": {
       "ai_languageModel": [
         [
           {

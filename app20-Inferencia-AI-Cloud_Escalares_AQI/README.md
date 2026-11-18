@@ -40,12 +40,8 @@ decidir se dispara o alerta crítico. O porquê do corte está em
 1. **`colab/`** — opcional na primeira passada. O modelo treinado já vem em
    `api/`; rode o notebook quando quiser o seu.
 2. **`CloudAI/`** — sobe a plataforma comum, a API e o fluxo de predição.
-3. **`Chatbot/`** — troca para a plataforma com PostgreSQL e Ollama, e
-   acrescenta a persistência e o chat.
-
-O `CloudAI` e o `Chatbot` usam **plataformas diferentes**: o segundo precisa do
-PostgreSQL e do Ollama, que a plataforma comum não sobe. Pare uma antes de subir
-a outra — as duas disputam as mesmas portas.
+3. **`Chatbot/`** — na mesma plataforma, acrescenta a persistência no
+   PostgreSQL e o chat com o Gemini.
 
 ## A API
 
