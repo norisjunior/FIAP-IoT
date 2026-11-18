@@ -93,21 +93,25 @@ Confira que subiu:
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"mean_ax":-0.413,"mean_ay":0.811,"mean_az":0.965,"std_ax":0.017,"std_ay":0.011,"std_az":0.005,"std_mag":0.01,"p2p_mag":0.04}'
+  -d '{"mean_ax":0.049,"mean_ay":0.696,"mean_az":0.687,"std_ax":0.009,"std_ay":0.011,"std_az":0.011,"std_mag":0.011,"p2p_mag":0.088}'
 ```
+
+Com o modelo de referência, a resposta é `inclinado_frente`. O `.pkl` desta
+pasta é o mesmo de referência do app anterior; se o seu grupo treinou o
+próprio, copie o seu por cima.
 
 ## Estrutura
 
 ```text
 api/               service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
-Chatbot-CloudAI/   device/ (publica a janela) · n8n/ (ingestão + chat)
+Chatbot-CloudAI/   n8n/ (ingestão · chat · as ferramentas por MCP); a placa é a do app anterior
 Chatbot-EdgeAI/    device/ (decide e publica) · n8n/ (ingestão da borda · comparação + chat)
 ```
 
 ## Por onde começar
 
-A `Chatbot-CloudAI/` primeiro: ela reaproveita o firmware que você já conhece e
-o que muda está todo no n8n. A `Chatbot-EdgeAI/` traz um firmware novo — o
+A `Chatbot-CloudAI/` primeiro: a placa continua com o firmware do app anterior,
+sem regravar, e o que muda está todo no n8n. A `Chatbot-EdgeAI/` traz um firmware novo — o
 primeiro deste curso que **decide sozinho e ainda assim fala com a nuvem**.
 
 As duas têm a mesma forma: um fluxo que ingere sem parar e um fluxo de chat com

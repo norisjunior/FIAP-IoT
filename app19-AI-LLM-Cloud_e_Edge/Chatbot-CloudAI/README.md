@@ -14,18 +14,13 @@ você ─► chat do n8n ─► agente LLM ─► PostgreSQL ─► resposta em 
 São **dois fluxos**: um que ingere sem parar, outro que responde quando você
 pergunta. Eles não se falam — conversam pelo banco.
 
-## 1) O firmware
+## 1) A placa
 
-```bash
-cd device
-pio run
-```
-
-Ajuste no `.cpp` o Wi-Fi e o `MQTT_SERVER` antes de gravar.
-
-É o firmware do app anterior, sem uma linha de diferença. Ele publica em
-`FIAPIoT/motor/multiclasse` e escuta a classe em
-`FIAPIoT/motor/multiclasse/cmd`.
+Não há firmware nesta pasta: a placa continua com o do app anterior
+(`CloudAI/device-devkitv1` ou `CloudAI/device-esp32c3`), **sem regravar**. Ela
+publica em `FIAPIoT/motor/multiclasse/<nome>` e escuta a classe em
+`FIAPIoT/motor/multiclasse/<nome>/cmd`, onde `<nome>` é o `MQTT_CLIENT_ID` da
+sua placa.
 
 | GPIO | Componente | Classe |
 |---|---|---|
@@ -36,22 +31,38 @@ Ajuste no `.cpp` o Wi-Fi e o `MQTT_SERVER` antes de gravar.
 
 ## 2) O fluxo de ingestão
 
-Importe `n8n/Fluxo-1-ingestao-postgres.json` e configure as credenciais de
-**MQTT** e **PostgreSQL**.
+É o fluxo do app anterior com **dois nós a mais**. Há dois jeitos de chegar
+nele:
+
+- **No seu fluxo, à mão (o melhor):** abra o fluxo que você já tem rodando e
+  acrescente os nós 7 e 8 da tabela, copiando o código e a consulta do
+  `n8n/Fluxo-1-ingestao-postgres.json`.
+- **Importando pronto:** importe o `n8n/Fluxo-1-ingestao-postgres.json`, troque
+  `DEFINA_UM_NOME` nos dois nós de MQTT e `SEU_CHAT_ID` nos dois do Telegram, e
+  **desative o fluxo do app anterior**: com os dois ativos, a placa recebe cada
+  resposta duas vezes.
+
+Nos dois casos, crie a credencial do **PostgreSQL**: Host `n8n-postgres`, e
+Database, User e Password iguais aos do `.env` da plataforma (`POSTGRES_DB`,
+`POSTGRES_USER`, `POSTGRES_PASSWORD`).
 
 | # | Nó | O que faz |
 |---|---|---|
-| 1 | `FIAPIoT/motor/multiclasse` | recebe a janela, já como objeto (**JSON Parse Body**) |
+| 1 | `Janela da placa` | recebe a janela, já como objeto (**JSON Parse Body**) |
 | 2 | `Predict Motor` | `POST` do `message` para a API |
-| 3 | `FIAPIoT/motor/multiclasse/cmd` | devolve a classe ao ESP32 |
-| 4 | `Formata para o banco` | calcula o carimbo de tempo e o **período** |
-| 5 | `Armazena a predicao` | cria a tabela se não existir e insere |
+| 3 | `Classe para a placa` | devolve a classe ao ESP32 |
+| 4 | `E anomalia?` | separa a classe `anomalia` |
+| 5 | `ANOMALIA: alerta no Telegram` | avisa a pessoa |
+| 6 | `FALHA: a API nao respondeu` | avisa quando a predição falha |
+| 7 | `Formata para o banco` | calcula o carimbo de tempo e o **período** |
+| 8 | `Armazena a predicao` | cria a tabela se não existir e insere |
 
-Os nós **3 e 4 saem os dois do nó 2**, em paralelo: o ESP32 não espera a
-gravação no banco para acender o LED.
+Os nós **3, 4 e 7 saem os três do nó 2**, em paralelo: o ESP32 não espera a
+gravação no banco para acender o LED, e o alerta não espera o banco.
 
-Comparado ao fluxo do app anterior, são **dois nós a mais** — o 4 e o 5. Todo o
-resto é idêntico.
+**O alarme não passa pelo modelo de linguagem.** O buzzer e o Telegram
+continuam neste fluxo, com uma regra fixa. O chat só consulta o que foi
+guardado: se o limite da chave do Gemini acabar, o chat para e o alarme não.
 
 ### O período é o truque da aplicação
 
@@ -138,14 +149,112 @@ pergunte no chat:
 - *"Preciso fazer alguma coisa?"* → usa a memória da conversa e a orientação
   da *system message*
 
-Conferindo direto no banco, se quiser ver o que o agente viu:
+Na aula, as três respostas possíveis do histórico aparecem com o seu próprio
+dado, trocando *noite* pelo período em que você está:
+
+- *"Quantas falhas hoje à noite?"*, antes de chacoalhar → zero (a linha
+  `anomalia` nem vem do banco);
+- chacoalhe a placa e pergunte de novo → a contagem;
+- *"E nesta madrugada?"* → não há medição.
+
+Conferindo direto no banco, se quiser ver o que o agente viu (troque o usuário
+e o banco se o seu `.env` for diferente):
+
+```bash
+docker exec -it n8n-postgres psql -U n8nuser -d n8n -c "SELECT classe, periodo, timestamp_medicao FROM motor_medicoes ORDER BY created_at DESC LIMIT 10;"
+```
+
+## 5) Quando a placa para
+
+Desligue a placa, espere um minuto e pergunte *"como está o motor agora?"*.
+
+O `motor_agora` devolve a **última linha do banco, seja de quando for**. O
+agente recebe uma classe e um horário, e nada diz a ele que aquilo já é velho:
+ele pode responder o estado de uma hora atrás como se fosse o de agora.
+
+A correção segue a regra desta aplicação: o trabalho fica na consulta, não no
+modelo de linguagem. Troque a consulta do `motor_agora` por esta, que já
+entrega a conta feita:
 
 ```sql
-SELECT classe, periodo, timestamp_medicao
+SELECT classe, timestamp_medicao, periodo,
+       EXTRACT(EPOCH FROM NOW() - created_at)::int AS segundos_atras
 FROM motor_medicoes
 ORDER BY created_at DESC
-LIMIT 10;
+LIMIT 1;
 ```
+
+E acrescente uma linha às LIMITAÇÕES da *system message*:
+
+```text
+- motor_agora devolve segundos_atras. Se for maior que 60, o motor está SEM
+  MEDIÇÃO: diga desde que horas, e não diga que ele está naquele estado.
+```
+
+## 6) Exercício: uma ferramenta nova
+
+Hoje o agente não sabe responder *"como o motor estava às 20h?"*: ele só
+conhece "agora" e os quatro períodos. Crie a ferramenta `motor_horario`.
+
+Dica: duplique o `motor_historico` e troque três coisas — o nome, a descrição
+e o filtro da consulta. Está pronto quando o agente escolhe a ferramenta nova
+sozinho, sem você citar o nome dela na pergunta.
+
+<details>
+<summary>Uma resposta possível</summary>
+
+Descrição:
+
+```text
+Esta ferramenta conta quantas vezes cada classe ocorreu em uma HORA específica
+de uma data. Use quando a pergunta citar um horário, como "às 20h" ou "por
+volta das 8 da manhã". Sempre envie Query_Parameters como uma string no
+formato: "AAAA-MM-DD, HH", com a hora de 0 a 23, por exemplo: "2026-09-21, 20".
+
+**NÃO USE ESTA FERRAMENTA PARA RESPONDER COMO O MOTOR ESTÁ AGORA.**
+```
+
+Consulta (com o mesmo `Query Parameters` do `motor_historico`):
+
+```sql
+SELECT classe,
+       COUNT(*) AS ocorrencias
+FROM motor_medicoes
+WHERE DATE(timestamp_medicao::timestamp) = $1
+  AND EXTRACT(HOUR FROM timestamp_medicao::timestamp) = $2
+GROUP BY classe
+ORDER BY ocorrencias DESC;
+```
+
+</details>
+
+## 7) As mesmas ferramentas, publicadas (MCP)
+
+Até aqui as duas ferramentas moram **dentro** do fluxo do chat: só aquele
+agente as enxerga. O MCP (*Model Context Protocol*) publica as ferramentas em
+um endereço, e qualquer agente que fale MCP as lista e as chama. É o que a API
+fez com o modelo: um contrato publicado.
+
+1. Importe `n8n/Fluxo-3-mcp-publica.json`, configure a credencial do
+   PostgreSQL nas duas ferramentas e **ative**. Ele publica o `motor_agora` e o
+   `motor_historico` em `http://localhost:5678/mcp/motor`.
+2. Importe `n8n/Fluxo-4-chat-mcp.json`, configure a credencial do Gemini e
+   ative. É o mesmo agente, com a mesma *system message*, e **nenhuma consulta
+   dentro dele**: no lugar das duas ferramentas há um nó **MCP Client**, que
+   aponta para o endereço acima.
+3. Faça as mesmas perguntas. As respostas são as mesmas.
+4. No nó **MCP Client**, troque o **Endpoint** pelo endereço do n8n de outra
+   pessoa (na aula, o do professor: `http://172.16.10.101:5678/mcp/motor`) e
+   pergunte de novo: o seu agente passa a responder sobre **o motor dela**.
+   Mudou o banco e mudou a máquina; o contrato é o mesmo.
+
+O cliente recebe de cada ferramenta o nome, a descrição que você escreveu e o
+que ela espera de entrada. A descrição continua sendo a única instrução para o
+agente escolher.
+
+O endereço está **sem senha**: quem alcança a porta 5678 do seu computador
+pergunta ao seu banco. Serve para a aula; fora dela, o nó *MCP Server Trigger*
+tem o campo **Authentication**.
 
 ## Se der errado
 
@@ -165,5 +274,5 @@ sem espaço no começo nem no fim.
 **A API não responde.** Do n8n em contêiner, `localhost` é o próprio contêiner.
 A URL precisa ser `http://host.docker.internal:8000/predict`.
 
-**O horário sai errado.** O nó 4 fixa `America/Sao_Paulo`. Se o seu fuso for
+**O horário sai errado.** O nó `Formata para o banco` fixa `America/Sao_Paulo`. Se o seu fuso for
 outro, é lá que se muda — em um lugar só.

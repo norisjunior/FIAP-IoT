@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "topics": "FIAPIoT/motor/multiclasse",
+        "topics": "FIAPIoT/motor/multiclasse/DEFINA_UM_NOME",
         "options": {
           "jsonParseBody": true
         }
@@ -11,11 +11,11 @@
       "type": "n8n-nodes-base.mqttTrigger",
       "typeVersion": 1,
       "position": [
-        -220,
+        0,
         0
       ],
-      "id": "f3744deb-ff15-4e30-9423-13d4967c2525",
-      "name": "FIAPIoT/motor/multiclasse",
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f001",
+      "name": "Janela da placa",
       "credentials": {
         "mqtt": {
           "id": "Kto3xtuWvj20XFQv",
@@ -35,15 +35,19 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        240,
         0
       ],
-      "id": "76fe1973-1d02-4288-a062-ceeed6073702",
-      "name": "Predict Motor"
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f004",
+      "name": "Predict Motor",
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "parameters": {
-        "topic": "FIAPIoT/motor/multiclasse/cmd",
+        "topic": "FIAPIoT/motor/multiclasse/DEFINA_UM_NOME/cmd",
         "sendInputData": false,
         "message": "={{ $json.class }}",
         "options": {}
@@ -51,15 +55,92 @@
       "type": "n8n-nodes-base.mqtt",
       "typeVersion": 1,
       "position": [
-        240,
-        -100
+        480,
+        -112
       ],
-      "id": "e368a163-b53f-483b-b6e6-10ead574b8a9",
-      "name": "FIAPIoT/motor/multiclasse/cmd",
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f005",
+      "name": "Classe para a placa",
       "credentials": {
         "mqtt": {
           "id": "Kto3xtuWvj20XFQv",
           "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b7e2f105-4a68-4c39-9d21-3f5c8ab41e77",
+              "leftValue": "={{ $json.class }}",
+              "rightValue": "anomalia",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        112
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f006",
+      "name": "E anomalia?"
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "🚨 ANOMALIA no motor!\nO modelo identificou uma anomalia. Verifique o motor.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        112
+      ],
+      "id": "a1f4c2d7-8b31-4e05-9c62-1d7ae930f007",
+      "name": "ANOMALIA: alerta no Telegram",
+      "webhookId": "c4a91f28-6b03-4d17-9e85-2f6a0b73d914",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "SEU_CHAT_ID",
+        "text": "=⚠️ A predição falhou.\nO motor continua medindo, mas ninguém está classificando.\n\nErro: {{ $json.error?.message || $json.error || 'sem detalhe' }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        288
+      ],
+      "id": "00703832-8734-451e-8262-192b9c2d6a93",
+      "name": "FALHA: a API nao respondeu",
+      "webhookId": "d0791e0c-2c8a-41f2-a108-a6ba0064bb9c",
+      "credentials": {
+        "telegramApi": {
+          "id": "POk20ATbwPPtZF54",
+          "name": "Telegram - FIAPIoTBot"
         }
       }
     },
@@ -70,8 +151,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
-        120
+        460,
+        488
       ],
       "id": "87badd8a-3797-4580-9aaf-17bb46795d66",
       "name": "Formata para o banco"
@@ -85,8 +166,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        460,
-        120
+        680,
+        488
       ],
       "id": "90ff499b-89ee-4db7-8b2b-e2fe50b81968",
       "name": "Armazena a predicao",
@@ -100,7 +181,7 @@
   ],
   "pinData": {},
   "connections": {
-    "FIAPIoT/motor/multiclasse": {
+    "Janela da placa": {
       "main": [
         [
           {
@@ -115,7 +196,12 @@
       "main": [
         [
           {
-            "node": "FIAPIoT/motor/multiclasse/cmd",
+            "node": "Classe para a placa",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "E anomalia?",
             "type": "main",
             "index": 0
           },
@@ -124,7 +210,26 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "FALHA: a API nao respondeu",
+            "type": "main",
+            "index": 0
+          }
         ]
+      ]
+    },
+    "E anomalia?": {
+      "main": [
+        [
+          {
+            "node": "ANOMALIA: alerta no Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     },
     "Formata para o banco": {
@@ -145,7 +250,8 @@
   },
   "versionId": "5a54b825-d196-42f3-8649-a79f55d1529b",
   "meta": {
-    "instanceId": "app19-AI-LLM-Cloud_e_Edge"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f95231834db7705ff3204de524e5fb047e626c5b2802b5e1565382eaf984fbc"
   },
   "id": "0845d29e-4d13-4de8-96b8-5a1193ae1ac3",
   "tags": []
