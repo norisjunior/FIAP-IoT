@@ -84,14 +84,14 @@ então não há passo de preparação do banco — a primeira janela cria a tabe
 
 ## 3) O fluxo do chat
 
-Importe `n8n/Fluxo-2-chat-llm.json` e configure as credenciais de **Ollama** e
-**PostgreSQL**.
+Importe `n8n/Fluxo-2-chat-llm.json` e configure as credenciais do **Gemini**
+(veja [A chave do Gemini](../README.md#a-chave-do-gemini)) e do **PostgreSQL**.
 
 | Nó | Papel |
 |---|---|
 | `When chat message received` | abre a janela de chat |
 | `FIoT Agent` | decide qual ferramenta usar e redige a resposta |
-| `Ollama Chat Model` | o modelo de linguagem (`llama3.2:1b`) |
+| `Google Gemini Chat Model` | o modelo de linguagem (`gemini-3.5-flash-lite`) |
 | `Simple Memory` | lembra as mensagens anteriores da conversa |
 | `motor_agora` | `SELECT ... ORDER BY created_at DESC LIMIT 1` |
 | `motor_historico` | `SELECT classe, periodo, COUNT(*) ... WHERE data = $1 AND periodo = $2 GROUP BY classe, periodo` |
@@ -104,14 +104,14 @@ Ele não escolhe por adivinhação: a escolha está escrita em dois lugares.
 
 - Na **descrição de cada ferramenta**. A do `motor_historico` termina com um
   aviso em maiúsculas para não ser usada em perguntas sobre "agora" — sem isso,
-  modelos pequenos usam a ferramenta errada com frequência.
+  o agente às vezes usa a ferramenta errada.
 - Na ***system message*** do agente, que recebe a data e a hora de hoje já
   resolvidas pelo n8n e traz dois exemplos prontos de conversão.
 
 ### O histórico chega contado
 
 Um período tem milhares de janelas, uma por segundo. Mandar todas para o
-`llama3.2:1b` e perguntar *"quantas falhas?"* seria pedir que um modelo de
+modelo de linguagem e perguntar *"quantas falhas?"* seria pedir que um modelo de
 linguagem contasse, e ele não conta. Por isso o `motor_historico` agrupa e
 conta no banco, e o agente recebe no máximo quatro linhas:
 
@@ -123,7 +123,7 @@ conta no banco, e o agente recebe no máximo quatro linhas:
 A *system message* completa a leitura com duas regras: **falha é a classe
 `anomalia`**, e uma classe que não aparece no resultado teve **zero**
 ocorrências. Sem a segunda, uma madrugada sem anomalia simplesmente não traz
-a linha `anomalia`, e um modelo pequeno tende a inventar um número.
+a linha `anomalia`, e o modelo tende a inventar um número.
 
 O modelo de linguagem não sabe que dia é hoje. Quem sabe é o n8n, e por isso a
 data entra na *system message* em vez de o LLM ter de deduzir.
@@ -153,9 +153,14 @@ LIMIT 10;
 fluxo de ingestão está **ativo** (não basta importar) e se o Serial Monitor do
 ESP32 mostra publicações.
 
-**O agente sempre usa a ferramenta errada.** É o sintoma clássico de modelo
-pequeno. Confira se as descrições das duas ferramentas vieram completas na
-importação — elas são a única instrução que o agente tem para escolher.
+**O agente sempre usa a ferramenta errada.** Confira se as descrições das duas
+ferramentas vieram completas na importação — elas são a única instrução que o
+agente tem para escolher.
+
+**O chat devolve erro de cota (429) ou de chave.** Erro de cota é o limite
+diário do plano gratuito do Gemini: espere o dia virar ou use a chave de outro
+integrante do grupo. Erro de chave é a credencial do n8n: cole a chave de novo,
+sem espaço no começo nem no fim.
 
 **A API não responde.** Do n8n em contêiner, `localhost` é o próprio contêiner.
 A URL precisa ser `http://host.docker.internal:8000/predict`.

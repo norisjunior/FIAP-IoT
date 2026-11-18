@@ -14,26 +14,20 @@ você ─► chat do n8n ─► agente LLM ─► PostgreSQL ─► resposta em 
 São **dois fluxos**: um que ingere sem parar, outro que responde quando você
 pergunta. Eles não se falam — conversam pelo banco.
 
-## 1) A plataforma muda
+## 1) A plataforma é a mesma
 
-O `CloudAI` roda na plataforma comum. Este precisa da **plataforma LLM + IoT**,
-que acrescenta PostgreSQL e Ollama. Pare a anterior antes:
-
-```bash
-wsl -d ubuntu
-cd ~/FIAP-IoT/IoT-platform/ && docker compose down
-
-cd ~/FIAP-IoT/LLM-IoT-platform/
-sudo ./start-llm-iot-platform.sh
-docker ps
-```
+O `CloudAI` e este rodam na mesma `IoT-platform`. Ela já sobe o PostgreSQL do
+n8n, e a tabela deste app fica nele. O modelo de linguagem é o **Gemini**, do
+Google, chamado pela internet com uma chave sua: crie em
+[aistudio.google.com](https://aistudio.google.com) (**Get API key**) e cadastre
+no n8n como credencial **Google Gemini(PaLM) Api**.
 
 | Serviço | Onde |
 |---|---|
 | MQTT Broker | `localhost:1883` |
 | n8n | `http://localhost:5678` |
-| PostgreSQL | `localhost:5432` |
-| Ollama | `http://localhost:11434` |
+| PostgreSQL | `n8n-postgres:5432`, dentro do Docker |
+| Gemini | na internet, com a sua chave |
 
 A API continua sendo a mesma, rodando no seu computador a partir de `api/`.
 
@@ -87,13 +81,13 @@ a primeira medição cria a tabela.
 
 ## 3) O fluxo do chat
 
-Importe `n8n/Fluxo-2-chat-llm.json` e configure **Ollama** e **PostgreSQL**.
+Importe `n8n/Fluxo-2-chat-llm.json` e configure **Gemini** e **PostgreSQL**.
 
 | Nó | Papel |
 |---|---|
 | `When chat message received` | abre a janela de chat |
 | `FIoT Agent` | escolhe a ferramenta e redige a resposta |
-| `Ollama Chat Model` | o modelo de linguagem (`llama3.2:1b`) |
+| `Google Gemini Chat Model` | o modelo de linguagem (`gemini-3.5-flash-lite`) |
 | `Simple Memory` | lembra as mensagens anteriores |
 | `aqi_atual` | `SELECT ... ORDER BY created_at DESC LIMIT 1` |
 | `aqi_historico` | `SELECT ... WHERE data = $1 AND periodo = $2` |
