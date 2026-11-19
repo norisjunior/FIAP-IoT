@@ -1,4 +1,4 @@
-# Plano — trilha IMU (app17 → app18 → app19)
+# Plano — trilha IMU (app17 → app18 → app19 → app20)
 
 ## Estado em 2026-11-10
 
@@ -20,15 +20,15 @@
 | app17-8 (motor DC), app17-10 (C6), app17-11 (C3 + motor de vibração) | placas prontas para o aluno que não conseguir montar, fora do conteúdo da aula (o objetivo é o protocolo de coleta); todas alimentam o mesmo treino |
 | LED RGB com uma cor por estado | padrão definido pelo professor para as placas com RGB |
 | XIAO nRF52840 Sense fica fora do app17 | vai para o app21 (`app-Fumaca-SensorFusion`), em outro chat |
-| Colab (2026-11-12): a célula do `pip` reinicia a sessão sozinha quando troca o NumPy; aviso "execute duas vezes" (app17-6, app17-7, app18 EdgeAI, app20) | o Colab (Python 3.13) já abre com NumPy carregado; sem reiniciar, o `import sklearn` quebra com `_no_nep50_warning`. Aconteceu no treino com as 3 rodadas do app17-11 |
+| Colab (2026-11-12): a célula do `pip` reinicia a sessão sozinha quando troca o NumPy; aviso "execute duas vezes" (app17-6, app17-7, a floresta do app20, o AQI de `extras/`) | o Colab (Python 3.13) já abre com NumPy carregado; sem reiniciar, o `import sklearn` quebra com `_no_nep50_warning`. Aconteceu no treino com as 3 rodadas do app17-11 |
 
 ## Pendências
 
-1. **Recoletar a ±8 g e retreinar.** Inclui o `.hpp` do motor no app18/EdgeAI. Em `g`, sem
+1. **Recoletar a ±8 g e retreinar.** Inclui o `.hpp` do motor no app20. Em `g`, sem
    saturação, as features quase não mudam, mas o dataset novo é o que vale.
 2. **Slides.** `FIAP-IoT-develop/app17-IMU/INSTRUÇÕES PARA POWERPOINT - Aula 17 v2 IMU.md`
    ainda fala de `ts_epoch_ms` e NTP (linhas ~135, 335, 610–635) e lista o filtro
-   `setAccelLPF(41) + setGyroLPF(42)` na tabela de paridade (~653). O guia do app18/CloudAI no
+   `setAccelLPF(41) + setGyroLPF(42)` na tabela de paridade (~653). O guia do app18 no
    eval já foi atualizado: o quadro "Sem NTP" saiu e a tabela do payload usa `ts_ms`.
    Nos decks do OneDrive (conferido em 2026-11-10): o deck 16 tem `ts_epoch_ms`/NTP (S15,
    S24), a linha do filtro e "sete coisas" (S25) e "mesmo filtro" (S40). Fica registrado em
@@ -45,7 +45,7 @@
 
 ## Referências
 
-- Tabela "⚖ paridade" nos `CONSTRUIR-O-FIRMWARE.md` do app18 (EdgeAI e CloudAI) e do
-  app19 (Chatbot-EdgeAI).
+- Tabela "⚖ paridade" nos `CONSTRUIR-O-FIRMWARE.md` do app18 (`device-devkitv1/`) e do
+  app20 (`device-MQTT-devkit/` e `device-local-devkit/`).
 - No develop, `app17-IMU/`: `INSTRUÇÕES PARA POWERPOINT - Aula 17 v2 IMU.md` e
   `DECISÕES - app18 CloudAI e EdgeAI.md`.

@@ -1,0 +1,133 @@
+{
+  "name": "app20 - Publica as ferramentas da concordancia (MCP)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "concordancia"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "28d3c572-f37c-496a-aff8-a0fb416cc89c",
+      "name": "MCP Server Trigger",
+      "webhookId": "concordancia"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta se chama \"concordancia_geral\" e responde o quanto o modelo da borda concorda com o da nuvem, considerando TODAS as janelas gravadas. Use para \"a borda esta confiavel?\", \"qual a taxa de concordancia?\", \"em geral\". Ela devolve janelas, concordaram e taxa_pct, ja calculados.",
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*)                                      AS janelas,\n       COUNT(*) FILTER (WHERE concordam)             AS concordaram,\n       ROUND(100.0 * COUNT(*) FILTER (WHERE concordam)\n             / NULLIF(COUNT(*), 0), 1)               AS taxa_pct\nFROM motor_validacao;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        260
+      ],
+      "id": "3e7c1420-6a8d-4b95-9f13-58e0c6a7bd49",
+      "name": "concordancia_geral",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta devolve a taxa de concordancia entre a borda e a nuvem em uma data e periodo do passado. Sempre envie Query_Parameters como uma string no formato: \"AAAA-MM-DD, periodo\", por exemplo: \"2026-09-21, madrugada\".\nO campo periodo deve ser uma destas palavras exatas: madrugada, manhã, tarde, noite.\n\n**NÃO USE ESTA FERRAMENTA PARA A TAXA GERAL, SEM PERIODO.**",
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*)                                      AS janelas,\n       COUNT(*) FILTER (WHERE concordam)             AS concordaram,\n       ROUND(100.0 * COUNT(*) FILTER (WHERE concordam)\n             / NULLIF(COUNT(*), 0), 1)               AS taxa_pct\nFROM motor_validacao\nWHERE DATE(timestamp_medicao::timestamp) = $1\n  AND periodo = $2;\n",
+        "options": {
+          "queryReplacement": "={{ $fromAI('Query_Parameters', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        260
+      ],
+      "id": "8b2f95d3-7c04-41ae-b628-9d3a1f60c587",
+      "name": "concordancia_periodo",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Esta ferramenta se chama \"onde_discordam\" e mostra QUAIS classes a borda e a nuvem confundiram entre si, da mais frequente para a menos frequente. Use quando o usuario perguntar \"onde erra\", \"em que classes discordam\", \"qual a confusao\". Ela devolve predicao_borda, predicao_nuvem e vezes.",
+        "operation": "executeQuery",
+        "query": "SELECT predicao_borda,\n       predicao_nuvem,\n       COUNT(*) AS vezes\nFROM motor_validacao\nWHERE NOT concordam\nGROUP BY 1, 2\nORDER BY 3 DESC\nLIMIT 5;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        480,
+        260
+      ],
+      "id": "d5a80e61-3b47-4c92-8107-6f2be9d34a70",
+      "name": "onde_discordam",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "concordancia_geral": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "concordancia_periodo": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "onde_discordam": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "app20-Inferencia-Borda"
+  }
+}
