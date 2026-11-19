@@ -1,14 +1,8 @@
-# Estado do motor (multiclasse): na nuvem e na borda
+# Estado do motor (multiclasse): a decisão na nuvem
 
-A mesma janela de features da coleta, classificada de dois jeitos. Quatro
-classes: `operando`, `inclinado_frente`, `inclinado_tras` e `anomalia`.
-
-| Pasta | Modelo | Quem decide |
-|---|---|---|
-| `CloudAI/` | a MLP treinada na coleta, num `.pkl` | a nuvem, e o ESP32 obedece |
-| `EdgeAI/` | uma Random Forest embarcada | o próprio ESP32, sem rede |
-
-As seções 1 a 4 são o caminho da nuvem; a seção 5 aponta para a borda.
+A mesma janela de features da coleta, classificada na nuvem: a MLP treinada na
+coleta, num `.pkl`, decide, e o ESP32 obedece. Quatro classes: `operando`,
+`inclinado_frente`, `inclinado_tras` e `anomalia`.
 
 ```text
 ESP32 → MQTT → n8n → API FastAPI (.pkl) → n8n → MQTT → ESP32
@@ -18,7 +12,7 @@ ESP32 → MQTT → n8n → API FastAPI (.pkl) → n8n → MQTT → ESP32
 ## 1) O modelo
 
 O notebook `treinamento_multiclasse.ipynb`, do app de coleta, gera o
-`modelo_motor_multiclasse.pkl`. Copie o arquivo para `CloudAI/api/`.
+`modelo_motor_multiclasse.pkl`. Copie o arquivo para `api/`.
 
 ## 2) A API
 
@@ -49,12 +43,12 @@ Resposta, com as probabilidades arredondadas:
 
 ## 3) O fluxo n8n
 
-Importe `CloudAI/n8n/Fluxo-n8n-predict.json` (n8n em `http://localhost:5678`) e
+Importe `n8n/Fluxo-n8n-predict.json` (n8n em `http://localhost:5678`) e
 selecione as credenciais: MQTT nos dois nós de MQTT e Telegram nos dois nós de
 aviso. Nos dois nós de MQTT, troque `DEFINA_UM_NOME` pelo nome da sua placa; nos
 dois nós do Telegram, troque `SEU_CHAT_ID` pelo seu.
 
-Passo a passo: [Construir o fluxo n8n](CloudAI/n8n/CONSTRUIR-O-FLUXO.md).
+Passo a passo: [Construir o fluxo n8n](n8n/CONSTRUIR-O-FLUXO.md).
 
 | # | Nó | Configuração |
 |---|---|---|
@@ -83,7 +77,7 @@ propósito — o alerta parar poderia ser lido como problema resolvido.
 ## 4) O firmware
 
 ```bash
-cd CloudAI/device-devkitv1
+cd device-devkitv1
 pio run
 ```
 
@@ -111,7 +105,7 @@ app de coleta — de entrada do rótulo humano viraram saída do rótulo do mode
 
 LED onboard aceso = conectado ao broker.
 
-Para o `.pkl` de referência (o que vem em `CloudAI/api/`), incline **uns 45°**: ele
+Para o `.pkl` de referência (o que vem em `api/`), incline **uns 45°**: ele
 foi treinado com a gravidade da inclinação indo para o **eixo y** (`mean_ay` perto
 de +0,7 para a frente e de −0,8 para trás). Com o MPU preso de outro jeito, as
 inclinações saem erradas: use o `.pkl` do seu dataset.
@@ -120,31 +114,22 @@ No Wokwi a **inclinação** sai, pelo controle de aceleração do MPU6050. A
 `anomalia` não: ela é vibração, e o controle parado deixa as 100 amostras da
 janela idênticas.
 
-**Outra placa:** [`CloudAI/device-esp32c3/`](CloudAI/device-esp32c3/README.md) é o
+**Outra placa:** [`device-esp32c3/`](device-esp32c3/README.md) é o
 mesmo firmware no ESP32-C3 Super Mini Plus com motor de vibração, a montagem da placa pronta
 de coleta (placa do professor). Um LED por classe (azul, verde, laranja, vermelho), o LED
 RGB da placa repetindo a cor do LED aceso e um bipe na anomalia.
 
-## 5) A mesma janela, sem nuvem
+## 5) A API continua no ar
 
-[`EdgeAI/`](EdgeAI/README.md) traz o outro extremo: a mesma janela, as mesmas 8
-features e as mesmas 4 saídas, mas com uma **Random Forest embarcada** decidindo
-dentro do ESP32. Sai o MQTT, sai o n8n, sai a API — e a resposta cai de ~1 s
-para poucos microssegundos.
-
-Nada do que está acima muda: o `CloudAI/` continua valendo inteiro. O
-`EdgeAI/` é uma segunda leitura do mesmo problema, com um modelo novo treinado a
-partir do mesmo dataset da coleta.
+O app19 (o agente que responde sobre o motor) e o app20 (a placa decide e a
+nuvem confere) usam esta mesma API, desta pasta, na mesma porta. Não há outra
+cópia dela no repositório.
 
 ## Estrutura
 
 ```text
-CloudAI/   o modelo na nuvem
-  api/       service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
-  device-devkitv1/   firmware (publica a janela, assina o tópico de comando)
-  device-esp32c3/    o mesmo, no ESP32-C3 Super Mini Plus com motor de vibração
-  n8n/       Fluxo-n8n-predict.json
-EdgeAI/    o modelo na borda
-  colab/     treinamento da Random Forest
-  device/    firmware sem rede + os dois .hpp do modelo
+api/               service_app.py · modelo_motor_multiclasse.pkl · requirements.txt
+device-devkitv1/   firmware (publica a janela, assina o tópico de comando)
+device-esp32c3/    o mesmo, no ESP32-C3 Super Mini Plus com motor de vibração
+n8n/               Fluxo-n8n-predict.json
 ```

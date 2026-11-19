@@ -41,7 +41,7 @@ roda**.
 |---|---|---|
 | Wake word + olhos | `app36-Audio/app36-6-DeskBuddy-ESP32` | o lado Edge inteiro |
 | Mosquitto, Node-RED, n8n, InfluxDB, Grafana | `FIAP-IoT-eval/IoT-platform` (Compose; há variante para RPi) | a Fog: basta somar um container de STT |
-| Chat com LLM pelo n8n (Gemini) | `FIAP-IoT-eval/app19-AI-LLM-Cloud_e_Edge` | o LLM na Cloud, já com chave e credencial |
+| Chat com LLM pelo n8n (Gemini) | `FIAP-IoT-eval/app19-AI-LLM-Cloud` | o LLM na Cloud, já com chave e credencial |
 | faster-whisper | `C:\Projects\WhisperAudio` (`transcript.py`) | o STT, já testado em português |
 | Atuadores MQTT | `app07_mqtt_subscriber_atuador`, `app08_..._LED_e_BUZ` | quem obedece ao comando |
 | Segurança MQTT | `app37`, `app38`, `app39` | onde ficam as credenciais |

@@ -1,7 +1,7 @@
 # app17-IMU-GerarDataset-Sinais
 
 Trilha IMU da disciplina de IoT (FIAP): do acelerômetro (MPU6050/MPU6500) a um dataset de
-features por janela no InfluxDB, que o app18 (inferência) e o app19 (LLM) consomem.
+features por janela no InfluxDB, que o app18 (inferência na nuvem), o app19 (LLM) e o app20 (inferência na borda) consomem.
 Estado, decisões e pendências: [PLANO.md](PLANO.md) — leia antes de mexer, atualize ao terminar.
 
 ## Pastas
