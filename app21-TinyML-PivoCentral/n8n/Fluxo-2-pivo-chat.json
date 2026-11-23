@@ -1,0 +1,332 @@
+{
+  "name": "app21 - Pivo: o chat responde e manda na bomba",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Olá! 👋\nSou o FIoT, do pivô central. Pergunte se está irrigando, ou peça para ligar, desligar ou voltar ao automático.",
+        "options": {
+          "title": "FIoT Agent - Pivô central",
+          "subtitle": "IoT + TinyML + n8n + LLM",
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -440,
+        0
+      ],
+      "id": "8e83cc8c-926b-5e76-8db4-6d7e2f7c4100",
+      "name": "When chat message received",
+      "webhookId": "dcbb54d7-92bc-547d-87be-478f51a60dbd"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Você é o assistente de um pivô central de irrigação numa fazenda.\n\nCOMO O PIVÔ FUNCIONA\n- Uma placa na torre do pivô classifica o motor a cada segundo, com uma rede neural:\n  operando, inclinado_frente, inclinado_tras ou anomalia.\n- Com a torre operando, a placa manda ligar a bomba; em qualquer outra classe, manda desligar.\n- A nuvem consulta a previsão do tempo: com mais de 10 mm de chuva nas próximas 2 horas,\n  manda desligar a bomba, e essa ordem vale por 2 horas.\n- A pessoa, por este chat, pode ligar, desligar ou devolver o controle. A ordem da pessoa\n  vale por 30 minutos e passa por cima de todas.\n- Quem manda na bomba: a pessoa, depois a nuvem, depois a placa.\n\nAGORA\n- {{ $now.format('yyyy-LL-dd HH:mm') }} ({{ $now.format('EEEE') }})\n- Períodos: madrugada 00:00–05:59, manhã 06:00–11:59, tarde 12:00–17:59, noite 18:00–23:59.\n\nFERRAMENTAS\n- bomba_agora: o último estado da bomba (ligada ou não, quem manda, o motivo e desde quando).\n  Use para \"está irrigando?\", \"a bomba está ligada?\", \"quem desligou?\", \"por quê?\".\n- bomba_historico: as mudanças da bomba num dia e período. Parâmetro no formato\n  \"AAAA-MM-DD, periodo\". Exemplos: \"hoje de manhã\" -> \"{{ $now.format('yyyy-LL-dd') }}, manhã\";\n  \"ontem à noite\" -> \"{{ $now.minus({days: 1}).format('yyyy-LL-dd') }}, noite\".\n\nREGRAS\n- Responda só com o que as ferramentas devolverem. Nunca invente o estado da bomba.\n- Ao dizer o estado, diga quem manda, o motivo e desde quando (a hora, hh:mm; a data só se não\n  for hoje).\n- Pedido explícito para ligar a bomba ou irrigar -> ordem LIGAR. Para desligar -> DESLIGAR.\n  Para voltar ao automático ou devolver o controle -> DEVOLVER. Qualquer outra mensagem,\n  inclusive perguntas -> NENHUMA.\n- Ao mandar LIGAR ou DESLIGAR, diga que a ordem foi enviada para a bomba (quem confirma é a\n  bomba, no estado), que ela vale por 30 minutos e que passa por cima da placa e da nuvem.\n- Ao devolver, diga que a nuvem e a placa voltam a mandar.\n- Responda em português do Brasil, em poucas frases.\n\nSAÍDA\nUm JSON com \"resposta\" (o texto para a pessoa) e \"ordem\" (LIGAR, DESLIGAR, DEVOLVER ou NENHUMA).\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        0
+      ],
+      "id": "296712d5-8bc7-5acd-a1e3-38dde8ec5735",
+      "name": "FIoT Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        240
+      ],
+      "id": "caac1b34-6403-52bc-a2d4-2bc4281f1613",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gEm1n1Ap1Acc0unt",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -180,
+        240
+      ],
+      "id": "cf042de3-8dff-5507-a028-8ceb1197ed8d",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "O estado atual da bomba do pivô: bomba (true = ligada), quem_manda (pessoa, nuvem, placa ou ninguem), motivo e desde (data e hora da última mudança). Use para qualquer pergunta sobre agora.",
+        "operation": "executeQuery",
+        "query": "SELECT bomba, quem_manda, motivo, timestamp_estado AS desde\nFROM pivo_bomba\nORDER BY id DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -40,
+        240
+      ],
+      "id": "2026392f-9b86-5aa5-8847-4575d0e3db97",
+      "name": "bomba_agora",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "As mudanças da bomba do pivô num dia e período, em ordem. Envie Query_Parameters como \"AAAA-MM-DD, periodo\", com periodo = madrugada, manhã, tarde ou noite.",
+        "operation": "executeQuery",
+        "query": "SELECT bomba, quem_manda, motivo, timestamp_estado\nFROM pivo_bomba\nWHERE DATE(timestamp_estado::timestamp) = $1\n  AND periodo = $2\nORDER BY id\nLIMIT 30;\n",
+        "options": {
+          "queryReplacement": "={{ $fromAI('Query_Parameters', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        100,
+        240
+      ],
+      "id": "ede94a88-9c4b-5ad4-a274-bbf3559cf78d",
+      "name": "bomba_historico",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"resposta\": { \"type\": \"string\" },\n    \"ordem\": { \"type\": \"string\", \"enum\": [\"LIGAR\", \"DESLIGAR\", \"DEVOLVER\", \"NENHUMA\"] }\n  },\n  \"required\": [\"resposta\", \"ordem\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        240
+      ],
+      "id": "c3ce3a2e-839f-5384-9c49-8cb6acc4fcf0",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "message": "={{ $json.output.resposta }}",
+        "waitUserReply": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        160,
+        160
+      ],
+      "id": "2720bf6e-2598-5e7a-92f7-0977bb5f1837",
+      "name": "Respond to Chat"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4e1d90ab-4cf7-5b4e-a54b-37eb1f74502c",
+              "leftValue": "={{ $json.output.ordem }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "rightValue": "NENHUMA"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        -160
+      ],
+      "id": "3038a3e9-74c8-561c-8514-53bb72c22311",
+      "name": "Tem ordem?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// A ordem da pessoa. Na bomba, ela vale por 30 min e passa por cima de todas.\nconst ordem = $input.first().json.output.ordem;\n\nif (ordem === \"DEVOLVER\") {\n  return [{ json: { dispositivo: \"pessoa\", devolver: true } }];\n}\n\nreturn [{\n  json: {\n    dispositivo: \"pessoa\",\n    bomba: ordem === \"LIGAR\",\n    motivo: \"pedido no chat\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        -180
+      ],
+      "id": "df40a0e3-f1f7-5569-b78f-0e2f22551297",
+      "name": "Ordem da pessoa"
+    },
+    {
+      "parameters": {
+        "topic": "FIAPIoT/pivo/DEFINA_UM_NOME/cmd/human",
+        "sendInputData": false,
+        "message": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        600,
+        -180
+      ],
+      "id": "dad4d737-63a8-5632-a00d-7c210d9a0710",
+      "name": "Ordem para a bomba",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FIoT Agent": {
+      "main": [
+        [
+          {
+            "node": "Tem ordem?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem ordem?": {
+      "main": [
+        [
+          {
+            "node": "Ordem da pessoa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ordem da pessoa": {
+      "main": [
+        [
+          {
+            "node": "Ordem para a bomba",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "bomba_agora": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "bomba_historico": {
+      "ai_tool": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "FIoT Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "app21-TinyML-PivoCentral"
+  },
+  "tags": []
+}
