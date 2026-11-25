@@ -1,0 +1,294 @@
+{
+  "name": "app21 - Pivo: guarda o estado da bomba e confere a chuva",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "FIAPIoT/pivo/DEFINA_UM_NOME/estado",
+        "options": {
+          "jsonParseBody": true
+        }
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        0
+      ],
+      "id": "b91de12c-2f3f-5310-818f-c3cb79707889",
+      "name": "Estado da bomba",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Timestamp e periodo no fuso de Sao Paulo, como no banco do motor.\nconst agora = new Date().toLocaleString(\"sv-SE\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour12: false\n});\n\nconst hora = Number(new Date().toLocaleString(\"en-US\", {\n  timeZone: \"America/Sao_Paulo\",\n  hour: \"numeric\",\n  hour12: false\n}));\n\nlet periodo = \"madrugada\";\nif (hora >= 6 && hora < 12) periodo = \"manhã\";\nelse if (hora >= 12 && hora < 18) periodo = \"tarde\";\nelse if (hora >= 18) periodo = \"noite\";\n\n// O estado vem da propria bomba: ligada ou nao, e quem mandou.\nconst estado = $input.first().json.message;\n\nreturn [{\n  json: {\n    bomba: estado.bomba === true,\n    quem_manda: estado.quem_manda,\n    motivo: estado.motivo || \"\",\n    timestamp_estado: agora,\n    periodo\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "0aad0c48-c8ad-5578-95f3-1c8d03b4134e",
+      "name": "Formata para o banco"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS pivo_bomba (\n  id SERIAL PRIMARY KEY,\n  bomba BOOLEAN,              -- true = ligada\n  quem_manda TEXT,            -- pessoa, nuvem, placa ou ninguem\n  motivo TEXT,\n  timestamp_estado TEXT,\n  periodo TEXT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nINSERT INTO pivo_bomba (bomba, quem_manda, motivo, timestamp_estado, periodo)\nVALUES ({{ $json.bomba }}, '{{ $json.quem_manda }}', '{{ $json.motivo }}',\n        '{{ $json.timestamp_estado }}', '{{ $json.periodo }}');\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        -120
+      ],
+      "id": "614db60f-8a6c-57db-800b-5729e35a5c3c",
+      "name": "Armazena o estado",
+      "credentials": {
+        "postgres": {
+          "id": "pSi9ueCiSjyuz9OB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ab60a672-2410-5b1c-a28c-9b8875a4240f",
+              "leftValue": "={{ $json.bomba }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "rightValue": true
+            },
+            {
+              "id": "43c1caa7-46c9-5ca3-9aee-d889d8c2d494",
+              "leftValue": "={{ $json.quem_manda }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "placa"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        120
+      ],
+      "id": "49d20d6c-4cb8-52ae-92d4-a02300f9f328",
+      "name": "A placa ligou a bomba?"
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={\n  \"latitude\": -23.55,\n  \"longitude\": -46.63,\n  \"hourly\": \"precipitation\",\n  \"forecast_hours\": 2,\n  \"timezone\": \"America/Sao_Paulo\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        220,
+        120
+      ],
+      "id": "bb01e7db-eabb-570c-afb1-da3eb9fc7b82",
+      "name": "Previsao de chuva"
+    },
+    {
+      "parameters": {
+        "jsCode": "// A previsao hora a hora: a hora atual e a proxima (forecast_hours = 2).\nconst previsao = $input.first().json.hourly || {};\nconst mm = previsao.precipitation || [];\nlet chuva_mm = mm.reduce((soma, valor) => soma + (valor || 0), 0);\n\n// Para a demonstracao: troque null por um numero (ex.: 25) e a nuvem age como\n// se fosse chover isso nas proximas 2 h. Depois, volte para null.\nconst SIMULAR_MM = null;\nif (SIMULAR_MM !== null) chuva_mm = SIMULAR_MM;\n\nconst LIMITE_MM = 10;   // acima disso, a chuva irriga sozinha\n\nreturn [{\n  json: {\n    chuva_mm: Math.round(chuva_mm * 10) / 10,\n    limite_mm: LIMITE_MM,\n    vai_chover: chuva_mm > LIMITE_MM\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        120
+      ],
+      "id": "7601d27a-e6a7-5537-a448-1f3673919481",
+      "name": "Chuva nas proximas 2 h"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "263530d2-0e05-592a-860f-79dcc694e12b",
+              "leftValue": "={{ $json.vai_chover }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "rightValue": true
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        120
+      ],
+      "id": "4439c955-8983-50e5-8043-8ba59f4879f2",
+      "name": "Vai chover?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// A ordem da nuvem: desligar. Na bomba, ela vale por 2 h.\nconst chuva = String($input.first().json.chuva_mm).replace(\".\", \",\");\n\nreturn [{\n  json: {\n    dispositivo: \"nuvem\",\n    bomba: false,\n    motivo: `chuva prevista: ${chuva} mm em 2 h`\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        100
+      ],
+      "id": "189479d0-41f7-5351-9a34-c571e85f1825",
+      "name": "Ordem da nuvem"
+    },
+    {
+      "parameters": {
+        "topic": "FIAPIoT/pivo/DEFINA_UM_NOME/cmd/cloud",
+        "sendInputData": false,
+        "message": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        100
+      ],
+      "id": "dad4d737-63a8-5632-a00d-7c210d9a0710",
+      "name": "Ordem para a bomba",
+      "credentials": {
+        "mqtt": {
+          "id": "Kto3xtuWvj20XFQv",
+          "name": "MQTT Local - Mosquitto"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Estado da bomba": {
+      "main": [
+        [
+          {
+            "node": "Formata para o banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formata para o banco": {
+      "main": [
+        [
+          {
+            "node": "Armazena o estado",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "A placa ligou a bomba?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A placa ligou a bomba?": {
+      "main": [
+        [
+          {
+            "node": "Previsao de chuva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Previsao de chuva": {
+      "main": [
+        [
+          {
+            "node": "Chuva nas proximas 2 h",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuva nas proximas 2 h": {
+      "main": [
+        [
+          {
+            "node": "Vai chover?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vai chover?": {
+      "main": [
+        [
+          {
+            "node": "Ordem da nuvem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ordem da nuvem": {
+      "main": [
+        [
+          {
+            "node": "Ordem para a bomba",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "app21-TinyML-PivoCentral"
+  },
+  "tags": []
+}
