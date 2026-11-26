@@ -1,5 +1,9 @@
 # app36-Audio — do sinal de áudio à wake word
 
+> **26/11/2026:** o app36-1, o app36-2 e o app36-3 foram para [`../app22-EdgeImpulse-Audio/`](../app22-EdgeImpulse-Audio/) (a aula ID 22), como `mic-onda`,
+> `mic-features`, `wakeword-notebook` e `wakeword-celular`. Onde este texto ainda cita os nomes
+> antigos, são essas pastas. O resto fica aqui até o ID 23 ser refeito.
+
 Trilha de áudio para a disciplina de IoT: do sinal cru do microfone até uma palavra que o
 dispositivo reconhece sozinho. Cada etapa acrescenta **um** conceito e roda sozinha.
 
@@ -35,12 +39,12 @@ turma é de IA e o objetivo é chegar rápido no Edge Impulse.
 
 | # | Pasta | O que o aluno vê | Conceito novo |
 |---|---|---|---|
-| 1 | [app36-1-mic-RAW](app36-1-mic-RAW/) | a onda da voz reagindo ao vivo | o microfone entrega número pronto |
-| 2 | [app36-2-mic-VOZ_FEATURES](app36-2-mic-VOZ_FEATURES/) | 16 000 números/s viram 4 | janela, RMS, `calcStd`, `calcZCR` |
+| 1 | [mic-onda](../app22-EdgeImpulse-Audio/mic-onda/) | a onda da voz reagindo ao vivo | o microfone entrega número pronto |
+| 2 | [mic-features](../app22-EdgeImpulse-Audio/mic-features/) | 16 000 números/s viram 4 | janela, RMS, `calcStd`, `calcZCR` |
 
 > **Material de apoio, fora do roteiro:** [app36-0-mic-SOM](app36-0-mic-SOM/) mostra o
 > microfone lido com a biblioteca `<I2S.h>` crua, e o gráfico sai picotado. Só serve se alguém
-> perguntar por que o app36-1 precisa do `INMP441.hpp`.
+> perguntar por que o mic-onda precisa do `INMP441.hpp`.
 
 > **Versão antiga:** [app36-Analogico-Wokwi/](app36-Analogico-Wokwi/) tem as mesmas ideias com
 > microfone analógico (KY038/MAX9814). Os arquivos de Wokwi dela ainda precisam de revisão.
@@ -63,7 +67,7 @@ depois a placa, e o celular nativo quando a turma já souber Android.
 
 | # | Pasta | Onde roda | Deployment |
 |---|---|---|---|
-| 3 | [app36-3-WakeWord-DockerHTTP](app36-3-WakeWord-DockerHTTP/) | notebook, ou celular por uma página HTTPS | Docker container |
+| 3 | [wakeword-notebook · wakeword-celular](../app22-EdgeImpulse-Audio/) | notebook, ou celular por uma página HTTPS | Docker container |
 | 4 | [app36-4-WakeWord-ESP32](app36-4-WakeWord-ESP32/) | ESP32-S3 Super Mini + INMP441 | Arduino library |
 | 5 | [app36-5-WakeWord-Android](app36-5-WakeWord-Android/) | Android (Flutter + FFI) | Android library C++ |
 | 6 | [app36-6-DeskBuddy-ESP32](app36-6-DeskBuddy-ESP32/) | o app36-4 com olhos numa tela redonda, que abrem com a wake word | Arduino library |

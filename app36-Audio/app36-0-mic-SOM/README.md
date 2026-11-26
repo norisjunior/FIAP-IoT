@@ -1,6 +1,6 @@
 # app36-0-mic-SOM — material de apoio, fora do roteiro
 
-> **Não entra na aula.** A trilha começa no [app36-1-mic-RAW](../app36-1-mic-RAW/).
+> **Não entra na aula.** A trilha começa no [mic-onda](../../app22-EdgeImpulse-Audio/mic-onda/).
 >
 > Este projeto existe para responder a **uma** pergunta, se algum aluno fizer:
 > *"por que o app-1 precisa daquele `INMP441.hpp`?"* — rode este aqui e a resposta aparece

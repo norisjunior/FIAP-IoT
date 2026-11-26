@@ -6,8 +6,8 @@ até uma wake word que aciona um atuador. Pastas independentes, em ordem crescen
 | Pasta | O que é |
 |---|---|
 | `app36-0-mic-SOM` | apoio, fora do roteiro (ver abaixo) |
-| `app36-1-mic-RAW`, `app36-2-mic-VOZ_FEATURES` | observar o sinal do INMP441 (PlatformIO) |
-| `app36-3-WakeWord-DockerHTTP` | a wake word do aluno no notebook/celular, Docker como motor |
+| `../app22-EdgeImpulse-Audio/mic-onda`, `mic-features` (desde 26/11) | observar o sinal do INMP441 (PlatformIO) |
+| `../app22-EdgeImpulse-Audio/wakeword-notebook`, `wakeword-celular` (desde 26/11) | a wake word do aluno no notebook/celular, Docker como motor |
 | `app36-4-WakeWord-ESP32` | a wake word no ESP32-S3 + INMP441 (PlatformIO + lib EI) |
 | `app36-5-WakeWord-Android` | a wake word no Android (Flutter + FFI), com `docs/` |
 | `app36-6-DeskBuddy-ESP32` | o app36-4 com olhos na tela redonda GC9A01 (TFT_eSPI, SPI nos GPIOs 9–13) |

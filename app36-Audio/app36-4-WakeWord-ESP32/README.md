@@ -118,7 +118,7 @@ sampleBuffer[x] = (int16_t)(rawBuffer[x] >> 16);
 `>> 16` pega os 16 bits de cima, **sem** o `* 8` do exemplo. Aquele ganho era para o
 microfone da ESP-EYE; o INMP441 é mais sensível, e com ele a voz passa de 32 767 e dá a volta
 para o negativo. O modelo recebe uma onda picotada e responde `ruido`, sem erro nenhum.
-Para conferir, rode o `app36-1-mic-RAW` com o mesmo `GANHO = 16` e fale a uns 30 cm: os picos
+Para conferir, rode o `mic-onda` (em `app22-EdgeImpulse-Audio/`) com o mesmo `GANHO = 16` e fale a uns 30 cm: os picos
 devem ficar longe de ±32 000.
 
 ### 6. Ajuste 3: mostrar a classe reconhecida

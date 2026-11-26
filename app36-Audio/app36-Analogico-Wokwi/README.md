@@ -2,7 +2,7 @@
 
 A primeira versão da trilha de áudio, com microfone **analógico** lido por `analogRead()`.
 Antes se chamavam `app28-1`, `app28-2` e `app28-3`. A trilha de hoje usa o INMP441
-([app36-1](../app36-1-mic-RAW/) e [app36-2](../app36-2-mic-VOZ_FEATURES/)), e esses mesmos
+([mic-onda](../../app22-EdgeImpulse-Audio/mic-onda/) e [mic-features](../../app22-EdgeImpulse-Audio/mic-features/)), e esses mesmos
 sketches estão guardados lá dentro como `.txt *-ANALOGICO`.
 
 | Pasta | Sketch ativo (`.ino`) | Variantes (`.txt`) |

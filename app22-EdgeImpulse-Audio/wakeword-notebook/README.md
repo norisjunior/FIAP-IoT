@@ -8,7 +8,7 @@ O container é o modelo do Edge Impulse (MFCC + rede). O `wakeword.py` captura o
 manda a janela e decide.
 
 **Passo a passo:** [ROTEIRO.md](ROTEIRO.md). Computador sem microfone? Use
-[`../celular/`](../celular/).
+[`../wakeword-celular/`](../wakeword-celular/).
 
 ## Antes de começar
 

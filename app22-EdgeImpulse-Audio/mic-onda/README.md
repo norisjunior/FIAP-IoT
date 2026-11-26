@@ -1,4 +1,4 @@
-# app36-1-mic-RAW — a onda da voz
+# mic-onda — a onda da voz
 
 Etapa 1, e o começo da trilha. Lê o INMP441 e desenha a onda no Teleplot. Nada mais.
 
@@ -87,5 +87,5 @@ Sem Wokwi: não existe peça INMP441 no simulador.
 ---
 
 > **Se alguém perguntar por que o `INMP441.hpp` existe:** o
-> [app36-0-mic-SOM](../app36-0-mic-SOM/) (material de apoio, fora do roteiro) lê o microfone sem
+> [app36-0-mic-SOM](../../app36-Audio/app36-0-mic-SOM/) (material de apoio, fora do roteiro) lê o microfone sem
 > ele, e o gráfico sai picotado.
