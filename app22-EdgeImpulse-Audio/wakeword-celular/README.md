@@ -8,7 +8,7 @@ O celular só captura o áudio. O container é o modelo do Edge Impulse (MFCC + 
 `servidor.py` monta a janela, manda ao container e decide.
 
 **Passo a passo:** [ROTEIRO.md](ROTEIRO.md). Notebook com microfone? A pasta
-[`../notebook/`](../notebook/) é mais simples.
+[`../wakeword-notebook/`](../wakeword-notebook/) é mais simples.
 
 ## Antes de começar
 

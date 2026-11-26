@@ -1,13 +1,17 @@
 # Plano — app36-Audio: do sinal de áudio ao assistente de voz (ESP32 + INMP441)
 
+> **26/11/2026:** o app36-1, o app36-2 e o app36-3 foram para [`../app22-EdgeImpulse-Audio/`](../app22-EdgeImpulse-Audio/) (a aula ID 22), como `mic-onda`,
+> `mic-features`, `wakeword-notebook` e `wakeword-celular`. Onde este texto ainda cita os nomes
+> antigos, são essas pastas. O resto fica aqui até o ID 23 ser refeito.
+
 > **Reorganização de 30/10/2026.** A trilha saiu do `FIAP-IoT-develop/app-FIoT-Audio` e virou
 > o `app36-Audio` do `FIAP-IoT-eval`, junto com o antigo `app40-WakeWord`. As seções abaixo
 > ainda descrevem o plano v4; a correspondência com as pastas de hoje é esta:
 >
 > | No plano | Hoje |
 > |---|---|
-> | `app-0` · `app-1` · `app-2` | [`app36-0-mic-SOM`](app36-0-mic-SOM/) · [`app36-1-mic-RAW`](app36-1-mic-RAW/) · [`app36-2-mic-VOZ_FEATURES`](app36-2-mic-VOZ_FEATURES/) |
-> | — (era `app40-2-DockerHTTP`) | [`app36-3-WakeWord-DockerHTTP`](app36-3-WakeWord-DockerHTTP/) |
+> | `app-0` · `app-1` · `app-2` | [`app36-0-mic-SOM`](app36-0-mic-SOM/) · [`mic-onda`](../app22-EdgeImpulse-Audio/mic-onda/) · [`mic-features`](../app22-EdgeImpulse-Audio/mic-features/) |
+> | — (era `app40-2-DockerHTTP`) | [`wakeword-notebook` · `wakeword-celular`](../app22-EdgeImpulse-Audio/) |
 > | `app-3-mic-FIOT` | [`app36-4-WakeWord-ESP32`](app36-4-WakeWord-ESP32/) — saiu no ESP32-S3, só mostra a classe (sem LED nem máquina de estados ainda) |
 > | `android-wakeword/` (docs) + `app40-1-SmartphoneAndroid` (código) | [`app36-5-WakeWord-Android`](app36-5-WakeWord-Android/) (código + `docs/`) |
 > | `app-4` MQTT · `app-5` ASSISTENTE · `app-6` EMERGÊNCIA | ainda não existem: continuam só neste plano |
@@ -121,7 +125,7 @@ subtrair a média, desvio-padrão e RMS são a mesma conta. A etapa intermediár
 rodada de upload, Teleplot e explicação para ensinar uma linha que a etapa seguinte contém.
 
 O que a PALMA ensinava e **continua sendo ensinado**, agora dentro do
-[app36-2-mic-VOZ_FEATURES](app36-2-mic-VOZ_FEATURES/):
+[mic-features](../app22-EdgeImpulse-Audio/mic-features/):
 
 | Lição da PALMA | Onde foi parar |
 |---|---|

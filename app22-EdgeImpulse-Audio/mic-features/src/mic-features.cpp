@@ -1,4 +1,4 @@
-// Etapa 3 — uma janela de 256 ms vira 4 numeros (features).
+// Etapa 2 — uma janela de 256 ms vira 4 numeros (features).
 // Mesmas funcoes do app17 (acelerometro), agora sobre audio.
 
 #include <Arduino.h>

@@ -1,4 +1,4 @@
-# app36-2-mic-VOZ_FEATURES — a janela vira quatro números
+# mic-features — a janela vira quatro números
 
 Etapa 2, e a última antes do Edge Impulse. Junta 4096 amostras (256 ms) e descreve a janela
 inteira com quatro **features**: 16 000 números por segundo viram 4.

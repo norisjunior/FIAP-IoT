@@ -5,8 +5,8 @@ seu computador. Escolha quem vai ouvir:
 
 | Pasta | Microfone | Para quem |
 |---|---|---|
-| [`notebook/`](notebook/) | do computador | tem notebook com microfone |
-| [`celular/`](celular/) | do celular, por uma página HTTPS | o computador não tem microfone (laboratório) |
+| [`wakeword-notebook/`](wakeword-notebook/) | do computador | tem notebook com microfone |
+| [`wakeword-celular/`](wakeword-celular/) | do celular, por uma página HTTPS | o computador não tem microfone (laboratório) |
 
 Nas duas, o container é o **impulse inteiro**: o MFCC e a rede neural, com o mesmo
 código do treino. O Python só recebe o áudio, monta a janela e decide o que fazer com
