@@ -81,9 +81,9 @@ uint32_t umidadeAbsoluta(float temp, float umid) {
   return (uint32_t)(1000.0f * gm3);
 }
 
-// As colunas do CSV no Serial (a ordem do Kaggle + rodada, o resto do SPS30 e rotulo); sao as mesmas chaves do JSON no MQTT
+// As colunas do CSV no Serial (a ordem do Kaggle + rodada, pm10 e rotulo); sao as mesmas chaves do JSON no MQTT
 const char* CSV_CABECALHO = "amostra,rodada,temp,umid,tvoc,eco2,raw_h2,raw_ethanol,pressao,"
-                            "pm1_0,pm2_5,nc0_5,nc1_0,nc2_5,pm10,pm4_0,nc4_0,nc10,tamanho,estimulo";
+                            "pm1_0,pm2_5,nc0_5,nc1_0,nc2_5,pm10,estimulo";
 
 // Wi-Fi: tenta por 10 s e segue; sem rede, a caixa so coleta pelo Serial
 void conectaWiFi() {
@@ -198,7 +198,7 @@ void loop() {
     }
     bool leuSgp = sgp.IAQmeasure() && sgp.IAQmeasureRaw();
 
-    // 3) SPS30: particulas (pm = massa em ug/m3; nc = contagem por cm3; tamanho tipico em um)
+    // 3) SPS30: particulas (pm = massa em ug/m3; nc = contagem por cm3)
     float pm1_0, pm2_5, pm4_0, pm10, nc0_5, nc1_0, nc2_5, nc4_0, nc10, tamanho;
     bool leuSps = (sps.readMeasurementValuesFloat(pm1_0, pm2_5, pm4_0, pm10,
                                                   nc0_5, nc1_0, nc2_5, nc4_0, nc10,
@@ -214,12 +214,10 @@ void loop() {
     int estimulo = SEQUENCIA[passo];
 
     // A linha em CSV, no Serial, na ordem do CSV_CABECALHO (o coleta.py grava como esta)
-    Serial.printf("%d,%d,%.2f,%.2f,%u,%u,%u,%u,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,"
-                  "%.2f,%.2f,%.2f,%.3f,%d\n",
+    Serial.printf("%d,%d,%.2f,%.2f,%u,%u,%u,%u,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n",
                   amostra, rodada, temp, umid,
                   sgp.TVOC, sgp.eCO2, sgp.rawH2, sgp.rawEthanol, pressao,
-                  pm1_0, pm2_5, nc0_5, nc1_0, nc2_5, pm10,
-                  pm4_0, nc4_0, nc10, tamanho, estimulo);
+                  pm1_0, pm2_5, nc0_5, nc1_0, nc2_5, pm10, estimulo);
 
     // 5) A mesma linha em JSON, no MQTT (o Node-RED grava no InfluxDB)
     if (mqttClient.connected()) {
@@ -240,10 +238,6 @@ void loop() {
       doc["nc1_0"]       = serialized(String(nc1_0, 2));
       doc["nc2_5"]       = serialized(String(nc2_5, 2));
       doc["pm10"]        = serialized(String(pm10, 2));
-      doc["pm4_0"]       = serialized(String(pm4_0, 2));
-      doc["nc4_0"]       = serialized(String(nc4_0, 2));
-      doc["nc10"]        = serialized(String(nc10, 2));
-      doc["tamanho"]     = serialized(String(tamanho, 3));
       doc["estimulo"]    = estimulo;
 
       char json[512];
