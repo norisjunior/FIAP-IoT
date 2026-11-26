@@ -50,10 +50,7 @@ broker na máquina da IoT-platform (`172.16.10.101`).
 |---|---|
 | measurement | `fumaca` |
 | tags | `coleta` (o dia, no horário de Brasília: `2026-11-19`) e `device` |
-| fields | as 20 colunas do CSV do app16-3, todas decimais (16 nas coletas até 17/11/2026) |
-
-O fluxo ganhou o `pm4_0`, o `nc4_0`, o `nc10` e o `tamanho` em 17/11/2026: quem importou antes
-importa de novo, ou esses 4 campos chegam no MQTT e não vão para o banco.
+| fields | as 16 colunas do CSV do app16-3, todas decimais |
 
 **Uma coleta por dia:** o Node-RED marca a tag `coleta` com a data. Duas coletas no mesmo dia
 viram uma.
